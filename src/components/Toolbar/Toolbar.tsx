@@ -46,7 +46,7 @@ export default function Toolbar() {
         <Tooltip>
           <TooltipTrigger className="focus:outline-none">
             <Button
-              variant="secondary"
+              variant="default"
               onClick={() => {
                 autoTag();
                 autoArrange();
@@ -65,8 +65,8 @@ export default function Toolbar() {
         <Tooltip>
           <TooltipTrigger className="focus:outline-none">
             <Button
-              variant="secondary"
-              onClick={() => scanDuplicates(slots)}
+              variant="default"
+              onClick={() => scanDuplicates()}
               disabled={!hasPack}
             >
               <Icons.Search className="mr-2" size={16} />
@@ -81,7 +81,7 @@ export default function Toolbar() {
 
       <div className="flex items-center space-x-2">
         <Button
-          variant="outline"
+          variant="default"
           onClick={undo}
           disabled={history.length === 0}
         >
