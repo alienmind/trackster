@@ -9,17 +9,19 @@ export function computeRenamePlan(slots: PadSlot[]): RenamePlan {
   const operations: RenameOperation[] = [];
 
   for (const slot of slots) {
-    if (slot.sample && slot.sample.originalSlotIndex !== slot.index) {
+    if (slot.sample) {
       const from = slot.sample.originalFilename;
       const extension = from.split('.').pop() || 'wav';
       const to = buildFilename(slot.index, slot.sample.displayName, extension);
       
-      operations.push({
-        from,
-        to,
-        fileHandle: slot.sample.fileHandle,
-        parentDirHandle: slot.sample.parentDirHandle,
-      });
+      if (from !== to) {
+        operations.push({
+          from,
+          to,
+          fileHandle: slot.sample.fileHandle,
+          parentDirHandle: slot.sample.parentDirHandle,
+        });
+      }
     }
   }
 

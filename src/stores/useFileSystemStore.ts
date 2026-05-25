@@ -1,7 +1,7 @@
 import { create, StateCreator } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { PadSlot, RenamePlan, SampleFile, TagDefinition } from '../types';
-import { parseFilename } from '../utils/fileNaming';
+import { parseFilename, buildFilename } from '../utils/fileNaming';
 import { inferTag } from '../utils/autoTag';
 import { computeArrangement } from '../utils/autoArrange';
 import { computeRenamePlan } from '../utils/renamePlan';
@@ -23,6 +23,8 @@ interface FileSystemState {
   moveSlot: (fromIndex: number, toIndex: number) => void;
   clearSlot: (index: number) => void;
   assignToSlot: (file: SampleFile, slotIndex: number) => void;
+  removeFile: (file: SampleFile) => void;
+  renameFile: (file: SampleFile, newDisplayName: string) => void;
   assignTagToSlot: (tagId: string, slotIndex: number) => void;
   addTag: (label: string) => void;
   removeTag: (tagId: string) => void;
@@ -36,6 +38,18 @@ interface FileSystemState {
 const getTracksHandle = async (root: FileSystemDirectoryHandle) => {
   if (root.name === 'Tracks') return root;
   return await root.getDirectoryHandle('Tracks');
+};
+
+const countPendingChanges = (slots: PadSlot[]) => {
+  let count = 0;
+  for (const s of slots) {
+    if (s.sample) {
+      const ext = s.sample.originalFilename.split('.').pop() || 'wav';
+      const to = buildFilename(s.index, s.sample.displayName, ext);
+      if (s.sample.originalFilename !== to) count++;
+    }
+  }
+  return count;
 };
 
 export const useFileSystemStore = create<FileSystemState>()(
@@ -107,7 +121,7 @@ export const useFileSystemStore = create<FileSystemState>()(
           const file = await fileHandle.getFile();
           
           if (parsed && parsed.prefix >= 0 && parsed.prefix < 64) {
-            newSlots[parsed.prefix]!.sample = {
+            const newSample: SampleFile = {
               originalFilename: entry.name,
               displayName: parsed.name,
               originalSlotIndex: parsed.prefix,
@@ -117,6 +131,13 @@ export const useFileSystemStore = create<FileSystemState>()(
               size: file.size,
               sourcePath: prefix.replace(/\/$/, '') || 'Root',
             };
+
+            if (newSlots[parsed.prefix]!.sample) {
+              // Slot already occupied — send this duplicate to unassigned
+              newUnassigned.push(newSample);
+            } else {
+              newSlots[parsed.prefix]!.sample = newSample;
+            }
           } else {
             const displayName = parsed ? parsed.name : entry.name.replace(/\.wav$/i, '');
             newUnassigned.push({
@@ -194,12 +215,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       newSlots[fromIndex] = { ...fromSlot, sample: toSlot.sample };
       newSlots[toIndex] = { ...toSlot, sample: tempSample };
       
-      let pendingChanges = 0;
-      for (const s of newSlots) {
-        if (s.sample && s.sample.originalSlotIndex !== s.index) {
-          pendingChanges++;
-        }
-      }
+      const pendingChanges = countPendingChanges(newSlots);
 
       return {
         slots: newSlots,
@@ -220,12 +236,78 @@ export const useFileSystemStore = create<FileSystemState>()(
       const newUnassigned = [...state.unassignedFiles, slot.sample];
       newSlots[index] = { ...slot, sample: null };
 
-      let pendingChanges = 0;
-      for (const s of newSlots) {
-        if (s.sample && s.sample.originalSlotIndex !== s.index) {
-          pendingChanges++;
+      const pendingChanges = countPendingChanges(newSlots);
+
+      return {
+        slots: newSlots,
+        unassignedFiles: newUnassigned,
+        history: [...state.history, snapshot],
+        pendingChanges
+      };
+    });
+  },
+
+  renameFile: (file, newDisplayName) => {
+    set((state) => {
+      const snapshot = state.slots.map((s) => ({ ...s }));
+      let newSlots = [...state.slots];
+      let newUnassigned = [...state.unassignedFiles];
+      
+      let found = false;
+      for (let i = 0; i < newSlots.length; i++) {
+        if (newSlots[i].sample?.originalFilename === file.originalFilename) {
+          newSlots[i] = {
+            ...newSlots[i],
+            sample: { ...newSlots[i].sample, displayName: newDisplayName }
+          };
+          found = true;
+          break;
         }
       }
+      
+      if (!found) {
+        for (let i = 0; i < newUnassigned.length; i++) {
+          if (newUnassigned[i].originalFilename === file.originalFilename) {
+            newUnassigned[i] = { ...newUnassigned[i], displayName: newDisplayName };
+            break;
+          }
+        }
+      }
+
+      const pendingChanges = countPendingChanges(newSlots);
+
+      return {
+        slots: newSlots,
+        unassignedFiles: newUnassigned,
+        history: [...state.history, snapshot],
+        pendingChanges
+      };
+    });
+  },
+
+  removeFile: (file) => {    set((state) => {
+      const snapshot = state.slots.map((s) => ({ ...s }));
+      const newSlots = [...state.slots];
+      let changed = false;
+
+      // Remove from slots if present
+      for (let i = 0; i < newSlots.length; i++) {
+        if (newSlots[i]!.sample?.originalFilename === file.originalFilename) {
+          newSlots[i] = { ...newSlots[i]!, sample: null };
+          changed = true;
+          break;
+        }
+      }
+
+      // Remove from unassigned if present
+      const newUnassigned = state.unassignedFiles.filter(f => f.originalFilename !== file.originalFilename);
+      if (newUnassigned.length !== state.unassignedFiles.length) {
+        changed = true;
+      }
+
+      if (!changed) return state;
+
+      const pendingChanges = countPendingChanges(newSlots);
 
       return {
         slots: newSlots,
@@ -250,12 +332,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       
       newSlots[slotIndex] = { ...newSlots[slotIndex]!, sample: file };
 
-      let pendingChanges = 0;
-      for (const s of newSlots) {
-        if (s.sample && s.sample.originalSlotIndex !== s.index) {
-          pendingChanges++;
-        }
-      }
+      const pendingChanges = countPendingChanges(newSlots);
 
       return {
         slots: newSlots,
@@ -353,17 +430,13 @@ export const useFileSystemStore = create<FileSystemState>()(
   autoArrange: () => {
     set((state) => {
       const snapshot = state.slots.map((s) => ({ ...s }));
-      const newSlots = computeArrangement(state.slots);
+      const result = computeArrangement(state.slots, state.unassignedFiles);
       
-      let pendingChanges = 0;
-      for (const s of newSlots) {
-        if (s.sample && s.sample.originalSlotIndex !== s.index) {
-          pendingChanges++;
-        }
-      }
+      const pendingChanges = countPendingChanges(result.slots);
       
       return {
-        slots: newSlots,
+        slots: result.slots,
+        unassignedFiles: result.unassignedFiles,
         history: [...state.history, snapshot],
         pendingChanges
       };
@@ -428,12 +501,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       const prevSlots = state.history[state.history.length - 1]!;
       const newHistory = state.history.slice(0, -1);
       
-      let pendingChanges = 0;
-      for (const s of prevSlots) {
-        if (s.sample && s.sample.originalSlotIndex !== s.index) {
-          pendingChanges++;
-        }
-      }
+      const pendingChanges = countPendingChanges(prevSlots);
       
       return {
         slots: prevSlots,
