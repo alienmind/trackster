@@ -17,9 +17,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Tracks(ter) - 🎛️ Tracks PCM Manager',
+        name: 'Tracks(ter) - Circuit Tracks PCM Manager',
         short_name: 'Tracks(ter)',
-        description: 'Manage, audition, and arrange samples for the Novation 🎛️ Tracks',
+        description: 'Manage, audition, and arrange samples for the Novation Circuit Tracks',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',
