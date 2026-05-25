@@ -4,6 +4,7 @@ import type { PageIndex, Notification, SampleFile } from '../types';
 
 interface UIState {
   activePage: PageIndex;
+  activeMainView: 'packs' | 'samples';
   selectedPadIndex: number | null;
   isCommitDialogOpen: boolean;
   notifications: Notification[];
@@ -15,6 +16,7 @@ interface UIState {
   isDuplicateModalOpen: boolean;
   duplicateClusters: SampleFile[][];
 
+  setActiveMainView: (view: 'packs' | 'samples') => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null) => void;
   openCommitDialog: () => void;
@@ -30,7 +32,8 @@ interface UIState {
 }
 
 const storeCreator: StateCreator<UIState> = (set) => ({
-  activePage: 0,
+  activePage: 1,
+  activeMainView: 'packs',
   selectedPadIndex: null,
   isCommitDialogOpen: false,
   notifications: [],
@@ -41,6 +44,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isDuplicateModalOpen: false,
   duplicateClusters: [],
 
+  setActiveMainView: (view) => set({ activeMainView: view }),
   setActivePage: (page) => {
     set({ activePage: page });
     // Side effect to update css variable can be handled here or in a component

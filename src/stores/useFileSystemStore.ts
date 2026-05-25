@@ -1,6 +1,6 @@
 import { create, StateCreator } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { PadSlot, RenamePlan, SampleFile, TagDefinition } from '../types';
+import type { PadSlot, RenamePlan, SampleFile, TagDefinition, PackSlot, PackFolder } from '../types';
 import { parseFilename, buildFilename } from '../utils/fileNaming';
 import { inferTag } from '../utils/autoTag';
 import { computeArrangement } from '../utils/autoArrange';
@@ -9,6 +9,7 @@ import { TAG_DEFINITIONS } from '../utils/constants';
 interface FileSystemState {
   rootHandle: FileSystemDirectoryHandle | null;
   packs: string[];
+  packSlots: PackSlot[];
   activePack: string | null;
   activePackHandle: FileSystemDirectoryHandle | null;
   slots: PadSlot[];
@@ -20,6 +21,7 @@ interface FileSystemState {
   openRootDirectory: () => Promise<void>;
   loadPack: (packName: string) => Promise<void>;
   copyToPack: (file: SampleFile, targetPackName: string) => Promise<void>;
+  movePackSlot: (fromIndex: number, toIndex: number) => void;
   moveSlot: (fromIndex: number, toIndex: number) => void;
   clearSlot: (index: number) => void;
   assignToSlot: (file: SampleFile, slotIndex: number) => void;
@@ -57,6 +59,7 @@ export const useFileSystemStore = create<FileSystemState>()(
     (set, get) => ({
       rootHandle: null,
       packs: [],
+      packSlots: Array.from({ length: 64 }, (_, i) => ({ index: i, pack: null })),
       activePack: null,
       activePackHandle: null,
       slots: Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null })),
@@ -73,12 +76,29 @@ export const useFileSystemStore = create<FileSystemState>()(
       try {
         const tracksHandle = await getTracksHandle(dirHandle);
         const packs: string[] = [];
+        const newPackSlots: PackSlot[] = Array.from({ length: 64 }, (_, i) => ({ index: i, pack: null }));
+
         for await (const entry of tracksHandle.values()) {
           if (entry.kind === 'directory') {
             packs.push(entry.name);
+            const parsed = parseFilename(entry.name);
+            if (parsed && parsed.prefix >= 0 && parsed.prefix < 64) {
+              const packFolder: PackFolder = {
+                originalDirname: entry.name,
+                displayName: parsed.name,
+                originalSlotIndex: parsed.prefix,
+                dirHandle: entry as FileSystemDirectoryHandle,
+              };
+              newPackSlots[parsed.prefix]!.pack = packFolder;
+            }
           }
         }
-        set({ packs: packs.sort() });
+        
+        set({ 
+          packs: packs.sort(),
+          packSlots: newPackSlots 
+        });
+        
         if (packs.length > 0) {
           await get().loadPack(packs[0]!);
         }
@@ -202,6 +222,22 @@ export const useFileSystemStore = create<FileSystemState>()(
     }
   },
   
+  movePackSlot: (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+
+    set((state) => {
+      const newSlots = [...state.packSlots];
+      const fromSlot = newSlots[fromIndex]!;
+      const toSlot = newSlots[toIndex]!;
+      
+      const tempPack = fromSlot.pack;
+      newSlots[fromIndex] = { ...fromSlot, pack: toSlot.pack };
+      newSlots[toIndex] = { ...toSlot, pack: tempPack };
+      
+      return { packSlots: newSlots };
+    });
+  },
+
   moveSlot: (fromIndex, toIndex) => {
     if (fromIndex === toIndex) return;
 
