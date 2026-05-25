@@ -3,6 +3,7 @@ import type { PadSlot } from '../types';
 
 interface AudioState {
   audioContext: AudioContext | null;
+  analyser: AnalyserNode | null;
   currentlyPlayingSlot: number | null;
   decodedBuffers: Map<number, AudioBuffer>;
   currentSource: AudioBufferSourceNode | null;
@@ -19,6 +20,7 @@ interface AudioState {
 
 export const useAudioStore = create<AudioState>((set, get) => ({
   audioContext: null,
+  analyser: null,
   currentlyPlayingSlot: null,
   decodedBuffers: new Map(),
   currentSource: null,
@@ -27,23 +29,67 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   initAudioContext: () => {
     if (!get().audioContext) {
-      set({ audioContext: new AudioContext() });
+      const ctx = new AudioContext();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      set({ audioContext: ctx, analyser });
     }
   },
 
   playSlot: async (slotIndex, fileHandle) => {
-    // TODO: implement
+    const state = get();
+    if (!state.audioContext) {
+      state.initAudioContext();
+    }
+    const ctx = get().audioContext!;
+    
+    get().stopPlayback();
+
+    let buffer = slotIndex >= 0 ? state.decodedBuffers.get(slotIndex) : undefined;
+    if (!buffer) {
+      const file = await fileHandle.getFile();
+      const arrayBuffer = await file.arrayBuffer();
+      buffer = await ctx.decodeAudioData(arrayBuffer);
+      if (slotIndex >= 0) {
+        state.decodedBuffers.set(slotIndex, buffer);
+      }
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    if (state.analyser) {
+      source.connect(state.analyser);
+      state.analyser.connect(ctx.destination);
+    } else {
+      source.connect(ctx.destination);
+    }
+    source.onended = () => {
+      if (get().currentlyPlayingSlot === slotIndex) {
+        set({ currentlyPlayingSlot: null, currentSource: null });
+      }
+    };
+    source.start();
+    set({ currentlyPlayingSlot: slotIndex, currentSource: source });
   },
 
   stopPlayback: () => {
-    // TODO: implement
+    const { currentSource } = get();
+    if (currentSource) {
+      currentSource.stop();
+      currentSource.disconnect();
+    }
+    set({ currentlyPlayingSlot: null, currentSource: null });
   },
 
   togglePlayback: async (slotIndex, fileHandle) => {
-    // TODO: implement
+    if (get().currentlyPlayingSlot === slotIndex) {
+      get().stopPlayback();
+    } else {
+      await get().playSlot(slotIndex, fileHandle);
+    }
   },
 
-  scanDuplicates: async (slots) => {
+  scanDuplicates: async (_slots) => {
     // TODO: implement
   },
 

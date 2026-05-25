@@ -1,5 +1,6 @@
-import { create } from 'zustand';
-import type { PageIndex, Notification } from '../types';
+import { create, StateCreator } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { PageIndex, Notification, SampleFile } from '../types';
 
 interface UIState {
   activePage: PageIndex;
@@ -7,19 +8,29 @@ interface UIState {
   isCommitDialogOpen: boolean;
   notifications: Notification[];
 
+  isLeftPaneCollapsed: boolean;
+  isRightPaneCollapsed: boolean;
+  selectedFile: SampleFile | null;
+
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null) => void;
   openCommitDialog: () => void;
   closeCommitDialog: () => void;
   addNotification: (notification: Omit<Notification, 'id'>) => void;
   dismissNotification: (id: string) => void;
+  toggleLeftPane: () => void;
+  toggleRightPane: () => void;
+  setSelectedFile: (file: SampleFile | null) => void;
 }
 
-export const useUIStore = create<UIState>((set, get) => ({
+const storeCreator: StateCreator<UIState> = (set) => ({
   activePage: 0,
   selectedPadIndex: null,
   isCommitDialogOpen: false,
   notifications: [],
+  isLeftPaneCollapsed: false,
+  isRightPaneCollapsed: false,
+  selectedFile: null,
 
   setActivePage: (page) => {
     set({ activePage: page });
@@ -44,5 +55,22 @@ export const useUIStore = create<UIState>((set, get) => ({
     set((state) => ({
       notifications: state.notifications.filter((n) => n.id !== id)
     }));
-  }
-}));
+  },
+
+  toggleLeftPane: () => set((state) => ({ isLeftPaneCollapsed: !state.isLeftPaneCollapsed })),
+  toggleRightPane: () => set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
+  setSelectedFile: (file) => set({ selectedFile: file })
+});
+
+export const useUIStore = create<UIState>()(
+  (persist as unknown as (config: StateCreator<UIState>, options: any) => StateCreator<UIState>)(
+    storeCreator,
+    {
+      name: 'trackster-ui-storage',
+      partialize: (state: any) => ({
+        isLeftPaneCollapsed: state.isLeftPaneCollapsed,
+        isRightPaneCollapsed: state.isRightPaneCollapsed
+      })
+    }
+  )
+);

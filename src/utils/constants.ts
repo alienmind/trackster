@@ -9,10 +9,10 @@ export interface PageConfig {
 }
 
 export const PAGES: readonly PageConfig[] = [
-  { index: 0, label: 'Page 1', slotRange: [0, 16],  color: '#ff8c00', tags: ['kick'] },
-  { index: 1, label: 'Page 2', slotRange: [16, 32], color: '#ffd700', tags: ['snare'] },
-  { index: 2, label: 'Page 3', slotRange: [32, 48], color: '#9370db', tags: ['hihat', 'cymbal'] },
-  { index: 3, label: 'Page 4', slotRange: [48, 64], color: '#00e5ff', tags: ['tom', 'perc', 'fx', 'unknown'] },
+  { index: 0, label: 'Drum 1', slotRange: [0, 16],  color: '#ef4444', tags: ['kick'] },
+  { index: 1, label: 'Drum 2', slotRange: [16, 32], color: '#eab308', tags: ['snare'] },
+  { index: 2, label: 'Drum 3', slotRange: [32, 48], color: '#3b82f6', tags: ['hihat', 'cymbal'] },
+  { index: 3, label: 'Drum 4', slotRange: [48, 64], color: '#ffffff', tags: ['tom', 'perc', 'fx', 'unknown'] },
 ] as const;
 
 export const TOTAL_SLOTS = 64;
@@ -21,24 +21,14 @@ export const GRID_COLS = 8;
 export const GRID_ROWS = 2;
 
 export const TAG_DEFINITIONS: readonly TagDefinition[] = [
-  { tag: 'kick',   label: 'BD', emoji: '🔴', patterns: [/kick/i, /\bbd\b/i, /bassdrum/i, /808/i, /\bsub\b/i] },
-  { tag: 'snare',  label: 'SD', emoji: '🟡', patterns: [/snare/i, /\bsd\b/i, /clap/i, /rim/i, /\bclp\b/i, /snap/i] },
-  { tag: 'hihat',  label: 'HH', emoji: '🔵', patterns: [/hat/i, /\bhh\b/i, /\boh\b/i, /\bch\b/i, /hihat/i, /open.?hat/i, /closed.?hat/i] },
-  { tag: 'cymbal', label: 'CY', emoji: '🟣', patterns: [/crash/i, /\bcym/i, /ride/i, /\bbell\b/i, /splash/i] },
-  { tag: 'tom',    label: 'TM', emoji: '🟠', patterns: [/\btom\b/i, /conga/i, /bongo/i] },
-  { tag: 'perc',   label: 'PC', emoji: '🟤', patterns: [/perc/i, /shaker/i, /tamb/i, /wood/i, /cowbell/i, /click/i, /clave/i] },
-  { tag: 'fx',     label: 'FX', emoji: '⚪', patterns: [/\bfx\b/i, /synth/i, /stab/i, /chord/i, /impact/i, /\bmel\b/i, /noise/i, /riser/i, /sweep/i, /drop/i, /vocal/i, /vox/i, /\bhit\b/i] },
+  { id: 'kick',   label: 'BD', icon: 'Circle', color: '#ef4444', patterns: [/kick/i, /\bbd\b/i, /bassdrum/i, /808/i, /\bsub\b/i] },
+  { id: 'snare',  label: 'SD', icon: 'Disc', color: '#eab308', patterns: [/snare/i, /\bsd\b/i, /clap/i, /rim/i, /\bclp\b/i, /snap/i] },
+  { id: 'hihat',  label: 'HH', icon: 'Triangle', color: '#3b82f6', patterns: [/hat/i, /\bhh\b/i, /\boh\b/i, /\bch\b/i, /hihat/i, /open.?hat/i, /closed.?hat/i] },
+  { id: 'cymbal', label: 'CY', icon: 'Hexagon', color: '#a855f7', patterns: [/crash/i, /\bcym/i, /ride/i, /\bbell\b/i, /splash/i] },
+  { id: 'tom',    label: 'TM', icon: 'Drum', color: '#f97316', patterns: [/\btom\b/i, /conga/i, /bongo/i] },
+  { id: 'perc',   label: 'PC', icon: 'Music', color: '#78716c', patterns: [/perc/i, /shaker/i, /tamb/i, /wood/i, /cowbell/i, /click/i, /clave/i] },
+  { id: 'fx',     label: 'FX', icon: 'Zap', color: '#e5e7eb', patterns: [/\bfx\b/i, /synth/i, /stab/i, /chord/i, /impact/i, /\bmel\b/i, /noise/i, /riser/i, /sweep/i, /drop/i, /vocal/i, /vox/i, /\bhit\b/i] },
+  { id: 'unknown',label: '??', icon: 'HelpCircle', color: '#6b7280', patterns: [] },
 ];
 
 export const SIMILARITY_THRESHOLD = 0.92;
-
-export const TAG_COLORS: Record<SampleTag, string> = {
-  kick:    '#ef4444',
-  snare:   '#eab308',
-  hihat:   '#3b82f6',
-  cymbal:  '#a855f7',
-  tom:     '#f97316',
-  perc:    '#78716c',
-  fx:      '#e5e7eb',
-  unknown: '#6b7280',
-};
