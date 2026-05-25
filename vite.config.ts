@@ -2,8 +2,14 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -11,9 +17,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Trackster - Circuit Tracks PCM Manager',
-        short_name: 'Trackster',
-        description: 'Manage, audition, and arrange samples for the Novation Circuit Tracks',
+        name: 'Tracks(ter) - 🎛️ Tracks PCM Manager',
+        short_name: 'Tracks(ter)',
+        description: 'Manage, audition, and arrange samples for the Novation 🎛️ Tracks',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',

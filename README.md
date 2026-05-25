@@ -1,73 +1,38 @@
-# React + TypeScript + Vite
+<img src="doc/trackster-logo.png" width="32" align="center" /> # 🎛️ Tracks(ter)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🎛️ Tracks(ter) is an advanced, fully client-side web application designed for organizing, previewing, and managing samples directly on your Novation 🎛️ Tracks SD card. 
 
-Currently, two official plugins are available:
+It leverages the File System Access API and Web Audio API to provide a seamless, in-browser experience for managing, renaming, and sorting audio files directly on your SD card without needing to upload anything to a server.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Local-first**: Reads and writes directly to your local file system (requires a Chromium-based browser).
+- **Drag & Drop**: Easily rearrange your samples on a virtual grid.
+- **Magic Sort**: Automatically tag and arrange your drum samples into a sensible layout.
+- **Waveform Preview**: Visualize and playback audio samples directly in the app.
+- **Duplicate Detection**: Scan for potential duplicates to save space on your SD card.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Development Setup
 
-## Expanding the ESLint configuration
+Trackster is built using React, TypeScript, and Vite.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Run the development server: `npm run dev`
+4. Open the provided local URL in a supported browser (Chrome, Edge, Arc).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Deployment
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Trackster is a fully client-side application and is designed to be hosted statically on GitHub Pages.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Deploying to GitHub Pages
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+A GitHub Actions workflow is already configured to automatically build and deploy the `main` branch to GitHub Pages.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+To enable GitHub Pages for this repository:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Go to the repository **Settings** on GitHub.
+2. In the left sidebar, click on **Pages**.
+3. Under the **Build and deployment** section, change the Source from "Deploy from a branch" to **GitHub Actions**.
+4. If you are deploying to a project repository (e.g., `https://your-username.github.io/trackster/`), you will need to update the `base` path in `vite.config.ts`. Add `base: '/trackster/'` (or your repository name) to the configuration object. If deploying to a user site (`https://your-username.github.io/`), no changes are needed.
+5. Push your changes to the `main` branch or trigger the workflow manually from the **Actions** tab on GitHub.
