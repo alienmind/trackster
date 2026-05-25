@@ -1,47 +1,73 @@
-# Trackster - Circuit Tracks PCM Manager
+# React + TypeScript + Vite
 
-A browser-based, offline-capable Progressive Web App for managing sample packs for the **Novation Circuit Tracks** groovebox.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## What It Does
+Currently, two official plugins are available:
 
-The Circuit Tracks uses a strict `00_` - `63_` filename prefix convention to map `.wav` files to its 64 sample pads across 4 pages. **Trackster** gives you a visual, hardware-mirrored interface to audition, re-order, auto-tag, and batch-rename those files - all without leaving your browser or uploading anything to a server.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Key Features
+## React Compiler
 
-- **Hardware-Mirrored Grid** - 4-page, 2×8 pad layout matching the Circuit Tracks' physical interface, with per-page color theming (Orange -> Yellow -> Purple -> Aqua).
-- **Drag & Drop Resequencing** - Rearrange pads visually; file renaming is computed but only written on explicit "Commit".
-- **Instant Audition** - Click any pad to hear the sample via an inline waveform visualizer.
-- **Magic Sort** - One-click auto-arrangement that scans filenames, infers instrument categories (kicks, snares, hats, FX…), and sorts them into the correct hardware pages.
-- **Duplicate Detection** - Client-side audio fingerprinting flags perceptually similar samples so you don't waste pad slots.
-- **Fully Offline** - PWA with service worker caching. Zero network traffic for audio files.
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Tech Stack
+## Expanding the ESLint configuration
 
-| Layer | Choice |
-|---|---|
-| Framework | Vite + React 19 |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 |
-| State | Zustand |
-| Drag & Drop | @dnd-kit |
-| Audio Viz | wavesurfer.js v7 |
-| Audio DSP | Meyda (via Web Worker) |
-| PWA | vite-plugin-pwa |
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## Getting Started
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-```bash
-npm install
-npm run dev
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-Requires a Chromium-based browser (Chrome, Edge, Arc, Brave) for the File System Access API.
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-## Documentation
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-- [Design Document](doc/DESIGN.md) - Architecture, business logic, and UX specification.
-- [Detailed Design](doc/DETAILED_DESIGN.md) - Folder structure, type definitions, component contracts, and implementation guide.
-
-## License
-
-MIT
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
