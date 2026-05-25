@@ -1,7 +1,7 @@
 <img src="doc/trackster-logo.png" align="center" />
 # 🎛️ Tracks(ter)
 
-🎛️ Tracks(ter) is an advanced, fully client-side web application designed for organizing, previewing, and managing samples directly on your Novation Circuit Tracks SD card.
+Tracks(ter) is an advanced, fully client-side web application designed for organizing, previewing, and managing samples directly on your Novation Circuit Tracks SD card.
 
 [Novation Circuit Tracks product page](https://novationmusic.com/products/circuit-tracks)
 1. Clone the repository

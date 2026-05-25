@@ -4,7 +4,7 @@
 
 Trackster is a browser-based, offline-capable Progressive Web App (PWA) for managing, auditioning, auto-tagging, and re-sequencing local `.wav` sample files before packing them onto the **Novation Circuit Tracks** groovebox.
 
-The app reads a local directory via the File System Access API, presents the samples in a 4-page, 2�-8 grid that mirrors the hardware layout, and allows drag-and-drop reordering. It includes client-side audio analysis for duplicate detection and heuristic filename parsing for auto-arrangement.
+The app reads a local directory via the File System Access API, presents the samples in a 4-page, 2x8 grid that mirrors the hardware layout, and allows drag-and-drop reordering. It includes client-side audio analysis for duplicate detection and heuristic filename parsing for auto-arrangement.
 
 **All operations are local.** No audio file ever leaves the user's machine.
 
@@ -18,7 +18,7 @@ Understanding the hardware is essential - the app's entire data model derives fr
 |---|---|
 | Total sample slots | **64** (indexed `00`–`63`) |
 | Pages | **4** (16 pads each) |
-| Pad grid per page | **2 rows �- 8 columns** |
+| Pad grid per page | **2 rows x 8 columns** |
 | Filename convention | `{NN}_{name}.wav` where `NN` is the zero-padded slot index |
 | Supported format | `.wav` - **48 kHz, 16-bit, mono** preferred; stereo files are accepted but summed to mono by the hardware |
 | Max sample length | ~15 seconds (hardware RAM limited) |
@@ -26,152 +26,109 @@ Understanding the hardware is essential - the app's entire data model derives fr
 
 The hardware reads the SD card's `PCM` folder and maps files exclusively by their numeric prefix. File ordering, tagging, and page assignment are therefore entirely determined by this prefix.
 
+---
+
 ## 3. Architecture & Toolchain
 
 ### 3.1 Architectural Choice: Vite + React
-
-**Vite + React** is the chosen architecture for this project due to the following structural and deployment reasons:
-
-- **Zero Server-Side Logic:** There are no API routes, databases, or SSR requirements. Every component uses browser-only APIs (`showDirectoryPicker`, Web Audio, drag events), making a client-only static architecture the optimal choice.
-- **Faster DX:** Vite's dev server starts in <300ms and provides instant HMR, ensuring maximum developer productivity.
-- **Simpler Deployment:** The build output is a static `dist/` folder deployable anywhere (GitHub Pages, Netlify, or a local `file://` open).
-- **Smaller Bundle:** No framework runtime overhead for routing, server components, or middleware.
+**Vite + React** is the chosen architecture for this project due to:
+- **Zero Server-Side Logic:** Every component uses browser-only APIs (`showDirectoryPicker`, Web Audio, drag events), making a client-only static architecture the optimal choice.
+- **Faster DX:** Vite's dev server provides instant HMR.
+- **Simpler Deployment:** The build output is a static `dist/` folder deployable anywhere.
+- **Smaller Bundle:** No framework runtime overhead for routing or SSR.
 
 ### 3.2 Technology Stack
-
-| Layer | Library | Version | Rationale |
-|---|---|---|---|
-| Build tool | **Vite** | 6.x | Fast, zero-config for React + TS |
-| UI Framework | **React** | 19.x | Component model, hooks, ecosystem |
-| Language | **TypeScript** | 5.x | Strict mode. Catches file-index math bugs at compile time |
-| Styling | **Tailwind CSS** | 4.x | Utility-first, rapid prototyping, easy theming via CSS custom properties |
-| State management | **Zustand** | 5.x | Minimal API, no provider nesting, selector-based re-renders (critical for 64-pad grid performance) |
-| Drag & Drop | **@dnd-kit/core** + **@dnd-kit/sortable** | 6.x | Hook-based, accessible, grid-layout-friendly, touch support |
-| Waveform display | **wavesurfer.js** | 7.x | Mature, Web Audio–backed, responsive, React wrapper available |
-| Audio DSP | **Meyda** | 5.x | Client-side feature extraction (RMS, spectral centroid, MFCC) |
-| Icons | **lucide-react** | latest | Consistent, tree-shakeable icon set |
-| PWA | **vite-plugin-pwa** | latest | Workbox-based service worker generation for Vite |
-| Linting | **ESLint** + **Prettier** | latest | Code quality and formatting consistency |
-
-### 3.3 State Management: Zustand over React Context
-
-React Context triggers re-renders for **all consumers** when any part of the context value changes. With 64 pad components subscribing to a shared file-list context, this creates a cascade of unnecessary re-renders on every drag operation.
-
-**Zustand** solves this with selector-based subscriptions:
-```typescript
-// Only re-renders when THIS pad's data changes
-const pad = useFileStore((s) => s.slots[padIndex]);
-```
-
-We will use **three stores**, each responsible for a distinct domain:
-1. **`useFileSystemStore`** - Directory handle, file list, slot assignments, pending changes, commit logic.
-2. **`useAudioStore`** - Currently playing pad, waveform data, playback state.
-3. **`useUIStore`** - Active page, selected pad, modal state, notification queue.
+- **Build tool:** Vite (Fast, zero-config for React + TS)
+- **UI Framework:** React 19.x
+- **Language:** TypeScript 5.x (Strict mode catches index math bugs at compile time)
+- **Styling:** Tailwind CSS 4.x (Utility-first, CSS custom properties for theming)
+- **State management:** Zustand 5.x (Minimal API, selector-based re-renders critical for 64-pad grid performance)
+- **Drag & Drop:** `@dnd-kit/core` + `@dnd-kit/sortable`
+- **Waveform display:** `wavesurfer.js` 7.x
+- **Audio DSP:** `Meyda` 5.x (Client-side feature extraction)
+- **Icons:** `lucide-react`
+- **PWA:** `vite-plugin-pwa`
 
 ---
 
-## 4. Core Mechanics & Browser APIs
+## 4. Folder Structure
 
-### 4.1 File System Access API
-
-```typescript
-const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+```
+trackster/
+├── src/
+│   ├── components/
+│   │   ├── Toolbar/         # Top action bar: directory picker, magic sort, scan, commit, undo
+│   │   ├── Waveform/        # wavesurfer.js wrapper, shows selected pad's audio
+│   │   ├── PageTabs/        # 4 page-selection tabs with color indicators
+│   │   ├── Grid/            # DndContext wrappers and individual SortablePad tiles
+│   │   ├── StatusBar/       # Bottom bar: slot count, pending changes, scan progress
+│   │   ├── CommitDialog/    # Modal showing rename plan, confirm/cancel
+│   │   ├── BrowserWarning/  # Full-page fallback for unsupported browsers
+│   │   └── ui/              # Shared primitive UI components (Button, Badge, Modal, Tooltip, etc.)
+│   ├── stores/              # Zustand stores (useFileSystemStore, useAudioStore, useUIStore)
+│   ├── hooks/               # Custom hooks (useAudioPlayback, useKeyboardShortcuts, useBrowserSupport)
+│   ├── utils/               # Pure functions (fileNaming, autoTag, autoArrange, similarity)
+│   ├── workers/             # Web Worker for Meyda feature extraction
+│   └── types/               # Shared TS types and ambient declarations for File System API
+└── doc/                     # Design documentation
 ```
 
-- Grants persistent, user-consented access to the local `PCM` folder.
-- Allows reading file contents (for audio playback and analysis) and writing (for renaming).
-- **Browser support:** Chromium-only (Chrome, Edge, Arc, Brave). Firefox and Safari do not support this API. The app must display a clear compatibility warning on unsupported browsers.
+---
 
-### 4.2 File Renaming Strategy
+## 5. Core Mechanics & Browser APIs
 
-When a user drags a pad to a new slot, or triggers "Magic Sort", the app must rewrite the file's numeric prefix. The approach:
+### 5.1 File System Access & Renaming Strategy
+The app uses `window.showDirectoryPicker` to grant persistent, user-consented access to the local `PCM` folder. It reads file contents and writes for renaming.
+- **Browser support:** Chromium-only. Unsupported browsers show a clear compatibility warning.
+- **Rename Strategy:** All drag operations update in-memory state only. When the user clicks "Commit", a rename plan is generated. A batch rename executes via a two-pass approach using temporary suffixes to avoid collisions when files swap positions.
 
-1. **Never mutate files during drag.** All drag operations update in-memory state only.
-2. **Compute a rename plan.** A diff between the current on-disk prefixes and the desired new prefixes.
-3. **Execute on "Commit".** Batch rename via the File System Access API:
-   - Read old file → Write new file with updated prefix → Delete old file.
-   - Use a temporary suffix (e.g., `__trackster_tmp`) during the rename to avoid name collisions when two files swap positions.
-4. **Show a confirmation dialog** listing all planned renames before executing.
-
-### 4.3 Audio Playback
-
-- Use the **Web Audio API** (`AudioContext`) for low-latency sample audition.
+### 5.2 Audio Playback
+- **Web Audio API** (`AudioContext`) handles low-latency sample audition.
 - **Single-voice playback:** clicking a new pad stops the currently playing sample.
-- **wavesurfer.js** renders the waveform of the currently selected/playing pad.
-- Decode audio via `audioContext.decodeAudioData()` on pad selection (lazy, not on directory load).
+- **wavesurfer.js** renders the waveform of the currently selected/playing pad. Audio is decoded lazily upon pad selection.
 
-### 4.4 Offline / PWA
-
-- **vite-plugin-pwa** generates a Workbox service worker that caches the app shell (HTML, JS, CSS, icons).
-- Audio files are never cached by the service worker - they live on the user's local filesystem.
-- The app must function fully offline after the first visit.
+### 5.3 Offline / PWA
+`vite-plugin-pwa` generates a Workbox service worker caching the app shell (HTML, JS, CSS, icons). Audio files are strictly local and are never cached by the service worker.
 
 ---
 
-## 5. Business Logic
+## 6. Business Logic
 
-### 5.1 Heuristic Auto-Tagging
+### 6.1 Heuristic Auto-Tagging
+A "Magic Sort" button scans filenames (stripping the prefix and extension) and assigns tags via case-insensitive regex matching. First match wins.
+- `kick` (🔴 BD), `snare` (🟡 SD), `hihat` (🔵 HH), `cymbal` (🟣 CY), `tom` (🟠 TM), `perc` (🟤 PC), `fx` (⚪ FX), `unknown` (⬜ ??).
 
-A "Magic Sort" button scans filenames and assigns functional tags via case-insensitive regex matching. The tag dictionary:
+### 6.2 Auto-Arrangement ("Magic Sort")
+Assigns tagged samples to hardware pages:
+- **Page 1 (Orange):** `kick`
+- **Page 2 (Yellow):** `snare`, `clap`
+- **Page 3 (Purple):** `hihat`, `cymbal`
+- **Page 4 (Aqua):** `tom`, `perc`, `fx`, `unknown`
 
-| Tag | Display | Regex Patterns |
-|---|---|---|
-| `kick` | 🔴 BD | `kick`, `bd`, `bassdrum`, `808`, `sub` |
-| `snare` | 🟡 SD | `snare`, `sd`, `clap`, `rim`, `clp`, `snap` |
-| `hihat` | 🔵 HH | `hat`, `hh`, `oh`, `ch`, `hihat`, `open.?hat`, `closed.?hat` |
-| `cymbal` | 🟣 CY | `crash`, `cym`, `ride`, `bell`, `splash` |
-| `tom` | 🟠 TM | `tom`, `conga`, `bongo` |
-| `perc` | 🟤 PC | `perc`, `shaker`, `tamb`, `wood`, `cowbell`, `click`, `clave`, `cabasa`, `guiro`, `maracas`, `triangle` |
-| `fx` | ⚪ FX | `fx`, `synth`, `stab`, `chord`, `impact`, `mel`, `noise`, `riser`, `sweep`, `drop`, `vocal`, `vox`, `hit` |
-| `unknown` | ⬜ ?? | _(no match)_ |
+*Overflow handling:* If a category has more samples than available slots on its page, overflow samples are placed in Page 4.
 
-**Matching rules:**
-- Match against the filename **after** stripping the numeric prefix and file extension.
-- First match wins (ordered by table priority above).
-- `unknown`-tagged samples remain in their current position during auto-arrange.
-
-### 5.2 Auto-Arrangement ("Magic Sort")
-
-When triggered, the app assigns tagged samples to hardware pages:
-
-| Page | Slots | Assigned Tags | Rationale |
-|---|---|---|---|
-| **1 (Orange)** | `00`–`15` | `kick` | Low-end foundation |
-| **2 (Yellow)** | `16`–`31` | `snare`, `clap` | Backbeat elements |
-| **3 (Purple)** | `32`–`47` | `hihat`, `cymbal` | Top-end / metallic |
-| **4 (Aqua)** | `48`–`63` | `tom`, `perc`, `fx`, `unknown` | Everything else |
-
-**Overflow handling:** If a category has more samples than available slots on its designated page, overflow samples are placed in Page 4's remaining slots. If Page 4 is also full, overflow samples retain their current position and are flagged with a warning.
-
-**Algorithm:**
-1. Tag all files via the heuristic dictionary.
-2. Sort each tag group alphabetically by filename.
-3. Assign to page slots sequentially.
-4. Compute the rename plan (old prefix → new prefix).
-5. Present the plan for user review in a confirmation modal.
-6. Execute on user approval.
-
-### 5.3 Audio Similarity / Duplicate Detection
-
-Detect perceptually similar samples without uploading files:
-
-1. **Decode:** Load each `.wav` `ArrayBuffer` into an `OfflineAudioContext` to get raw PCM data.
-2. **Extract features** (via `Meyda`):
-   - **RMS envelope** - overall volume shape.
-   - **Spectral Centroid** - brightness/timbre proxy.
-   - **MFCC** (Mel-Frequency Cepstral Coefficients) - timbral fingerprint.
-   - **Duration** - simple but effective filter.
-3. **Compare:** Compute cosine similarity between each pair's feature vectors.
-4. **Threshold:** If similarity exceeds **0.92** (configurable), flag both pads as "Potential Duplicate".
-5. **UI:** Flagged pads receive a pulsing warning border and a tooltip showing which other pad(s) they match.
-
-**Performance:** Analysis runs in a **Web Worker** to avoid blocking the UI thread. A progress indicator shows scan status ("Analyzing 23/64…").
+### 6.3 Audio Similarity / Duplicate Detection
+Detects perceptually similar samples locally:
+1. Loads raw PCM data.
+2. Posts data to a **Web Worker** which extracts features via Meyda (RMS envelope, Spectral Centroid, MFCC).
+3. Computes cosine similarity between each pair's feature vectors.
+4. If similarity exceeds a threshold (~0.92), pads are flagged as "Potential Duplicate" with a warning icon and pulsing border.
 
 ---
 
-## 6. UI/UX Specification
+## 7. State Management (Zustand Stores)
 
-### 6.1 Overall Layout
+Using Zustand with selector-based subscriptions avoids cascading React Context re-renders across the 64-pad grid.
+
+- **`useFileSystemStore`**: The primary store. Owns the directory handle, the 64 slots array, pending changes count, and an undo stack. Actions include `loadFiles`, `moveSlot`, `autoTag`, `autoArrange`, `commitChanges`, and `executeRenamePlan`.
+- **`useAudioStore`**: Manages the `AudioContext`, cached decoded buffers, active playback state, and duplicate analysis results. Exposes actions for lazy init, playing, stopping, and scanning duplicates.
+- **`useUIStore`**: Holds the active page, selected pad index, and UI states like modals and notifications.
+
+---
+
+## 8. UI/UX Specification & Component Architecture
+
+### 8.1 Overall Layout
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -185,7 +142,7 @@ Detect perceptually similar samples without uploading files:
 │  PAGE TABS                                              │
 │  [ Page 1 🟠 ] [ Page 2 🟡 ] [ Page 3 🟣 ] [ Page 4 🔵 ] │
 ├─────────────────────────────────────────────────────────┤
-│  PAD GRID (2 rows �- 8 columns)                         │
+│  PAD GRID (2 rows x 8 columns)                          │
 │  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐│
 │  │ 00 │ │ 01 │ │ 02 │ │ 03 │ │ 04 │ │ 05 │ │ 06 │ │ 07 ││
 │  │Kick│ │Kick│ │Kick│ │    │ │    │ │    │ │    │ │    ││
@@ -201,22 +158,16 @@ Detect perceptually similar samples without uploading files:
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 6.2 Color Theming
+### 8.2 Component Architecture
+- **`App.tsx`**: Root layout orchestrating Toolbar, Waveform, PageTabs, SortableGrid, StatusBar, and conditional overlays.
+- **`Toolbar.tsx`**: Triggers file loading, magic sort, dup scan, undo, and commit actions. Tracks disabled states appropriately.
+- **`Waveform.tsx`**: Wraps `wavesurfer.js` with a fixed height. Color matches the active page's accent.
+- **`PageTabs.tsx`**: Four tabs updating the active page state and global `--accent` color.
+- **`SortableGrid.tsx`**: Wraps 16 pads per page with `@dnd-kit`'s `<DndContext>` and `<SortableContext>`.
+- **`SortablePad.tsx`**: Interactive square tile displaying content based on occupied status. Connects to `useSortable` for drag operations.
+- **`CommitDialog.tsx`**: Modal rendering the rename plan (From → To table) with confirmation actions.
 
-The active page determines the UI accent color, mirroring the Circuit Tracks hardware LEDs:
-
-| Page | CSS Custom Property | Hex | Usage |
-|---|---|---|---|
-| 1 | `--color-page-1` | `#ff8c00` | Pad borders, active tab, toolbar accent |
-| 2 | `--color-page-2` | `#ffd700` | Same |
-| 3 | `--color-page-3` | `#9370db` | Same |
-| 4 | `--color-page-4` | `#00e5ff` | Same (adjusted from `#00ffff` for readability) |
-
-Background: dark theme (`#0a0a0f` base) with subtle surface elevation via lightened grays.
-
-### 6.3 Pad Anatomy
-
-Each pad is a square, interactive tile displaying:
+### 8.3 Pad Anatomy
 
 ```
 ┌──────────────┐
@@ -230,93 +181,58 @@ Each pad is a square, interactive tile displaying:
 ```
 
 **Pad states:**
-- **Empty** - Dashed border, muted color, shows slot number only.
-- **Occupied** - Solid border in page accent color, full content.
-- **Selected** - Elevated (box-shadow), brighter border, waveform loads.
-- **Playing** - Pulsing glow animation on border.
-- **Dragging** - Semi-transparent, with a drag preview showing the pad content.
-- **Drop target** - Border brightens with a scale-up micro-animation.
-- **Duplicate warning** - Amber pulsing border overlay + ⚠ icon.
+- **Empty:** Dashed border, muted color.
+- **Occupied:** Solid border in page accent color.
+- **Selected:** Elevated with a box-shadow.
+- **Playing:** Pulsing glow animation on border.
+- **Dragging:** Semi-transparent drag preview.
+- **Drop target:** Border brightens with a scale-up micro-animation.
+- **Duplicate warning:** Amber pulsing border overlay + ⚠ icon.
 
-### 6.4 Interactions
+### 8.4 Color Theming & Styling Architecture
+Styling relies on Tailwind CSS v4 using CSS Custom Properties defined in `index.css`. The active page determines the UI accent color (`--accent`), mirroring hardware LEDs:
+- **Page 1:** Orange (`#ff8c00`)
+- **Page 2:** Yellow (`#ffd700`)
+- **Page 3:** Purple (`#9370db`)
+- **Page 4:** Aqua (`#00e5ff`)
 
-| Action | Behavior |
-|---|---|
-| **Click pad** | Select pad → load waveform → begin playback |
-| **Click playing pad** | Stop playback |
-| **Drag pad** | Pick up and reorder within the current page's 16 slots |
-| **Drag pad to another page tab** | Move sample to the first empty slot on that page |
-| **Click page tab** | Switch visible page, update accent color |
-| **Magic Sort** | Tag → arrange → show confirmation modal → commit on approve |
-| **Scan Duplicates** | Analyze all 64 files → flag matches → show count in status bar |
-| **Commit** | Show rename plan → execute on confirm → refresh file list |
-| **Undo** | Revert the last in-memory reorder (pre-commit only) |
+Background is a dark theme (`#0a0a0f` base) with subtle surface elevation.
 
-### 6.5 Keyboard Shortcuts
-
-| Key | Action |
-|---|---|
-| `1`–`4` | Switch to page 1–4 |
-| `Space` | Play/stop selected pad |
-| `←` `→` `↑` `↓` | Navigate pad selection |
-| `Ctrl+Z` | Undo last move |
-| `Ctrl+S` | Open commit dialog |
-
-### 6.6 Responsive Design
-
-- **Desktop (≥1024px):** Full 2�-8 grid, waveform above grid.
-- **Tablet (768–1023px):** 2�-8 grid with smaller pads, waveform collapses to mini-bar.
-- **Mobile (<768px):** 2�-4 grid (horizontal scroll for remaining columns), bottom-sheet waveform. Note: File System Access API is not available on mobile browsers, so the mobile layout is secondary.
+### 8.5 Interactions & Keyboard Shortcuts
+- **Click pad:** Load waveform & play.
+- **Drag pad:** Reorder within page or drag to another page tab.
+- **Commit:** Shows rename plan before executing via File System Access API.
+- **Shortcuts:** `1`–`4` for page switching, `Space` for play/stop, Arrow keys for navigation, `Ctrl+Z` to undo, `Ctrl+S` to open commit dialog.
 
 ---
 
-## 7. File Validation
+## 9. Validation & Error Handling
 
-Before a directory is accepted, the app performs basic validation:
-
-| Check | Action |
-|---|---|
-| Non-`.wav` files | Ignored silently |
-| Files without `NN_` prefix | Shown in a separate "Unassigned" tray below the grid |
-| Files with duplicate prefixes | Flagged with error; user must resolve before committing |
-| Files > 20 MB | Warning badge (unusually large for a one-shot sample) |
-| More than 64 `.wav` files | Only first 64 (by prefix) loaded; remainder shown in overflow list |
+- **Browser Validation:** Fallback screen if `showDirectoryPicker` is unavailable.
+- **File Validation:** Ignores non-`.wav` files. Files without a `NN_` prefix go to an unassigned tray. Duplicate prefixes trigger a block. Files >20 MB receive a warning badge.
+- **Runtime Errors:** Graceful fallbacks for Web Worker crashes, corrupted `.wav` decodes, and temporary rename collision handling.
 
 ---
 
-## 8. Error Handling
-
-| Scenario | Behavior |
-|---|---|
-| Unsupported browser | Full-page message with browser recommendations |
-| Permission denied / revoked | Re-prompt with explanation toast |
-| Rename collision during commit | Use temp-file swap strategy (see §4.2) |
-| Corrupt `.wav` file | Skip with error toast; mark pad with ❌ |
-| Web Worker crash | Graceful fallback to main-thread analysis with progress warning |
+## 10. Web Worker (Duplicate Analysis)
+To prevent UI freezes from heavy DSP computations, Meyda feature extraction runs in a dedicated Web Worker (`audioAnalyzer.worker.ts`). The main thread passes raw `ArrayBuffer` data (zero-copy transfers). The worker processes the queue and posts progress updates back to the UI, returning final feature vectors for duplicate flagging.
 
 ---
 
-## 9. Deployment
+## 11. Testing & Deployment
 
-The app is a **static site**. The Vite build outputs a `dist/` folder containing:
-- `index.html`
-- Hashed JS/CSS bundles
-- PWA manifest + service worker
+### 11.1 Testing Strategy
+- **Unit Tests (Vitest):** Tests all pure utilities (filename parsing, tagging, auto-arrange math, similarity calculations).
+- **Component Tests (React Testing Library):** Validates UI interactions, dialog states, and disabled states.
 
-**Deployment targets:**
-- **GitHub Pages** - Deployed automatically via GitHub Actions workflow.
-- **Netlify** - Push to repo with build command `npm run build`, publish dir `dist`.
-- **GitHub Pages** - Via GitHub Actions.
-- **Local** - `npx serve dist` or just open `index.html` (service worker requires HTTP).
+### 11.2 Build & Deployment
+The Vite static site output is deployed automatically via GitHub Actions to GitHub Pages, or can be hosted on Netlify or locally via any static file server.
 
 ---
 
-## 10. Future Considerations (Out of Scope for v1)
-
-- **Waveform editing** - Trim, normalize, fade in/out before committing.
-- **Multi-pack management** - Switch between different sample pack directories.
-- **Sample import** - Drag external `.wav` files into empty pad slots.
-- **Circuit Tracks sysex** - Direct USB MIDI communication for live sample transfer.
-- **Audio format conversion** - Auto-convert non-48kHz/non-16-bit files to Circuit Tracks spec.
-- **Tag persistence** - Save tag assignments to a sidecar `.json` file so they survive across sessions.
-
+## 12. Future Considerations (Out of Scope for v1)
+- Waveform editing (trim, normalize, fade in/out).
+- Multi-pack management and external sample import.
+- Circuit Tracks sysex integration for direct USB MIDI transfer.
+- Audio format conversion to preferred 48kHz/16-bit specs.
+- Persisting tags to a sidecar `.json` file.
