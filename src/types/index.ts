@@ -28,6 +28,9 @@ export interface SampleFile {
   /** File handle for reading/writing via File System Access API */
   fileHandle: FileSystemFileHandle;
 
+  /** Directory handle of the folder containing this sample (for correct rename targeting) */
+  parentDirHandle: FileSystemDirectoryHandle;
+
   /** Inferred tag from filename heuristic */
   tag: SampleTag;
 
@@ -61,6 +64,9 @@ export interface RenameOperation {
 
   /** The file handle to operate on */
   fileHandle: FileSystemFileHandle;
+
+  /** The directory handle where this file lives */
+  parentDirHandle: FileSystemDirectoryHandle;
 }
 
 export interface RenamePlan {

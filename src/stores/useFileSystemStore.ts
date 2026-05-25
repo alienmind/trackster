@@ -112,6 +112,7 @@ export const useFileSystemStore = create<FileSystemState>()(
               displayName: parsed.name,
               originalSlotIndex: parsed.prefix,
               fileHandle,
+              parentDirHandle: dirHandle,
               tag: inferTag(parsed.name),
               size: file.size,
               sourcePath: prefix.replace(/\/$/, '') || 'Root',
@@ -123,6 +124,7 @@ export const useFileSystemStore = create<FileSystemState>()(
               displayName,
               originalSlotIndex: -1,
               fileHandle,
+              parentDirHandle: dirHandle,
               tag: inferTag(displayName),
               size: file.size,
               sourcePath: prefix.replace(/\/$/, '') || 'Root',
@@ -373,40 +375,44 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
   
   executeRenamePlan: async (plan) => {
-    const { activePackHandle, activePack, loadPack } = get();
-    if (!activePackHandle || !activePack) return;
+    const { activePack, loadPack } = get();
+    if (!activePack) return;
 
+    // Pass 1: rename each file to a temp name (in its own directory)
     for (const op of plan.operations) {
+      const dir = op.parentDirHandle;
       const tempName = `__tmp_${op.to}`;
       try {
         if ('move' in op.fileHandle) {
-          await (op.fileHandle as any).move(activePackHandle, tempName);
+          await (op.fileHandle as any).move(dir, tempName);
         } else {
           const file = await op.fileHandle.getFile();
-          const newFileHandle = await activePackHandle.getFileHandle(tempName, { create: true });
+          const newFileHandle = await dir.getFileHandle(tempName, { create: true });
           const writable = await newFileHandle.createWritable();
           await writable.write(file);
           await writable.close();
-          await activePackHandle.removeEntry(op.from);
+          await dir.removeEntry(op.from);
         }
       } catch (err) {
         console.error('Rename pass 1 failed', err);
       }
     }
 
+    // Pass 2: rename temp files to final names (in their own directories)
     for (const op of plan.operations) {
+      const dir = op.parentDirHandle;
       const tempName = `__tmp_${op.to}`;
       try {
-        const tempHandle = await activePackHandle.getFileHandle(tempName);
+        const tempHandle = await dir.getFileHandle(tempName);
         if ('move' in tempHandle) {
-          await (tempHandle as any).move(activePackHandle, op.to);
+          await (tempHandle as any).move(dir, op.to);
         } else {
           const file = await tempHandle.getFile();
-          const newFileHandle = await activePackHandle.getFileHandle(op.to, { create: true });
+          const newFileHandle = await dir.getFileHandle(op.to, { create: true });
           const writable = await newFileHandle.createWritable();
           await writable.write(file);
           await writable.close();
-          await activePackHandle.removeEntry(tempName);
+          await dir.removeEntry(tempName);
         }
       } catch (err) {
         console.error('Rename pass 2 failed', err);

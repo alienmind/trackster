@@ -18,6 +18,7 @@ export function computeRenamePlan(slots: PadSlot[]): RenamePlan {
         from,
         to,
         fileHandle: slot.sample.fileHandle,
+        parentDirHandle: slot.sample.parentDirHandle,
       });
     }
   }
