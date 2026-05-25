@@ -61,7 +61,7 @@ export default function CommitDialog() {
         
         <DialogFooter className="mt-6">
           <Button
-            variant="outline"
+            variant="default"
             onClick={closeCommitDialog}
             disabled={isExecuting}
           >
