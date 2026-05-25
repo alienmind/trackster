@@ -1,6 +1,13 @@
-<img src="doc/trackster-logo.png" width="32" align="center" /> # 🎛️ Tracks(ter)
+<img src="doc/trackster-logo.png" align="center" />
+# 🎛️ Tracks(ter)
 
-🎛️ Tracks(ter) is an advanced, fully client-side web application designed for organizing, previewing, and managing samples directly on your Novation 🎛️ Tracks SD card. 
+🎛️ Tracks(ter) is an advanced, fully client-side web application designed for organizing, previewing, and managing samples directly on your Novation Circuit Tracks SD card.
+
+[Novation Circuit Tracks product page](https://novationmusic.com/products/circuit-tracks)
+1. Clone the repository
+2. Install dependencies: `pnpm install`
+3. Run the development server: `pnpm dev`
+4. Open the provided local URL in a supported browser (Chrome, Edge, Arc). 
 
 It leverages the File System Access API and Web Audio API to provide a seamless, in-browser experience for managing, renaming, and sorting audio files directly on your SD card without needing to upload anything to a server.
 
