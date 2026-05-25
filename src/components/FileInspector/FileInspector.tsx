@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { useUIStore } from '../../stores/useUIStore';
 import { useFileSystemStore } from '../../stores/useFileSystemStore';
 import { formatBytes } from '../../utils/formatters';
@@ -8,9 +9,34 @@ export default function FileInspector() {
   const selectedFile = useUIStore((s) => s.selectedFile);
   const tags = useFileSystemStore((s) => s.tags);
   const assignTagToSlot = useFileSystemStore((s) => s.assignTagToSlot);
+  const renameFile = useFileSystemStore((s) => s.renameFile);
   const selectedPadIndex = useUIStore((s) => s.selectedPadIndex);
   const slots = useFileSystemStore((s) => s.slots);
   
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditingName && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditingName]);
+
+  const handleRenameSubmit = () => {
+    if (!selectedFile || !editNameValue.trim()) {
+      setIsEditingName(false);
+      return;
+    }
+    renameFile(selectedFile, editNameValue.trim());
+    useUIStore.getState().setSelectedFile({
+      ...selectedFile,
+      displayName: editNameValue.trim()
+    });
+    setIsEditingName(false);
+  };
+
   // Derive the current tag from the slot if possible, so it updates immediately
   const activeSlot = (selectedPadIndex !== null && selectedPadIndex !== -1) ? slots[selectedPadIndex] : null;
 
@@ -39,10 +65,46 @@ export default function FileInspector() {
   // Note: we can't easily manage tags for unassigned files right now unless we add a specific function for it.
   // The user said "Tags should be equally manageable from that view".
   
+  const ext = selectedFile.originalFilename?.split('.').pop() || 'wav';
+  const prefix = (selectedPadIndex !== null && selectedPadIndex >= 0) ? `${selectedPadIndex.toString().padStart(2, '0')}_` : '';
+  
   return (
     <div className="flex flex-col h-full bg-card rounded border border-border p-2 text-xs overflow-y-auto">
-      <div className="font-semibold mb-2 text-foreground break-all" title={selectedFile.originalFilename || selectedFile.displayName || selectedFile.fileHandle?.name}>
-        {selectedFile.originalFilename || selectedFile.displayName || selectedFile.fileHandle?.name || 'Unknown file'}
+      <div 
+        className="font-semibold mb-2 text-foreground break-all cursor-pointer hover:bg-muted/50 p-1 rounded -ml-1 transition-colors" 
+        title="Click to rename"
+        onClick={() => {
+          if (!isEditingName) {
+            setEditNameValue(selectedFile.displayName);
+            setIsEditingName(true);
+          }
+        }}
+      >
+        {isEditingName ? (
+          <div className="flex items-center">
+            <span className="text-muted-foreground">{prefix}</span>
+            <input
+              ref={inputRef}
+              type="text"
+              className="bg-input text-foreground border border-primary/50 rounded px-1 min-w-0 flex-1 outline-none"
+              value={editNameValue}
+              onChange={(e) => setEditNameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameSubmit();
+                if (e.key === 'Escape') setIsEditingName(false);
+              }}
+              onBlur={handleRenameSubmit}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <span className="text-muted-foreground">.{ext}</span>
+          </div>
+        ) : (
+          <span>
+            <span className="text-muted-foreground">{prefix}</span>
+            {selectedFile.displayName}
+            <span className="text-muted-foreground">.{ext}</span>
+          </span>
+        )}
       </div>
       <div className="text-muted-foreground truncate mb-2 text-[10px]" title={selectedFile.sourcePath}>
         {selectedFile.sourcePath || 'Root path'}
