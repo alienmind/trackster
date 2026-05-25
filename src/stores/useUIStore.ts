@@ -12,6 +12,9 @@ interface UIState {
   isRightPaneCollapsed: boolean;
   selectedFile: SampleFile | null;
 
+  isDuplicateModalOpen: boolean;
+  duplicateClusters: SampleFile[][];
+
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null) => void;
   openCommitDialog: () => void;
@@ -21,6 +24,9 @@ interface UIState {
   toggleLeftPane: () => void;
   toggleRightPane: () => void;
   setSelectedFile: (file: SampleFile | null) => void;
+
+  openDuplicateModal: (clusters: SampleFile[][]) => void;
+  closeDuplicateModal: () => void;
 }
 
 const storeCreator: StateCreator<UIState> = (set) => ({
@@ -31,6 +37,9 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isLeftPaneCollapsed: false,
   isRightPaneCollapsed: false,
   selectedFile: null,
+
+  isDuplicateModalOpen: false,
+  duplicateClusters: [],
 
   setActivePage: (page) => {
     set({ activePage: page });
@@ -59,7 +68,10 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   toggleLeftPane: () => set((state) => ({ isLeftPaneCollapsed: !state.isLeftPaneCollapsed })),
   toggleRightPane: () => set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
-  setSelectedFile: (file) => set({ selectedFile: file })
+  setSelectedFile: (file) => set({ selectedFile: file }),
+
+  openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
+  closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] })
 });
 
 export const useUIStore = create<UIState>()(
