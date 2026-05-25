@@ -55,6 +55,28 @@ export interface PadSlot {
   sample: SampleFile | null;
 }
 
+export interface PackFolder {
+  /** Original directory name on disk, e.g. "00_MyPack" */
+  originalDirname: string;
+
+  /** Clean display name, e.g. "MyPack" */
+  displayName: string;
+
+  /** Original numeric prefix parsed from filename, e.g. 0 */
+  originalSlotIndex: number;
+
+  /** Directory handle for reading/writing via File System Access API */
+  dirHandle: FileSystemDirectoryHandle;
+}
+
+export interface PackSlot {
+  /** Slot index 0–63 */
+  index: number;
+
+  /** The pack occupying this slot, or null if empty */
+  pack: PackFolder | null;
+}
+
 export interface RenameOperation {
   /** Current filename on disk */
   from: string;
