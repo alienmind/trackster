@@ -255,10 +255,10 @@ export const useFileSystemStore = create<FileSystemState>()(
       
       let found = false;
       for (let i = 0; i < newSlots.length; i++) {
-        if (newSlots[i].sample?.originalFilename === file.originalFilename) {
+        if (newSlots[i]!.sample?.originalFilename === file.originalFilename) {
           newSlots[i] = {
-            ...newSlots[i],
-            sample: { ...newSlots[i].sample, displayName: newDisplayName }
+            ...newSlots[i]!,
+            sample: { ...newSlots[i]!.sample!, displayName: newDisplayName }
           };
           found = true;
           break;
@@ -267,8 +267,8 @@ export const useFileSystemStore = create<FileSystemState>()(
       
       if (!found) {
         for (let i = 0; i < newUnassigned.length; i++) {
-          if (newUnassigned[i].originalFilename === file.originalFilename) {
-            newUnassigned[i] = { ...newUnassigned[i], displayName: newDisplayName };
+          if (newUnassigned[i]!.originalFilename === file.originalFilename) {
+            newUnassigned[i] = { ...newUnassigned[i]!, displayName: newDisplayName };
             break;
           }
         }

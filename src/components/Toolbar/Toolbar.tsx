@@ -9,7 +9,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 export default function Toolbar() {
   const { activePack, autoTag, autoArrange, undo, history, pendingChanges } = useFileSystemStore();
   const scanDuplicates = useAudioStore((s) => s.scanDuplicates);
-  const slots = useFileSystemStore((s) => s.slots);
   const openCommitDialog = useUIStore((s) => s.openCommitDialog);
 
   const openRootDirectory = useFileSystemStore((s) => s.openRootDirectory);

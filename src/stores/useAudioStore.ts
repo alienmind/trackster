@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { PadSlot, SampleFile } from '../types';
+import type { SampleFile } from '../types';
 import { useFileSystemStore } from './useFileSystemStore';
 import { useUIStore } from './useUIStore';
 import { computeSimilarity } from '../utils/similarity';
