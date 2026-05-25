@@ -1,18 +1,11 @@
-export type SampleTag =
-  | 'kick'
-  | 'snare'
-  | 'hihat'
-  | 'cymbal'
-  | 'tom'
-  | 'perc'
-  | 'fx'
-  | 'unknown';
+export type SampleTag = string;
 
 export interface TagDefinition {
-  tag: SampleTag;
+  id: string;          // Unique identifier for the tag
   label: string;       // Short display label: "BD", "SD", "HH", etc.
-  emoji: string;       // Color indicator emoji for quick scanning
+  icon: string;        // lucide-react icon name
   patterns: RegExp[];  // Filename match patterns (case-insensitive)
+  color: string;       // Background color for the tag
 }
 
 export interface AudioFeatureVector {
@@ -46,6 +39,9 @@ export interface SampleFile {
 
   /** File size in bytes */
   size: number;
+
+  /** Relative path from pack root, e.g. "Samples/Kicks" */
+  sourcePath?: string;
 }
 
 export interface PadSlot {

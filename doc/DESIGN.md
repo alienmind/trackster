@@ -34,7 +34,7 @@ The hardware reads the SD card's `PCM` folder and maps files exclusively by thei
 
 - **Zero Server-Side Logic:** There are no API routes, databases, or SSR requirements. Every component uses browser-only APIs (`showDirectoryPicker`, Web Audio, drag events), making a client-only static architecture the optimal choice.
 - **Faster DX:** Vite's dev server starts in <300ms and provides instant HMR, ensuring maximum developer productivity.
-- **Simpler Deployment:** The build output is a static `dist/` folder deployable anywhere (Vercel, Netlify, GitHub Pages, or a local `file://` open).
+- **Simpler Deployment:** The build output is a static `dist/` folder deployable anywhere (GitHub Pages, Netlify, or a local `file://` open).
 - **Smaller Bundle:** No framework runtime overhead for routing, server components, or middleware.
 
 ### 3.2 Technology Stack
@@ -304,7 +304,7 @@ The app is a **static site**. The Vite build outputs a `dist/` folder containing
 - PWA manifest + service worker
 
 **Deployment targets:**
-- **Vercel** - `vercel deploy` (auto-detects Vite).
+- **GitHub Pages** - Deployed automatically via GitHub Actions workflow.
 - **Netlify** - Push to repo with build command `npm run build`, publish dir `dist`.
 - **GitHub Pages** - Via GitHub Actions.
 - **Local** - `npx serve dist` or just open `index.html` (service worker requires HTTP).

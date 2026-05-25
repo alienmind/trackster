@@ -1056,20 +1056,16 @@ Test interactive behavior:
 }
 ```
 
-### 13.2 Vercel Deployment
+### 13.2 GitHub Pages Deployment
 
-Vercel auto-detects Vite projects. No special configuration needed.
+The application is deployed to GitHub Pages using GitHub Actions.
 
-```bash
-# One-time setup
-npm i -g vercel
-vercel link
+A workflow file (`.github/workflows/deploy.yml`) handles the build and deployment process automatically when changes are pushed to the `main` branch. 
 
-# Deploy
-vercel deploy --prod
-```
-
-Or connect the GitHub repo to Vercel for automatic deploys on push.
+To enable this:
+1. Go to your repository settings on GitHub.
+2. Navigate to "Pages" under the "Code and automation" section.
+3. Under "Build and deployment", set the Source to "GitHub Actions".
 
 ### 13.3 Static Hosting
 

@@ -9,11 +9,10 @@ import type { SampleTag } from '../types';
  * "ambient_pad" → "unknown"
  */
 export function inferTag(displayName: string): SampleTag {
+  const normalized = displayName.toLowerCase();
   for (const def of TAG_DEFINITIONS) {
-    for (const pattern of def.patterns) {
-      if (pattern.test(displayName)) {
-        return def.tag;
-      }
+    if (def.patterns.some((p) => p.test(normalized))) {
+      return def.id;
     }
   }
   return 'unknown';
