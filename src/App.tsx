@@ -3,12 +3,12 @@ import { useUIStore } from './stores/useUIStore';
 import { PAGES } from './utils/constants';
 import { useFileSystemStore } from './stores/useFileSystemStore';
 import { useAudioStore } from './stores/useAudioStore';
-import { 
-  DndContext, 
-  closestCenter, 
-  PointerSensor, 
-  useSensor, 
-  useSensors, 
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
@@ -18,6 +18,7 @@ import SortableGrid from './components/Grid/SortableGrid';
 import PageTabs from './components/PageTabs/PageTabs';
 import StatusBar from './components/StatusBar/StatusBar';
 import CommitDialog from './components/CommitDialog/CommitDialog';
+import DuplicateScanModal from './components/DuplicateScanModal/DuplicateScanModal';
 import BrowserWarning from './components/BrowserWarning/BrowserWarning';
 import PacksSidebar from './components/PacksSidebar/PacksSidebar';
 import StagingArea from './components/StagingArea/StagingArea';
@@ -39,10 +40,10 @@ export default function App() {
   const assignToSlot = useFileSystemStore((s) => s.assignToSlot);
   const copyToPack = useFileSystemStore((s) => s.copyToPack);
   const slots = useFileSystemStore((s) => s.slots);
-  
+
   const initAudioContext = useAudioStore((s) => s.initAudioContext);
   const [activeDragItem, setActiveDragItem] = useState<{ id: string, type: string, data: any } | null>(null);
-  const activeTagItem = activeDragItem?.type === 'tag' 
+  const activeTagItem = activeDragItem?.type === 'tag'
     ? useFileSystemStore.getState().tags.find(t => t.id === activeDragItem.data.tagId)
     : null;
 
@@ -122,24 +123,24 @@ export default function App() {
           <div className="flex items-center space-x-3">
             <img src={logoUrl} alt="Trackster Logo" className="h-8 w-auto" />
             <div className="flex items-baseline space-x-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">🎛️ Tracks(ter)</h1>
-              <span className="text-xs text-muted-foreground hidden sm:inline-block">🎛️ Tracks management tool</span>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Tracks(ter)</h1>
+              <span className="text-xs text-muted-foreground hidden sm:inline-block">Circuit Tracks management tool</span>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
-            <a 
-              href="https://github.com/alienmind/trackster" 
-              target="_blank" 
+            <a
+              href="https://github.com/alienmind/trackster"
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary"
             >
               <Icons.GitBranch size={14} />
               GitHub
             </a>
-            <a 
-              href="https://components.novationmusic.com/" 
-              target="_blank" 
+            <a
+              href="https://components.novationmusic.com/"
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary"
             >
@@ -163,7 +164,7 @@ export default function App() {
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
                   <Icons.FolderOpen size={48} className="opacity-20" />
                   <h2 className="text-xl font-semibold">No SD Card Selected</h2>
-                  <p>Open your 🎛️ Tracks SD Card root folder to begin.</p>
+                  <p>Open your Circuit Tracks SD Card root folder to begin.</p>
                 </div>
               ) : !activePack ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
@@ -176,7 +177,7 @@ export default function App() {
                     <div className="flex-1 min-w-[250px]"><FileInspector /></div>
                     <div className="flex-1 relative"><Oscilloscope /></div>
                   </div>
-                  
+
                   <div className="flex-1 flex flex-col bg-card rounded-lg border border-border overflow-hidden shadow-sm">
                     <PageTabs />
                     <div className="p-6 flex-1 overflow-y-auto bg-background/30">
@@ -186,7 +187,7 @@ export default function App() {
                 </>
               )}
             </div>
-            
+
             {/* Bottom Pane: Staging Area */}
             <StagingArea />
           </main>
@@ -197,9 +198,10 @@ export default function App() {
 
         {/* Footer */}
         <StatusBar />
-        
+
         <CommitDialog />
-        
+        <DuplicateScanModal />
+
         <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
           {activeDragItem ? (
             <div className="opacity-80 scale-105 transition-transform pointer-events-none">

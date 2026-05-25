@@ -189,7 +189,7 @@ export default function RightPane() {
             {isCollapsed && <TooltipContent side="left">Tag Manager</TooltipContent>}
           </Tooltip>
           {!isCollapsed && (
-            <Button variant="outline" size="sm" onClick={() => setIsAddTagOpen(true)} className="h-8">
+            <Button variant="default" size="sm" onClick={() => setIsAddTagOpen(true)} className="h-8">
               <Icons.Plus size={14} className="mr-1" />
               Add Tag
             </Button>
@@ -222,7 +222,7 @@ export default function RightPane() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddTagOpen(false)}>Cancel</Button>
+            <Button variant="default" onClick={() => setIsAddTagOpen(false)}>Cancel</Button>
             <Button onClick={handleAddTag}>Add Tag</Button>
           </DialogFooter>
         </DialogContent>
@@ -242,7 +242,7 @@ export default function RightPane() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTagToDelete(null)}>Cancel</Button>
+            <Button variant="default" onClick={() => setTagToDelete(null)}>Cancel</Button>
             <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
