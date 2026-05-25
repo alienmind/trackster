@@ -3,8 +3,8 @@
  * Computes MFCC-like features or spectral summaries from raw audio buffers to identify similar files.
  */
 
-self.onmessage = async (e: MessageEvent<{ slotIndex: number; buffer: ArrayBuffer }>) => {
-  const { slotIndex, buffer } = e.data;
+self.onmessage = async (e: MessageEvent<{ originalFilename: string; buffer: ArrayBuffer }>) => {
+  const { originalFilename, buffer } = e.data;
   try {
     // In a worker, we don't have access to AudioContext or OfflineAudioContext.
     // Wait, OfflineAudioContext IS available in workers in some browsers, but maybe not all.
@@ -27,8 +27,8 @@ self.onmessage = async (e: MessageEvent<{ slotIndex: number; buffer: ArrayBuffer
       sampleSum
     ];
 
-    self.postMessage({ slotIndex, fingerprint });
+    self.postMessage({ originalFilename, fingerprint });
   } catch (err) {
-    self.postMessage({ slotIndex, error: 'Analysis failed' });
+    self.postMessage({ originalFilename, error: 'Analysis failed' });
   }
 };
