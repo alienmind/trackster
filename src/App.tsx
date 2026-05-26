@@ -23,9 +23,11 @@ import { TagBadge } from './components/TagBadge/TagBadge';
 import logoUrl from '../doc/trackster-logo.png';
 import * as Icons from 'lucide-react';
 import { ThemeToggle } from './components/ThemeToggle';
+import pkg from '../package.json';
 
 import PackOrganizer from './components/PackOrganizer/PackOrganizer';
 import SampleOrganizer from './components/SampleOrganizer/SampleOrganizer';
+import PendingChangesPane from './components/PendingChangesPane/PendingChangesPane';
 
 export default function App() {
   const isSupported = 'showDirectoryPicker' in window;
@@ -110,16 +112,23 @@ export default function App() {
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="min-h-screen bg-background text-foreground flex flex-col font-sans h-screen overflow-hidden" onClick={initAudioContext}>
         {/* Header */}
-        <div className="h-14 flex-none border-b border-border bg-card flex items-center px-4 justify-between">
-          <div className="flex items-center space-x-3">
+        <div className="h-16 flex-none border-b border-border bg-card flex items-center px-4 justify-between">
+          {/* Left part (logo) */}
+          <div className="flex-1 flex items-center space-x-3">
             <img src={logoUrl} alt="Trackster Logo" className="h-8 w-auto" />
-            <div className="flex items-baseline space-x-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">Tracks(ter)</h1>
-              <span className="text-xs text-muted-foreground hidden sm:inline-block">Circuit Tracks management tool</span>
-            </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          {/* Center part */}
+          <div className="flex flex-col items-center justify-center shrink-0">
+            <div className="flex items-baseline space-x-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Tracks(ter)</h1>
+              <span className="text-[10px] text-muted-foreground font-mono font-bold">v{pkg.version}</span>
+            </div>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground hidden sm:block mt-0.5">Circuit Tracks management tool</span>
+          </div>
+
+          {/* Right part */}
+          <div className="flex-1 flex items-center justify-end space-x-3">
             <a
               href="https://github.com/alienmind/trackster"
               target="_blank"
@@ -151,10 +160,15 @@ export default function App() {
               <h2 className="text-xl font-semibold">No SD Card Selected</h2>
               <p>Mount your Circuit Tracks SD Card root folder to begin.</p>
             </div>
-          ) : activeMainView === 'packs' ? (
-            <PackOrganizer />
           ) : (
-            <SampleOrganizer />
+            <>
+              {activeMainView === 'packs' ? (
+                <PackOrganizer />
+              ) : (
+                <SampleOrganizer />
+              )}
+              <PendingChangesPane />
+            </>
           )}
         </div>
 

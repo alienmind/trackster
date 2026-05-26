@@ -33,26 +33,26 @@ export default function CommitDialog() {
 
   return (
     <Dialog open={isCommitDialogOpen} onOpenChange={(open) => !open && closeCommitDialog()}>
-      <DialogContent className="max-w-2xl bg-card border-border">
-        <DialogHeader className="flex flex-row items-center justify-between">
+      <DialogContent className="sm:max-w-2xl bg-card border-border overflow-hidden flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex flex-row items-center justify-between pr-8">
           <DialogTitle className="text-xl font-bold">Review Changes</DialogTitle>
           {plan && (
-            <span className="bg-secondary px-3 py-1 rounded-full text-sm font-mono mr-4">
+            <span className="bg-secondary px-3 py-1 rounded-full text-sm font-mono shrink-0">
               {plan.operations.length} operations
             </span>
           )}
         </DialogHeader>
         
-        <ScrollArea className="max-h-[60vh] mt-4 border border-border rounded-md">
+        <ScrollArea className="mt-4 border border-border rounded-md flex-1 min-h-0">
           <div className="p-4 space-y-2">
             {!plan || plan.operations.length === 0 ? (
               <div className="text-muted-foreground text-center py-8">No changes to commit.</div>
             ) : (
               plan.operations.map((op, i) => (
-                <div key={i} className="flex items-center space-x-4 bg-muted p-3 rounded text-sm font-mono border border-border">
-                  <div className="flex-1 text-destructive line-through opacity-80">{op.from}</div>
-                  <div className="text-muted-foreground">→</div>
-                  <div className="flex-1 text-green-500">{op.to}</div>
+                <div key={i} className="flex items-center space-x-4 bg-muted p-3 rounded text-sm font-mono border border-border min-w-0">
+                  <div className="flex-1 text-destructive line-through opacity-80 truncate" title={op.from}>{op.from}</div>
+                  <div className="text-muted-foreground shrink-0">→</div>
+                  <div className="flex-1 text-green-500 truncate" title={op.to}>{op.to}</div>
                 </div>
               ))
             )}

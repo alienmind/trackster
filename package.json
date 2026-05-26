@@ -1,7 +1,7 @@
 {
   "name": "trackster",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,7 @@
     "@fontsource-variable/geist": "^5.2.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "idb-keyval": "^6.2.4",
     "lucide-react": "^1.16.0",
     "meyda": "^5.6.3",
     "react": "^19.2.6",

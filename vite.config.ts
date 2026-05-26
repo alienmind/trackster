@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
-  base: '/trackster/',
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

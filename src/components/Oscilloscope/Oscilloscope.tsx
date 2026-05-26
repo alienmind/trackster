@@ -18,6 +18,16 @@ export default function Oscilloscope() {
     const dataArray = new Uint8Array(bufferLength);
 
     const draw = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const displayWidth = Math.round(rect.width * dpr);
+      const displayHeight = Math.round(rect.height * dpr);
+
+      if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
+      }
+
       const width = canvas.width;
       const height = canvas.height;
 
@@ -26,7 +36,7 @@ export default function Oscilloscope() {
       canvasCtx.fillStyle = 'rgba(24, 24, 27, 0.8)'; // bg-background basically
       canvasCtx.fillRect(0, 0, width, height);
 
-      canvasCtx.lineWidth = 2;
+      canvasCtx.lineWidth = 2 * dpr;
       canvasCtx.strokeStyle = '#00e5ff'; // primary accent
       canvasCtx.beginPath();
 
@@ -46,7 +56,7 @@ export default function Oscilloscope() {
         x += sliceWidth;
       }
 
-      canvasCtx.lineTo(canvas.width, canvas.height / 2);
+      canvasCtx.lineTo(width, height / 2);
       canvasCtx.stroke();
 
       requestRef.current = requestAnimationFrame(draw);
@@ -63,8 +73,6 @@ export default function Oscilloscope() {
     <div className="h-full w-full relative bg-background rounded-md border border-border overflow-hidden">
       <canvas 
         ref={canvasRef} 
-        width={300} 
-        height={100} 
         className="w-full h-full block"
       />
     </div>
