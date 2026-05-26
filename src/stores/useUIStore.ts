@@ -25,6 +25,7 @@ interface UIState {
   dismissNotification: (id: string) => void;
   toggleLeftPane: () => void;
   toggleRightPane: () => void;
+  setRightPaneCollapsed: (collapsed: boolean) => void;
   setSelectedFile: (file: SampleFile | null) => void;
 
   openDuplicateModal: (clusters: SampleFile[][]) => void;
@@ -32,7 +33,7 @@ interface UIState {
 }
 
 const storeCreator: StateCreator<UIState> = (set) => ({
-  activePage: 1,
+  activePage: 0,
   activeMainView: 'packs',
   selectedPadIndex: null,
   isCommitDialogOpen: false,
@@ -72,6 +73,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   toggleLeftPane: () => set((state) => ({ isLeftPaneCollapsed: !state.isLeftPaneCollapsed })),
   toggleRightPane: () => set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
+  setRightPaneCollapsed: (collapsed) => set({ isRightPaneCollapsed: collapsed }),
   setSelectedFile: (file) => set({ selectedFile: file }),
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),

@@ -1,5 +1,6 @@
 import { create, StateCreator } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, type PersistStorage } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval';
 import type { PadSlot, RenamePlan, SampleFile, TagDefinition, PackSlot, PackFolder } from '../types';
 import { parseFilename, buildFilename } from '../utils/fileNaming';
 import { inferTag } from '../utils/autoTag';
@@ -18,10 +19,22 @@ interface FileSystemState {
   pendingChanges: number;
   history: PadSlot[][];
   
-  openRootDirectory: () => Promise<void>;
+  slotsByPack: Record<string, PadSlot[]>;
+  unassignedFilesByPack: Record<string, SampleFile[]>;
+  historyByPack: Record<string, PadSlot[][]>;
+  
+  applyTagsToFilenames: boolean;
+  setApplyTagsToFilenames: (apply: boolean) => void;
+  
+  workspaceMode: 'read' | 'readwrite' | null;
+  setWorkspaceMode: (mode: 'read' | 'readwrite') => Promise<boolean>;
+  
+  openRootDirectory: (mode?: 'read' | 'readwrite') => Promise<void>;
+  rescanRootDirectory: () => Promise<void>;
   loadPack: (packName: string) => Promise<void>;
   copyToPack: (file: SampleFile, targetPackName: string) => Promise<void>;
   movePackSlot: (fromIndex: number, toIndex: number) => void;
+  moveToPack: (file: SampleFile, targetPackName: string) => void;
   moveSlot: (fromIndex: number, toIndex: number) => void;
   clearSlot: (index: number) => void;
   assignToSlot: (file: SampleFile, slotIndex: number) => void;
@@ -38,20 +51,62 @@ interface FileSystemState {
 }
 
 const getTracksHandle = async (root: FileSystemDirectoryHandle) => {
-  if (root.name === 'Tracks') return root;
-  return await root.getDirectoryHandle('Tracks');
+  if (root.name.toLowerCase() === 'tracks') return root;
+  try {
+    return await root.getDirectoryHandle('Tracks');
+  } catch (e) {
+    try {
+      return await root.getDirectoryHandle('tracks');
+    } catch (e2) {
+      for await (const entry of root.values()) {
+        if (entry.kind === 'directory' && entry.name.toLowerCase() === 'tracks') {
+          return await root.getDirectoryHandle(entry.name);
+        }
+      }
+      throw e;
+    }
+  }
 };
 
-const countPendingChanges = (slots: PadSlot[]) => {
+const countPendingChanges = (slots: PadSlot[], packSlots: PackSlot[], applyTagsToFilenames: boolean) => {
   let count = 0;
   for (const s of slots) {
     if (s.sample) {
       const ext = s.sample.originalFilename.split('.').pop() || 'wav';
-      const to = buildFilename(s.index, s.sample.displayName, ext);
+      const shouldApplyTag = applyTagsToFilenames || s.sample.hasOriginalTagPrefix || s.index !== s.sample.originalSlotIndex;
+      const to = buildFilename(s.index, s.sample.displayName, shouldApplyTag ? s.sample.tag : undefined, ext);
       if (s.sample.originalFilename !== to) count++;
     }
   }
+  for (const s of packSlots) {
+    if (s.pack) {
+      const to = `${s.index.toString().padStart(2, '0')}_${s.pack.displayName}`;
+      if (s.pack.originalDirname !== to) count++;
+    }
+  }
   return count;
+};
+
+const countAllPendingChanges = (slotsByPack: Record<string, PadSlot[]>, packSlots: PackSlot[], applyTagsToFilenames: boolean) => {
+  let count = 0;
+  for (const packName in slotsByPack) {
+    const slots = slotsByPack[packName];
+    if (slots) count += countPendingChanges(slots, [], applyTagsToFilenames);
+  }
+  count += countPendingChanges([], packSlots, applyTagsToFilenames);
+  return count;
+};
+
+const idbStorage: PersistStorage<any> = {
+  getItem: async (name: string) => {
+    return (await get(name)) || null;
+  },
+  setItem: async (name: string, value: any) => {
+    await set(name, value);
+  },
+  removeItem: async (name: string) => {
+    await del(name);
+  },
 };
 
 export const useFileSystemStore = create<FileSystemState>()(
@@ -67,55 +122,103 @@ export const useFileSystemStore = create<FileSystemState>()(
       tags: [...TAG_DEFINITIONS],
       pendingChanges: 0,
       history: [],
-
-  openRootDirectory: async () => {
-    try {
-      const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-      set({ rootHandle: dirHandle });
-
-      try {
-        const tracksHandle = await getTracksHandle(dirHandle);
-        const packs: string[] = [];
-        const newPackSlots: PackSlot[] = Array.from({ length: 64 }, (_, i) => ({ index: i, pack: null }));
-
-        for await (const entry of tracksHandle.values()) {
-          if (entry.kind === 'directory') {
-            packs.push(entry.name);
-            const parsed = parseFilename(entry.name);
-            if (parsed && parsed.prefix >= 0 && parsed.prefix < 64) {
-              const packFolder: PackFolder = {
-                originalDirname: entry.name,
-                displayName: parsed.name,
-                originalSlotIndex: parsed.prefix,
-                dirHandle: entry as FileSystemDirectoryHandle,
-              };
-              newPackSlots[parsed.prefix]!.pack = packFolder;
+      slotsByPack: {},
+      unassignedFilesByPack: {},
+      historyByPack: {},
+      
+      applyTagsToFilenames: false,
+      setApplyTagsToFilenames: (apply) => set((state) => ({ 
+        applyTagsToFilenames: apply,
+        pendingChanges: countAllPendingChanges(state.slotsByPack, state.packSlots, apply)
+      })),
+      
+      workspaceMode: null,
+      setWorkspaceMode: async (mode) => {
+        const { rootHandle } = get();
+        if (!rootHandle) return false;
+        try {
+          if (mode === 'readwrite') {
+            const status = await rootHandle.requestPermission({ mode: 'readwrite' });
+            if (status === 'granted') {
+              console.info(`[Store] Workspace mode changed to readwrite`);
+              set({ workspaceMode: 'readwrite' });
+              return true;
+            } else {
+              console.warn(`[Store] User denied readwrite permission`);
+              return false;
             }
+          } else {
+            console.info(`[Store] Workspace mode changed to read`);
+            set({ workspaceMode: 'read' });
+            return true;
           }
+        } catch (e) {
+          console.error(`[Store] Error setting workspace mode:`, e);
+          return false;
         }
-        
-        set({ 
-          packs: packs.sort(),
-          packSlots: newPackSlots 
-        });
-        
-        if (packs.length > 0) {
-          await get().loadPack(packs[0]!);
-        }
-      } catch (err) {
-        console.error('Could not find Tracks folder or read packs', err);
-        // Fallback: treat root as a single pack if no Tracks folder?
-        // Or just alert the user.
-        alert('Could not find a top-level "Tracks" folder on this drive.');
-      }
+      },
+      
+      openRootDirectory: async (mode = 'read') => {
+    try {
+      console.log(`[Store] Opening root directory with mode: ${mode}`);
+      const dirHandle = await window.showDirectoryPicker({ mode });
+      set({ rootHandle: dirHandle, workspaceMode: mode });
+      await get().rescanRootDirectory();
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error('Error opening directory:', err);
       }
     }
   },
+
+  rescanRootDirectory: async () => {
+    const { rootHandle } = get();
+    if (!rootHandle) return;
+
+    try {
+      const tracksHandle = await getTracksHandle(rootHandle);
+      const packs: string[] = [];
+      const newPackSlots: PackSlot[] = Array.from({ length: 64 }, (_, i) => ({ index: i, pack: null }));
+
+      for await (const entry of tracksHandle.values()) {
+        if (entry.kind === 'directory') {
+          packs.push(entry.name);
+          const parsed = parseFilename(entry.name);
+          if (parsed && parsed.prefix >= 0 && parsed.prefix < 64) {
+            const packFolder: PackFolder = {
+              originalDirname: entry.name,
+              displayName: parsed.name,
+              originalSlotIndex: parsed.prefix,
+              dirHandle: entry as FileSystemDirectoryHandle,
+            };
+            newPackSlots[parsed.prefix]!.pack = packFolder;
+          }
+        }
+      }
+      
+      set((state) => ({ 
+        packs: packs.sort(),
+        packSlots: newPackSlots,
+        pendingChanges: countAllPendingChanges(state.slotsByPack, newPackSlots, state.applyTagsToFilenames)
+      }));
+      
+      const { activePack } = get();
+      if (!activePack && packs.length > 0) {
+        await get().loadPack(packs[0]!);
+      } else if (activePack) {
+        if (packs.includes(activePack)) {
+          await get().loadPack(activePack);
+        } else {
+        }
+      }
+    } catch (err) {
+      console.error('Could not find Tracks folder or read packs', err);
+      alert('Could not find a top-level "Tracks" folder on this drive.');
+    }
+  },
   
   loadPack: async (packName: string) => {
+    console.log(`[Store] Loading pack: ${packName}`);
     const { rootHandle } = get();
     if (!rootHandle) return;
 
@@ -128,11 +231,24 @@ export const useFileSystemStore = create<FileSystemState>()(
       return;
     }
 
-    // Reset slots
+    const existingSlots = get().slotsByPack[packName];
+    const existingUnassigned = get().unassignedFilesByPack[packName];
+
+    if (existingSlots && existingUnassigned) {
+      set((state) => ({
+        activePack: packName,
+        activePackHandle: packHandle,
+        slots: existingSlots,
+        unassignedFiles: existingUnassigned,
+        history: state.historyByPack[packName] || [],
+        pendingChanges: countAllPendingChanges(state.slotsByPack, state.packSlots, state.applyTagsToFilenames),
+      }));
+      return;
+    }
+
     const newSlots: PadSlot[] = Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null }));
     const newUnassigned: SampleFile[] = [];
 
-    // Helper to recursively find .wav files, up to 2 levels deep
     const findWavFiles = async (dirHandle: FileSystemDirectoryHandle, prefix = '') => {
       for await (const entry of dirHandle.values()) {
         if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.wav')) {
@@ -148,12 +264,12 @@ export const useFileSystemStore = create<FileSystemState>()(
               fileHandle,
               parentDirHandle: dirHandle,
               tag: inferTag(parsed.name),
+              hasOriginalTagPrefix: parsed.hasOriginalTagPrefix,
               size: file.size,
               sourcePath: prefix.replace(/\/$/, '') || 'Root',
             };
 
             if (newSlots[parsed.prefix]!.sample) {
-              // Slot already occupied — send this duplicate to unassigned
               newUnassigned.push(newSample);
             } else {
               newSlots[parsed.prefix]!.sample = newSample;
@@ -167,17 +283,16 @@ export const useFileSystemStore = create<FileSystemState>()(
               fileHandle,
               parentDirHandle: dirHandle,
               tag: inferTag(displayName),
+              hasOriginalTagPrefix: parsed ? parsed.hasOriginalTagPrefix : false,
               size: file.size,
               sourcePath: prefix.replace(/\/$/, '') || 'Root',
             });
           }
         } else if (entry.kind === 'directory' && prefix === '') {
-          // Look one level deep (e.g. into Samples/ folder if it exists)
           try {
             const subDirHandle = await dirHandle.getDirectoryHandle(entry.name);
             await findWavFiles(subDirHandle, entry.name + '/');
           } catch (e) {
-            // ignore
           }
         }
       }
@@ -185,17 +300,71 @@ export const useFileSystemStore = create<FileSystemState>()(
 
     await findWavFiles(packHandle);
     
-    set({ 
-      activePack: packName,
-      activePackHandle: packHandle,
-      slots: newSlots, 
-      unassignedFiles: newUnassigned, 
-      pendingChanges: 0, 
-      history: [] 
+    set((state) => {
+      const newSlotsByPack = { ...state.slotsByPack, [packName]: newSlots };
+      return { 
+        activePack: packName,
+        activePackHandle: packHandle,
+        slots: newSlots, 
+        unassignedFiles: newUnassigned, 
+        pendingChanges: countAllPendingChanges(newSlotsByPack, get().packSlots, get().applyTagsToFilenames), 
+        history: [],
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: { ...state.unassignedFilesByPack, [packName]: newUnassigned },
+        historyByPack: { ...state.historyByPack, [packName]: [] }
+      };
     });
   },
   
+  moveToPack: (file, targetPackName) => {
+    console.log(`[Store] Moving file ${file.displayName} to pack ${targetPackName}`);
+    set((state) => {
+      const { activePack } = state;
+      if (!activePack || activePack === targetPackName) return state;
+
+      const newSlots = [...state.slots];
+      let changed = false;
+
+      for (let i = 0; i < newSlots.length; i++) {
+        if (newSlots[i]!.sample?.originalFilename === file.originalFilename) {
+          newSlots[i] = { ...newSlots[i]!, sample: null };
+          changed = true;
+          break;
+        }
+      }
+
+      const newUnassigned = state.unassignedFiles.filter(f => f.originalFilename !== file.originalFilename);
+      if (newUnassigned.length !== state.unassignedFiles.length) {
+        changed = true;
+      }
+
+      if (!changed) return state;
+
+      const newSlotsByPack = { ...state.slotsByPack, [activePack]: newSlots };
+      
+      const targetUnassigned = [...(state.unassignedFilesByPack[targetPackName] || [])];
+      targetUnassigned.push(file);
+
+      const newUnassignedByPack = { 
+        ...state.unassignedFilesByPack, 
+        [activePack]: newUnassigned,
+        [targetPackName]: targetUnassigned
+      };
+
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
+
+      return {
+        slots: newSlots,
+        unassignedFiles: newUnassigned,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        pendingChanges
+      };
+    });
+  },
+
   copyToPack: async (file, targetPackName) => {
+    console.log(`[Store] Copying file ${file.displayName} to pack ${targetPackName}`);
     const { rootHandle, activePack } = get();
     if (!rootHandle || !activePack || activePack === targetPackName) return;
 
@@ -205,24 +374,37 @@ export const useFileSystemStore = create<FileSystemState>()(
       
       const fileData = await file.fileHandle.getFile();
       
-      // We want to drop it in the staging area of the target pack, 
-      // so we use the clean display name without any slot prefix.
-      // And we prepend the activePack name so the user knows where it came from!
       const targetFilename = `[${activePack}] ${file.displayName}.wav`;
       
       const newFileHandle = await destPackHandle.getFileHandle(targetFilename, { create: true });
       const writable = await newFileHandle.createWritable();
       await writable.write(fileData);
       await writable.close();
+
+      // Clear cache for the target pack so it will rescan when loaded
+      set((state) => {
+        const newSlotsByPack = { ...state.slotsByPack };
+        const newUnassignedByPack = { ...state.unassignedFilesByPack };
+        const newHistoryByPack = { ...state.historyByPack };
+        
+        delete newSlotsByPack[targetPackName];
+        delete newUnassignedByPack[targetPackName];
+        delete newHistoryByPack[targetPackName];
+        
+        return {
+          slotsByPack: newSlotsByPack,
+          unassignedFilesByPack: newUnassignedByPack,
+          historyByPack: newHistoryByPack
+        };
+      });
       
-      // We do NOT remove the original file, making this a pure copy operation.
-      // We also do not need to reload the current pack since the current pack hasn't changed.
     } catch (err) {
       console.error('Failed to copy to pack', err);
     }
   },
   
   movePackSlot: (fromIndex, toIndex) => {
+    console.log(`[Store] Moving pack slot from ${fromIndex} to ${toIndex}`);
     if (fromIndex === toIndex) return;
 
     set((state) => {
@@ -234,14 +416,17 @@ export const useFileSystemStore = create<FileSystemState>()(
       newSlots[fromIndex] = { ...fromSlot, pack: toSlot.pack };
       newSlots[toIndex] = { ...toSlot, pack: tempPack };
       
-      return { packSlots: newSlots };
+      const pendingChanges = countAllPendingChanges(state.slotsByPack, newSlots, state.applyTagsToFilenames);
+      return { packSlots: newSlots, pendingChanges };
     });
   },
 
   moveSlot: (fromIndex, toIndex) => {
+    console.log(`[Store] Moving slot from ${fromIndex} to ${toIndex}`);
     if (fromIndex === toIndex) return;
 
     set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
       const newSlots = [...state.slots];
       const fromSlot = newSlots[fromIndex]!;
@@ -251,18 +436,24 @@ export const useFileSystemStore = create<FileSystemState>()(
       newSlots[fromIndex] = { ...fromSlot, sample: toSlot.sample };
       newSlots[toIndex] = { ...toSlot, sample: tempSample };
       
-      const pendingChanges = countPendingChanges(newSlots);
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
 
       return {
         slots: newSlots,
-        history: [...state.history, snapshot],
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
       };
     });
   },
 
   clearSlot: (index) => {
+    console.log(`[Store] Clearing slot ${index}`);
     set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
       const newSlots = [...state.slots];
       const slot = newSlots[index]!;
@@ -272,22 +463,30 @@ export const useFileSystemStore = create<FileSystemState>()(
       const newUnassigned = [...state.unassignedFiles, slot.sample];
       newSlots[index] = { ...slot, sample: null };
 
-      const pendingChanges = countPendingChanges(newSlots);
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
 
       return {
         slots: newSlots,
         unassignedFiles: newUnassigned,
-        history: [...state.history, snapshot],
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
       };
     });
   },
 
   renameFile: (file, newDisplayName) => {
+    console.log(`[Store] Renaming file ${file.displayName} to ${newDisplayName}`);
     set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
-      let newSlots = [...state.slots];
-      let newUnassigned = [...state.unassignedFiles];
+      const newSlots = [...state.slots];
+      const newUnassigned = [...state.unassignedFiles];
       
       let found = false;
       for (let i = 0; i < newSlots.length; i++) {
@@ -310,23 +509,31 @@ export const useFileSystemStore = create<FileSystemState>()(
         }
       }
 
-      const pendingChanges = countPendingChanges(newSlots);
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
 
       return {
         slots: newSlots,
         unassignedFiles: newUnassigned,
-        history: [...state.history, snapshot],
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
       };
     });
   },
 
-  removeFile: (file) => {    set((state) => {
+  removeFile: (file) => {
+    console.log(`[Store] Removing file ${file.displayName}`);
+    set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
       const newSlots = [...state.slots];
       let changed = false;
 
-      // Remove from slots if present
       for (let i = 0; i < newSlots.length; i++) {
         if (newSlots[i]!.sample?.originalFilename === file.originalFilename) {
           newSlots[i] = { ...newSlots[i]!, sample: null };
@@ -335,7 +542,6 @@ export const useFileSystemStore = create<FileSystemState>()(
         }
       }
 
-      // Remove from unassigned if present
       const newUnassigned = state.unassignedFiles.filter(f => f.originalFilename !== file.originalFilename);
       if (newUnassigned.length !== state.unassignedFiles.length) {
         changed = true;
@@ -343,44 +549,59 @@ export const useFileSystemStore = create<FileSystemState>()(
 
       if (!changed) return state;
 
-      const pendingChanges = countPendingChanges(newSlots);
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
 
       return {
         slots: newSlots,
         unassignedFiles: newUnassigned,
-        history: [...state.history, snapshot],
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
       };
     });
   },
 
   assignToSlot: (file, slotIndex) => {
+    console.log(`[Store] Assigning file ${file.displayName} to slot ${slotIndex}`);
     set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
       const newSlots = [...state.slots];
       
       const newUnassigned = state.unassignedFiles.filter(f => f.originalFilename !== file.originalFilename);
       
-      // If the slot is occupied, put its sample back to unassigned
       if (newSlots[slotIndex]!.sample) {
         newUnassigned.push(newSlots[slotIndex]!.sample!);
       }
       
       newSlots[slotIndex] = { ...newSlots[slotIndex]!, sample: file };
 
-      const pendingChanges = countPendingChanges(newSlots);
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
 
       return {
         slots: newSlots,
         unassignedFiles: newUnassigned,
-        history: [...state.history, snapshot],
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
       };
     });
   },
   
   assignTagToSlot: (tagId, slotIndex) => {
+    console.log(`[Store] Assigning tag ${tagId} to slot ${slotIndex}`);
     set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
       const newSlots = [...state.slots];
       const slot = newSlots[slotIndex];
@@ -392,19 +613,24 @@ export const useFileSystemStore = create<FileSystemState>()(
         sample: { ...slot.sample, tag: tagId }
       };
 
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newHistory = [...state.history, snapshot];
+
       return {
         slots: newSlots,
-        history: [...state.history, snapshot]
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
       };
     });
   },
 
   addTag: (label: string) => {
+    console.log(`[Store] Adding tag ${label}`);
     const upperLabel = label.toUpperCase();
     const id = upperLabel.toLowerCase().replace(/[^a-z0-9]/g, '-');
     const color = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
     set((state) => {
-      // Don't add if id already exists
       if (state.tags.some(t => t.id === id)) return state;
       const newTag: TagDefinition = {
         id,
@@ -418,11 +644,11 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   removeTag: (tagId: string) => {
+    console.log(`[Store] Removing tag ${tagId}`);
     set((state) => {
-      // Remove tag from tag list
+      if (!state.activePack) return state;
       const newTags = state.tags.filter(t => t.id !== tagId);
 
-      // Remove tag from slots
       const newSlots = state.slots.map(slot => {
         if (slot.sample && slot.sample.tag === tagId) {
           return { ...slot, sample: { ...slot.sample, tag: 'unknown' } };
@@ -430,7 +656,6 @@ export const useFileSystemStore = create<FileSystemState>()(
         return slot;
       });
 
-      // Remove tag from unassignedFiles
       const newUnassignedFiles = state.unassignedFiles.map(file => {
         if (file.tag === tagId) {
           return { ...file, tag: 'unknown' };
@@ -438,110 +663,324 @@ export const useFileSystemStore = create<FileSystemState>()(
         return file;
       });
 
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassignedFiles };
+
       return {
         tags: newTags,
         slots: newSlots,
-        unassignedFiles: newUnassignedFiles
+        unassignedFiles: newUnassignedFiles,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack
       };
     });
   },
 
   autoTag: () => {
+    console.log(`[Store] Auto-tagging files`);
     set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
+      
       const newSlots = state.slots.map(s => {
         if (!s.sample) return s;
-        return {
-          ...s,
-          sample: {
-            ...s.sample,
-            tag: inferTag(s.sample.displayName)
-          }
-        };
+        if (s.sample.tag !== 'unknown') return s;
+        return { ...s, sample: { ...s.sample, tag: inferTag(s.sample.displayName) } };
       });
-      return { slots: newSlots, history: [...state.history, snapshot] };
+      
+      const newUnassignedFiles = state.unassignedFiles.map(f => {
+        if (f.tag !== 'unknown') return f;
+        return { ...f, tag: inferTag(f.displayName) };
+      });
+
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassignedFiles };
+      const newHistory = [...state.history, snapshot];
+
+      return { 
+        slots: newSlots, 
+        unassignedFiles: newUnassignedFiles, 
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory }
+      };
     });
   },
   
   autoArrange: () => {
     set((state) => {
+      if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
       const result = computeArrangement(state.slots, state.unassignedFiles);
       
-      const pendingChanges = countPendingChanges(result.slots);
-      
-      return {
-        slots: result.slots,
-        unassignedFiles: result.unassignedFiles,
-        history: [...state.history, snapshot],
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: result.slots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: result.unassignedFiles };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
+
+      return { 
+        slots: result.slots, 
+        unassignedFiles: result.unassignedFiles, 
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
       };
     });
   },
   
   commitChanges: async () => {
-    return computeRenamePlan(get().slots);
+    console.log(`[Store] Committing changes... computing plan...`);
+    const { rootHandle, slotsByPack, packSlots, applyTagsToFilenames } = get();
+    if (!rootHandle) return { operations: [], createdAt: new Date() };
+
+    return computeRenamePlan(slotsByPack, packSlots, rootHandle, applyTagsToFilenames);
   },
   
   executeRenamePlan: async (plan) => {
-    const { activePack, loadPack } = get();
+    const { activePack } = get();
     if (!activePack) return;
 
-    // Pass 1: rename each file to a temp name (in its own directory)
-    for (const op of plan.operations) {
+    console.log(`[executeRenamePlan] Starting with ${plan.operations.length} operations, activePack=${activePack}`);
+
+    // Build a map from originalFilename → packName BEFORE renaming anything.
+    // We can't use parentDirHandle.name because files may live in subdirectories (e.g. "PCM")
+    // while the slotsByPack key is the pack name (e.g. "16_AcidTechno").
+    const fileToPackMap = new Map<string, string>();
+    const currentSlotsByPack = get().slotsByPack;
+    for (const packName in currentSlotsByPack) {
+      const slots = currentSlotsByPack[packName];
+      if (slots) {
+        for (const slot of slots) {
+          if (slot.sample) {
+            fileToPackMap.set(slot.sample.originalFilename, packName);
+          }
+        }
+      }
+    }
+
+    // Pass 1: rename each file/folder to a temp name (copy+delete, never use .move() which can hang on USB)
+    for (let opIdx = 0; opIdx < plan.operations.length; opIdx++) {
+      const op = plan.operations[opIdx]!;
       const dir = op.parentDirHandle;
       const tempName = `__tmp_${op.to}`;
+      console.log(`[executeRenamePlan] Pass1 op${opIdx}: ${op.type} "${op.from}" -> temp "${tempName}"`);
       try {
-        if ('move' in op.fileHandle) {
-          await (op.fileHandle as any).move(dir, tempName);
-        } else {
-          const file = await op.fileHandle.getFile();
+        if (op.type === 'file') {
+          const file = await (op.handle as FileSystemFileHandle).getFile();
           const newFileHandle = await dir.getFileHandle(tempName, { create: true });
           const writable = await newFileHandle.createWritable();
           await writable.write(file);
           await writable.close();
           await dir.removeEntry(op.from);
+        } else if (op.type === 'pack') {
+          const newDirHandle = await dir.getDirectoryHandle(tempName, { create: true });
+          const oldDirHandle = op.handle as FileSystemDirectoryHandle;
+          for await (const entry of oldDirHandle.values()) {
+            if (entry.kind === 'file') {
+              const file = await (entry as FileSystemFileHandle).getFile();
+              const newFile = await newDirHandle.getFileHandle(entry.name, { create: true });
+              const writable = await newFile.createWritable();
+              await writable.write(file);
+              await writable.close();
+            }
+          }
+          await dir.removeEntry(op.from, { recursive: true });
         }
+        console.log(`[executeRenamePlan] Pass1 op${opIdx}: done`);
       } catch (err) {
-        console.error('Rename pass 1 failed', err);
+        console.error(`[executeRenamePlan] Pass1 op${opIdx} FAILED:`, err);
       }
     }
 
-    // Pass 2: rename temp files to final names (in their own directories)
-    for (const op of plan.operations) {
+    // Pass 2: rename temp files/folders to final names (copy+delete again)
+    const fileUpdates: Array<{
+      packName: string; 
+      from: string; 
+      to: string; 
+      handle: FileSystemFileHandle; 
+      newPrefix: number;
+      newName: string;
+      newHasTag: boolean;
+    }> = [];
+
+    for (let opIdx = 0; opIdx < plan.operations.length; opIdx++) {
+      const op = plan.operations[opIdx]!;
       const dir = op.parentDirHandle;
       const tempName = `__tmp_${op.to}`;
+      console.log(`[executeRenamePlan] Pass2 op${opIdx}: temp "${tempName}" -> "${op.to}"`);
       try {
-        const tempHandle = await dir.getFileHandle(tempName);
-        if ('move' in tempHandle) {
-          await (tempHandle as any).move(dir, op.to);
-        } else {
+        if (op.type === 'file') {
+          const tempHandle = await dir.getFileHandle(tempName);
           const file = await tempHandle.getFile();
           const newFileHandle = await dir.getFileHandle(op.to, { create: true });
           const writable = await newFileHandle.createWritable();
           await writable.write(file);
           await writable.close();
           await dir.removeEntry(tempName);
+          
+          const finalHandle = await dir.getFileHandle(op.to);
+          const parsed = parseFilename(op.to);
+          const resolvedPackName = fileToPackMap.get(op.from) || dir.name;
+          console.log(`[executeRenamePlan] Pass2 op${opIdx}: resolved pack="${resolvedPackName}" (dir.name="${dir.name}")`);
+          fileUpdates.push({
+            packName: resolvedPackName,
+            from: op.from,
+            to: op.to,
+            handle: finalHandle,
+            newPrefix: parsed ? parsed.prefix : -1,
+            newName: parsed ? parsed.name : '',
+            newHasTag: parsed ? parsed.hasOriginalTagPrefix : false
+          });
+        } else if (op.type === 'pack') {
+          const oldDirHandle = await dir.getDirectoryHandle(tempName);
+          const newDirHandle = await dir.getDirectoryHandle(op.to, { create: true });
+          for await (const entry of oldDirHandle.values()) {
+            if (entry.kind === 'file') {
+              const file = await (entry as FileSystemFileHandle).getFile();
+              const newFile = await newDirHandle.getFileHandle(entry.name, { create: true });
+              const writable = await newFile.createWritable();
+              await writable.write(file);
+              await writable.close();
+            }
+          }
+          await dir.removeEntry(tempName, { recursive: true });
         }
+        console.log(`[executeRenamePlan] Pass2 op${opIdx}: done`);
       } catch (err) {
-        console.error('Rename pass 2 failed', err);
+        console.error(`[executeRenamePlan] Pass2 op${opIdx} FAILED:`, err);
       }
     }
 
-    await loadPack(activePack);
+    console.log(`[executeRenamePlan] File updates collected:`, fileUpdates.map(u => `"${u.from}" -> "${u.to}" (pack: ${u.packName})`));
+
+    // Determine if any packs were renamed
+    let newActivePack = activePack;
+    const renamedPacks: Record<string, string> = {};
+
+    for (const op of plan.operations) {
+      if (op.type === 'pack') {
+        renamedPacks[op.from] = op.to;
+        if (op.from === activePack) {
+          newActivePack = op.to;
+        }
+      }
+    }
+
+    // Update state directly — manual sync avoids stale FS cache issues
+    set(state => {
+      const newSlotsByPack = { ...state.slotsByPack };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack };
+      const newHistoryByPack = { ...state.historyByPack };
+
+      // 1. Rename keys for packs that were renamed
+      for (const [from, to] of Object.entries(renamedPacks)) {
+        if (newSlotsByPack[from]) {
+          newSlotsByPack[to] = newSlotsByPack[from];
+          delete newSlotsByPack[from];
+        }
+        if (newUnassignedByPack[from]) {
+          newUnassignedByPack[to] = newUnassignedByPack[from];
+          delete newUnassignedByPack[from];
+        }
+        if (newHistoryByPack[from]) {
+          newHistoryByPack[to] = newHistoryByPack[from];
+          delete newHistoryByPack[from];
+        }
+      }
+
+      // 2. Update files directly in slotsByPack to match new filenames on disk
+      for (const update of fileUpdates) {
+        const packSlots = newSlotsByPack[update.packName];
+        if (packSlots) {
+          const newPackSlots = [...packSlots];
+          let found = false;
+          for (let i = 0; i < newPackSlots.length; i++) {
+            const slot = newPackSlots[i];
+            if (slot && slot.sample && slot.sample.originalFilename === update.from) {
+              console.log(`[executeRenamePlan] Updating slot ${i} in pack "${update.packName}": "${update.from}" -> "${update.to}"`);
+              newPackSlots[i] = {
+                ...slot,
+                sample: {
+                  ...slot.sample,
+                  originalFilename: update.to,
+                  originalSlotIndex: update.newPrefix,
+                  displayName: update.newName || slot.sample.displayName,
+                  hasOriginalTagPrefix: update.newHasTag,
+                  fileHandle: update.handle
+                }
+              };
+              found = true;
+              break;
+            }
+          }
+          if (found) {
+            newSlotsByPack[update.packName] = newPackSlots;
+          } else {
+            console.warn(`[executeRenamePlan] Could not find slot with originalFilename="${update.from}" in pack "${update.packName}"`);
+          }
+        } else {
+          console.warn(`[executeRenamePlan] No slotsByPack entry for pack "${update.packName}"`);
+        }
+      }
+
+      // 3. Clear history for all affected packs since the baseline has changed
+      const affectedPacks = new Set<string>();
+      for (const update of fileUpdates) {
+        affectedPacks.add(update.packName);
+      }
+      for (const packName of affectedPacks) {
+        newHistoryByPack[packName] = [];
+      }
+
+      const finalSlots = newActivePack ? (newSlotsByPack[newActivePack] || state.slots) : state.slots;
+      const finalUnassigned = newActivePack ? (newUnassignedByPack[newActivePack] || state.unassignedFiles) : state.unassignedFiles;
+      
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
+      console.log(`[executeRenamePlan] After state update: pendingChanges=${pendingChanges}`);
+
+      return {
+        activePack: newActivePack,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: newHistoryByPack,
+        slots: finalSlots,
+        unassignedFiles: finalUnassigned,
+        history: [],
+        pendingChanges
+      };
+    });
+
+    console.log(`[executeRenamePlan] Complete`);
   },
   
   undo: () => {
     set((state) => {
-      if (state.history.length === 0) return state;
-      const prevSlots = state.history[state.history.length - 1]!;
-      const newHistory = state.history.slice(0, -1);
+      if (!state.activePack || state.history.length === 0) return state;
+      const newHistory = [...state.history];
+      const prevSlots = newHistory.pop()!;
       
-      const pendingChanges = countPendingChanges(prevSlots);
+      // Compute unassigned diff: if a file was in current slots but not in prevSlots, it goes to unassigned
+      const newUnassigned = [...state.unassignedFiles];
+      state.slots.forEach(s => {
+        if (s.sample && !prevSlots.some(ps => ps.sample?.originalFilename === s.sample?.originalFilename)) {
+          newUnassigned.push(s.sample);
+        }
+      });
       
-      return {
-        slots: prevSlots,
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: prevSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
+
+      return { 
+        slots: prevSlots, 
+        unassignedFiles: newUnassigned,
         history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
       };
     });
@@ -549,7 +988,22 @@ export const useFileSystemStore = create<FileSystemState>()(
     }),
     {
       name: 'trackster-storage',
-      partialize: (state: any) => ({ tags: state.tags }),
+      storage: idbStorage,
+      partialize: (state: FileSystemState) => ({
+        rootHandle: state.rootHandle,
+        packs: state.packs,
+        packSlots: state.packSlots,
+        activePack: state.activePack,
+        activePackHandle: state.activePackHandle,
+        slots: state.slots,
+        unassignedFiles: state.unassignedFiles,
+        tags: state.tags,
+        pendingChanges: state.pendingChanges,
+        history: state.history,
+        slotsByPack: state.slotsByPack,
+        unassignedFilesByPack: state.unassignedFilesByPack,
+        historyByPack: state.historyByPack,
+      }),
     }
   )
 );

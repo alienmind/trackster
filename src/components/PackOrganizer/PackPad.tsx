@@ -36,7 +36,7 @@ export default function PackPad({ slot }: PackPadProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleDoubleClick = () => {
+  const handleClick = () => {
     if (slot.pack) {
       loadPack(slot.pack.originalDirname);
       setActiveMainView('samples');
@@ -53,7 +53,7 @@ export default function PackPad({ slot }: PackPadProps) {
           : 'bg-card border-dashed border-border text-muted-foreground',
         isOver && 'ring-2 ring-primary bg-primary/10 border-primary'
       )}
-      onDoubleClick={handleDoubleClick}
+      onClick={handleClick}
     >
       <div className="absolute top-1 left-2 text-[10px] font-mono text-muted-foreground">
         {slot.index.toString().padStart(2, '0')}

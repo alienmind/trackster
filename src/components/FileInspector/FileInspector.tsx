@@ -62,16 +62,14 @@ export default function FileInspector() {
   const currentTagId = activeSlot?.sample?.tag || selectedFile.tag;
   const fileTag = tags.find(t => t.id === currentTagId);
   
-  // Note: we can't easily manage tags for unassigned files right now unless we add a specific function for it.
-  // The user said "Tags should be equally manageable from that view".
-  
   const ext = selectedFile.originalFilename?.split('.').pop() || 'wav';
   const prefix = (selectedPadIndex !== null && selectedPadIndex >= 0) ? `${selectedPadIndex.toString().padStart(2, '0')}_` : '';
+  const tagPrefix = (fileTag && fileTag.id !== 'unknown') ? `${fileTag.label}_` : '';
   
   return (
     <div className="flex flex-col h-full bg-card rounded border border-border p-2 text-xs overflow-y-auto">
       <div 
-        className="font-semibold mb-2 text-foreground break-all cursor-pointer hover:bg-muted/50 p-1 rounded -ml-1 transition-colors" 
+        className="mb-2 break-all cursor-pointer hover:bg-muted/50 p-1 rounded -ml-1 transition-colors" 
         title="Click to rename"
         onClick={() => {
           if (!isEditingName) {
@@ -81,12 +79,13 @@ export default function FileInspector() {
         }}
       >
         {isEditingName ? (
-          <div className="flex items-center">
-            <span className="text-muted-foreground">{prefix}</span>
+          <div className="flex items-center font-mono text-[11px]">
+            {prefix && <span className="text-muted-foreground/50 select-none">{prefix}</span>}
+            {tagPrefix && <span className="text-primary/70 font-bold select-none">{tagPrefix}</span>}
             <input
               ref={inputRef}
               type="text"
-              className="bg-input text-foreground border border-primary/50 rounded px-1 min-w-0 flex-1 outline-none"
+              className="bg-input text-foreground font-semibold border border-primary/50 rounded px-1 min-w-0 flex-1 outline-none h-5 mx-[1px]"
               value={editNameValue}
               onChange={(e) => setEditNameValue(e.target.value)}
               onKeyDown={(e) => {
@@ -96,14 +95,15 @@ export default function FileInspector() {
               onBlur={handleRenameSubmit}
               onClick={(e) => e.stopPropagation()}
             />
-            <span className="text-muted-foreground">.{ext}</span>
+            <span className="text-muted-foreground/50 select-none">.{ext}</span>
           </div>
         ) : (
-          <span>
-            <span className="text-muted-foreground">{prefix}</span>
-            {selectedFile.displayName}
-            <span className="text-muted-foreground">.{ext}</span>
-          </span>
+          <div className="flex items-center font-mono text-[11px]">
+            {prefix && <span className="text-muted-foreground/50 mr-[1px]">{prefix}</span>}
+            {tagPrefix && <span className="text-primary/70 font-bold mr-[1px]">{tagPrefix}</span>}
+            <span className="text-foreground font-semibold">{selectedFile.displayName}</span>
+            <span className="text-muted-foreground/50 ml-[1px]">.{ext}</span>
+          </div>
         )}
       </div>
       <div className="text-muted-foreground truncate mb-2 text-[10px]" title={selectedFile.sourcePath}>

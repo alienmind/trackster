@@ -22,6 +22,9 @@ export interface SampleFile {
   /** Clean display name (prefix + extension stripped), e.g. "TR808_Kick" */
   displayName: string;
 
+  /** Whether the original filename had a recognized tag prefix (e.g. BD_) */
+  hasOriginalTagPrefix?: boolean;
+
   /** Original numeric prefix parsed from filename, e.g. 3 */
   originalSlotIndex: number;
 
@@ -78,16 +81,19 @@ export interface PackSlot {
 }
 
 export interface RenameOperation {
-  /** Current filename on disk */
+  /** 'file' for sample files, 'pack' for pack folders */
+  type: 'file' | 'pack';
+
+  /** Current filename or dirname on disk */
   from: string;
 
-  /** Desired new filename */
+  /** Desired new filename or dirname */
   to: string;
 
-  /** The file handle to operate on */
-  fileHandle: FileSystemFileHandle;
+  /** The handle to operate on */
+  handle: FileSystemFileHandle | FileSystemDirectoryHandle;
 
-  /** The directory handle where this file lives */
+  /** The directory handle where this file or directory lives */
   parentDirHandle: FileSystemDirectoryHandle;
 }
 
