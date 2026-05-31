@@ -9,7 +9,7 @@ import clsx from 'clsx';
 import { del } from 'idb-keyval';
 import DisclaimerModal from '../../Core/DisclaimerModal/DisclaimerModal';
 import { useOverviewStore } from '../../../stores/useOverviewStore';
-import { DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../Overview/OverviewTab';
+import { DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../../stores/useOverviewStore';
 
 export default function Toolbar() {
   const { rootHandle, activePack, workspaceMode, setWorkspaceMode } = useFileSystemStore();
