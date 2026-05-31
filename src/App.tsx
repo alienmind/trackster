@@ -125,7 +125,7 @@ export default function App() {
               <h1 className="text-xl font-bold tracking-tight text-foreground">Tracks(ter)</h1>
               <span className="text-[10px] text-muted-foreground font-mono font-bold">v{pkg.version}</span>
             </div>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground hidden sm:block mt-0.5">Your Hybrid DAWless set up tool</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground hidden sm:block mt-0.5">Hybrid DAWless documentation and utility tool</span>
           </div>
 
           {/* Right part */}
