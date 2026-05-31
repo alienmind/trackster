@@ -30,13 +30,19 @@ export interface OverviewConnection {
   endOffset: { x: number; y: number };
 }
 
+export type RoutingMode = 'physical' | 'logical';
+
 interface OverviewState {
+  routingMode: RoutingMode;
   nodes: Record<string, OverviewNode>;
   connections: Record<string, OverviewConnection>;
+  logicalConnections: Record<string, OverviewConnection>;
+  setRoutingMode: (mode: RoutingMode) => void;
   setNodes: (updater: (prev: Record<string, OverviewNode>) => Record<string, OverviewNode>) => void;
   setConnections: (updater: (prev: Record<string, OverviewConnection>) => Record<string, OverviewConnection>) => void;
+  setLogicalConnections: (updater: (prev: Record<string, OverviewConnection>) => Record<string, OverviewConnection>) => void;
   autoArrange: (hardwareWidths: Record<string, number>) => void;
-  resetLayout: (defaultNodes: Record<string, OverviewNode>, defaultConnections: Record<string, OverviewConnection>) => void;
+  resetLayout: (defaultNodes: Record<string, OverviewNode>, defaultConnections: Record<string, OverviewConnection>, defaultLogicalConnections: Record<string, OverviewConnection>) => void;
   saveLayout: () => void;
   copyLayout: () => void;
 }
@@ -61,11 +67,22 @@ export const DEFAULT_CONNECTIONS: Record<string, OverviewConnection> = {
   c_midi_3: { id: 'c_midi_3', source: 'n_grind', target: 'n_s1', type: 'midi_din', label: 'Thru', startOffset: {x:40,y:200}, endOffset: {x:40,y:20} },
 };
 
+
+export const DEFAULT_LOGICAL_CONNECTIONS: Record<string, OverviewConnection> = {
+  lc_synth1: { id: 'lc_synth1', source: 'n_circuit', target: 'n_minifreak', type: 'channel_3', label: 'Synth 1 (Ch 3)', startOffset: {x: 100, y: 10}, endOffset: {x: 150, y: 50} },
+  lc_midi1: { id: 'lc_midi1', source: 'n_circuit', target: 'n_grind', type: 'channel_1', label: 'MIDI 1 (Ch 1)', startOffset: {x: 100, y: 50}, endOffset: {x: 150, y: 70} },
+  lc_midi2: { id: 'lc_midi2', source: 'n_circuit', target: 'n_s1', type: 'channel_2', label: 'MIDI 2 (Ch 2)', startOffset: {x: 100, y: 70}, endOffset: {x: 150, y: 50} },
+};
+
 export const useOverviewStore = create<OverviewState>((set, get) => ({
+  routingMode: 'physical',
   nodes: {},
   connections: {},
+  logicalConnections: {},
+  setRoutingMode: (mode) => set({ routingMode: mode }),
   setNodes: (updater) => set((state) => ({ nodes: updater(state.nodes) })),
   setConnections: (updater) => set((state) => ({ connections: updater(state.connections) })),
+  setLogicalConnections: (updater) => set((state) => ({ logicalConnections: updater(state.logicalConnections) })),
 
   autoArrange: (hardwareWidths) => {
     set((state) => {
@@ -87,20 +104,21 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
     });
   },
 
-  resetLayout: (defaultNodes, defaultConnections) => {
-    set({ nodes: defaultNodes, connections: defaultConnections });
+  resetLayout: (defaultNodes, defaultConnections, defaultLogicalConnections) => {
+    set({ nodes: defaultNodes, connections: defaultConnections, logicalConnections: defaultLogicalConnections });
   },
 
   saveLayout: () => {
-    const { nodes, connections } = get();
+    const { nodes, connections, logicalConnections } = get();
     localStorage.setItem('alienmind_nodes_v4', JSON.stringify(nodes));
     localStorage.setItem('alienmind_connections_v4', JSON.stringify(connections));
+    localStorage.setItem('alienmind_logical_v4', JSON.stringify(logicalConnections));
     useUIStore.getState().addNotification({ type: 'success', message: 'Layout Saved successfully!' });
   },
 
   copyLayout: () => {
-    const { nodes, connections } = get();
-    navigator.clipboard.writeText(JSON.stringify({ nodes, connections }, null, 2)).then(() => {
+    const { nodes, connections, logicalConnections } = get();
+    navigator.clipboard.writeText(JSON.stringify({ nodes, connections, logicalConnections }, null, 2)).then(() => {
       useUIStore.getState().addNotification({ type: 'success', message: 'Layout copied to clipboard!' });
     });
   }
