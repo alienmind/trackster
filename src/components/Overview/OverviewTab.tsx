@@ -12,18 +12,22 @@
  * 7. High-Fidelity Vector Graphics: SVG/CSS accurate representations of specific hardware (Stellar, Grind, S-1, etc).
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Circle, Square, ChevronDown, ChevronRight, Laptop } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import { useOverviewStore, OverviewNode, OverviewConnection, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../stores/useOverviewStore';
 
 // Technical Cable Dictionary
 const CABLE_TYPES: Record<string, any> = {
-  audio_ts: { label: "Audio: TS (Mono)", category: "audio", color: "#f97316", stroke: 3, dash: "none", marker: "url(#arrowOrange)", filter: "url(#glowOrange)" },
-  audio_trs: { label: "Audio: TRS (Stereo)", category: "audio", color: "#06b6d4", stroke: 4, dash: "none", marker: "url(#arrowCyan)", filter: "url(#glowCyan)" },
-  audio_sidechain: { label: "Audio: Sidechain (Pump)", category: "audio", color: "#a855f7", stroke: 4, dash: "none", marker: "url(#arrowPurple)", filter: "url(#glowPurple)", animate: true },
-  midi_din: { label: "MIDI: 5-Pin DIN", category: "midi", color: "#10b981", stroke: 3, dash: "6 4", marker: "url(#arrowEmerald)", filter: "none" },
-  midi_usb: { label: "MIDI: USB Data", category: "midi", color: "#3b82f6", stroke: 3, dash: "3 3", marker: "url(#arrowBlue)", filter: "none" }
+  audio_ts: { label: "Jack 6.35 to Jack 6.35 (Mono)", category: "audio", color: "#f97316", stroke: 3, dash: "none", marker: "url(#arrowOrange)", filter: "url(#glowOrange)" },
+  audio_trs: { label: "TRS to TRS (Stereo)", category: "audio", color: "#06b6d4", stroke: 4, dash: "none", marker: "url(#arrowCyan)", filter: "url(#glowCyan)" },
+  audio_jack_to_minijack: { label: "Jack 6.35 to Mini Jack 3.5", category: "audio", color: "#a855f7", stroke: 3, dash: "none", marker: "url(#arrowPurple)", filter: "url(#glowPurple)" },
+  audio_minijack_to_dual_trs: { label: "Mini Jack to TRS Left/Right (Y cable)", category: "audio", color: "#f472b6", stroke: 4, dash: "none", marker: "url(#arrowPink)", filter: "none" },
+  audio_trs_to_xlr: { label: "TRS to XLR", category: "audio", color: "#2dd4bf", stroke: 4, dash: "none", marker: "url(#arrowTeal)", filter: "none" },
+  audio_xlr_to_xlr: { label: "XLR to XLR", category: "audio", color: "#fb7185", stroke: 4, dash: "none", marker: "url(#arrowRose)", filter: "none" },
+  midi_din: { label: "5-Pin MIDI DIN", category: "midi", color: "#10b981", stroke: 3, dash: "6 4", marker: "url(#arrowEmerald)", filter: "none" },
+  midi_din_to_trs: { label: "MIDI DIN to TRS Type A", category: "midi", color: "#34d399", stroke: 3, dash: "6 4", marker: "url(#arrowEmerald)", filter: "none" },
+  midi_usb: { label: "USB Type-B to Type-A", category: "midi", color: "#3b82f6", stroke: 3, dash: "3 3", marker: "url(#arrowBlue)", filter: "none" }
 };
 
 // Logical MIDI Cables
@@ -329,21 +333,86 @@ export default function AlienMindSetup() {
   const { setActiveMainView } = useUIStore();
   const nodes = useOverviewStore((s) => s.nodes);
   const connections = useOverviewStore((s) => s.connections);
-  const logicalConnections = useOverviewStore((s) => s.logicalConnections);
   const routingMode = useOverviewStore((s) => s.routingMode);
 
   const setNodes = useOverviewStore((s) => s.setNodes);
   const setConnections = useOverviewStore((s) => s.setConnections);
-  const setLogicalConnections = useOverviewStore((s) => s.setLogicalConnections);
   const [draggingNode, setDraggingNode] = useState<any>(null);
   const [draggedCable, setDraggedCable] = useState<any>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<any>(null);
+
+  const computedLogicalConnections = useMemo(() => {
+    if (routingMode !== 'logical') return {};
+    const conns: Record<string, OverviewConnection> = {};
+    Object.values(nodes).forEach(sourceNode => {
+      let outs: { id: string, name: string, channel: number | null }[] = [];
+      if (sourceNode.type === 'circuit' && sourceNode.circuitLogicalOuts) {
+        outs = [
+          { id: 'synth1', name: 'Synth 1', channel: sourceNode.circuitLogicalOuts.synth1 ?? null },
+          { id: 'synth2', name: 'Synth 2', channel: sourceNode.circuitLogicalOuts.synth2 ?? null },
+          { id: 'midi1', name: 'MIDI 1', channel: sourceNode.circuitLogicalOuts.midi1 ?? null },
+          { id: 'midi2', name: 'MIDI 2', channel: sourceNode.circuitLogicalOuts.midi2 ?? null }
+        ];
+      } else if (sourceNode.logicalOutChannel) {
+        outs = [{ id: 'out1', name: 'Output', channel: sourceNode.logicalOutChannel }];
+      }
+      
+      outs.forEach(out => {
+        if (!out.channel) return;
+        Object.values(nodes).forEach(targetNode => {
+          if (targetNode.id === sourceNode.id) return;
+          if (targetNode.logicalInChannel === out.channel) {
+             const cId = `lc_${sourceNode.id}_${targetNode.id}_${out.channel}`;
+             conns[cId] = {
+               id: cId,
+               source: sourceNode.id,
+               target: targetNode.id,
+               type: `channel_${out.channel}`,
+               label: out.name,
+               startOffset: { x: 100, y: 50 },
+               endOffset: { x: 50, y: 50 }
+             };
+          }
+        });
+      });
+    });
+    return conns;
+  }, [nodes, routingMode]);
   const [pan, setPan] = useState<{x: number, y: number}>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<any>(null);
   const [maxZIndex, setMaxZIndex] = useState(30);
   const [editingLabel, setEditingLabel] = useState<any>(null);
+  const [draggedLabel, setDraggedLabel] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(zoom);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  const panRef = useRef(pan);
+  useEffect(() => { panRef.current = pan; }, [pan]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const prevZoom = zoomRef.current;
+        const prevPan = panRef.current;
+        const zoomDelta = -e.deltaY * 0.01;
+        const newZoom = Math.max(0.1, Math.min(3, prevZoom * Math.exp(zoomDelta)));
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const newPanX = mouseX - (mouseX - prevPan.x) * (newZoom / prevZoom);
+        const newPanY = mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom);
+        setZoom(newZoom);
+        setPan({ x: newPanX, y: newPanY });
+      }
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // Load from local storage
   useEffect(() => {
@@ -401,12 +470,13 @@ export default function AlienMindSetup() {
          } else {
             const newId = `c_auto_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
             const isAudio = portType.includes('audio');
+            const cableType = isAudio ? 'audio_ts' : 'midi_din';
             newConns[newId] = {
                id: newId,
                source: portType.includes('In') ? selectedNodeId : nodeId,
                target: portType.includes('In') ? nodeId : selectedNodeId,
-               type: isAudio ? 'audio_ts' : 'midi_din',
-               label: isAudio ? 'Audio' : 'MIDI',
+               type: cableType,
+               label: CABLE_TYPES[cableType].label,
                startOffset: { x: 50, y: 50 },
                endOffset: { x: 50, y: 50 }
             };
@@ -455,17 +525,35 @@ export default function AlienMindSetup() {
   };
 
   const handleCableDragStart = (e: React.PointerEvent, connId: string, endpoint: string) => {
+    if (routingMode === 'logical') return;
     e.stopPropagation();
     const rect = containerRef.current!.getBoundingClientRect();
     setDraggedCable({
         id: connId,
         endpoint: endpoint,
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: (e.clientX - rect.left - pan.x) / zoomRef.current,
+        y: (e.clientY - rect.top - pan.y) / zoomRef.current
     });
   };
 
   const handleMouseMove = (e: any) => {
+    if (draggedLabel && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left - pan.x) / zoomRef.current;
+        const mouseY = (e.clientY - rect.top - pan.y) / zoomRef.current;
+        setConnections(prev => {
+            if (!prev[draggedLabel]) return prev;
+            return {
+                ...prev,
+                [draggedLabel]: {
+                    ...prev[draggedLabel] as OverviewConnection,
+                    midPoint: { x: mouseX, y: mouseY }
+                }
+            };
+        });
+        return;
+    }
+
     if (isPanning && panStart) {
        setPan({
           x: e.clientX - panStart.x,
@@ -479,16 +567,16 @@ export default function AlienMindSetup() {
         ...prev,
         [draggingNode.id]: {
           ...prev[draggingNode.id],
-          x: draggingNode.initialNodeX + (e.clientX - draggingNode.startX),
-          y: draggingNode.initialNodeY + (e.clientY - draggingNode.startY)
+          x: draggingNode.initialNodeX + (e.clientX - draggingNode.startX) / zoomRef.current,
+          y: draggingNode.initialNodeY + (e.clientY - draggingNode.startY) / zoomRef.current
         }
       }));
     } else if (draggedCable && containerRef.current) {
       const rect = containerRef.current!.getBoundingClientRect();
       setDraggedCable((prev: any) => ({
           ...prev,
-          x: e.clientX - rect.left - pan.x,
-          y: e.clientY - rect.top - pan.y
+          x: (e.clientX - rect.left - pan.x) / zoomRef.current,
+          y: (e.clientY - rect.top - pan.y) / zoomRef.current
       }));
 
       const elements = document.elementsFromPoint(e.clientX, e.clientY);
@@ -502,65 +590,72 @@ export default function AlienMindSetup() {
   };
 
   const handleMouseUp = (e: any) => {
-    if (isPanning) {
-       setIsPanning(false);
-       setPanStart(null);
-       return;
-    }
-    
-    if (draggedCable && containerRef.current) {
+    // Handle cable drop target assignment
+    if (routingMode !== 'logical' && draggedCable && containerRef.current) {
        const elements = document.elementsFromPoint(e.clientX, e.clientY);
        const hitNodeEl = elements.find(el => el.classList && el.classList.contains('hardware-node'));
        
        if (hitNodeEl) {
            const nodeId = hitNodeEl.getAttribute('data-id');
-           if (!nodeId) return;
-           const rect = containerRef.current!.getBoundingClientRect();
-           const canvasX = e.clientX - rect.left - pan.x;
-           const canvasY = e.clientY - rect.top - pan.y;
-           
-           const activeSetter = routingMode === 'physical' ? setConnections : setLogicalConnections;
-           activeSetter(prev => {
-               const newConns = { ...prev };
-               const conn = { ...newConns[draggedCable.id] };
-               const targetNode = nodes[nodeId]!;
+           if (nodeId) {
+               const rect = containerRef.current.getBoundingClientRect();
+               const canvasX = e.clientX - rect.left - pan.x;
+               const canvasY = e.clientY - rect.top - pan.y;
                
-               if (draggedCable.endpoint === 'source') {
-                   conn.source = nodeId!;
-                   conn.startOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
-               } else {
-                   conn.target = nodeId!;
-                   conn.endOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
-               }
-               newConns[draggedCable.id] = conn as OverviewConnection;
-               return newConns;
-           });
+               setConnections(prev => {
+                   const newConns = { ...prev };
+                   const conn = { ...newConns[draggedCable.id] };
+                   const targetNode = nodes[nodeId]!;
+                   
+                   if (draggedCable.endpoint === 'source') {
+                       conn.source = nodeId;
+                       conn.startOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
+                   } else {
+                       conn.target = nodeId;
+                       conn.endOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
+                   }
+                   newConns[draggedCable.id] = conn as OverviewConnection;
+                   return newConns;
+               });
+           }
        }
-       setDraggedCable(null);
     }
+
+    // Unconditionally clean up ALL mouse interaction states
+    setDraggedLabel(null);
+    setDraggedCable(null);
+    setIsPanning(false);
+    setPanStart(null);
     setHoveredNodeId(null);
     setDraggingNode(null);
   };
 
+  const handleMouseMoveRef = useRef(handleMouseMove);
+  const handleMouseUpRef = useRef(handleMouseUp);
+  
   useEffect(() => {
-    if (draggingNode || draggedCable || isPanning) {
+    handleMouseMoveRef.current = handleMouseMove;
+    handleMouseUpRef.current = handleMouseUp;
+  });
+
+  useEffect(() => {
+    if (draggingNode || draggedCable || draggedLabel || isPanning) {
       document.body.style.userSelect = 'none';
-      window.addEventListener('pointermove', handleMouseMove);
-      window.addEventListener('pointerup', handleMouseUp);
-      window.addEventListener('pointercancel', handleMouseUp);
-    } else {
-      document.body.style.userSelect = '';
-      window.removeEventListener('pointermove', handleMouseMove);
-      window.removeEventListener('pointerup', handleMouseUp);
-      window.removeEventListener('pointercancel', handleMouseUp);
+      const moveHandler = (e: any) => handleMouseMoveRef.current(e);
+      const upHandler = (e: any) => handleMouseUpRef.current(e);
+      
+      window.addEventListener('pointermove', moveHandler);
+      window.addEventListener('pointerup', upHandler);
+      window.addEventListener('pointercancel', upHandler);
+      
+      return () => {
+        document.body.style.userSelect = '';
+        window.removeEventListener('pointermove', moveHandler);
+        window.removeEventListener('pointerup', upHandler);
+        window.removeEventListener('pointercancel', upHandler);
+      };
     }
-    return () => {
-      document.body.style.userSelect = '';
-      window.removeEventListener('pointermove', handleMouseMove);
-      window.removeEventListener('pointerup', handleMouseUp);
-      window.removeEventListener('pointercancel', handleMouseUp);
-    };
-  }, [draggingNode, draggedCable, isPanning, panStart]);
+  }, [!!draggingNode, !!draggedCable, !!draggedLabel, isPanning]);
 
   const handleCanvasMouseDown = (e: any) => {
     if ((e.target as Element).closest('.hardware-node') || (e.target as Element).closest('header') || (e.target as Element).closest('button')) return;
@@ -581,11 +676,11 @@ export default function AlienMindSetup() {
         style={{
           backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
           backgroundPosition: `${pan.x}px ${pan.y}px`,
-          backgroundSize: '20px 20px',
+          backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
           cursor: isPanning ? 'grabbing' : 'grab'
         }}
       >
-        <div className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}>
+        <div className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }}>
         
         {/* SVG Canvas for Cables */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
@@ -614,8 +709,8 @@ export default function AlienMindSetup() {
           </defs>
 
           {[
-            ...Object.entries(connections).map(([id, conn]) => ({ id, conn, isLogical: false, isActive: routingMode === 'physical' })),
-            ...Object.entries(logicalConnections).map(([id, conn]) => ({ id, conn, isLogical: true, isActive: routingMode === 'logical' }))
+            ...Object.entries(connections).map(([id, conn]) => ({ id, conn: conn as OverviewConnection, isLogical: false, isActive: routingMode === 'physical' })),
+            ...Object.entries(computedLogicalConnections).map(([id, conn]) => ({ id, conn: conn as OverviewConnection, isLogical: true, isActive: routingMode === 'logical' }))
           ].map(({ id, conn, isLogical, isActive }) => {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
@@ -628,7 +723,11 @@ export default function AlienMindSetup() {
             if(startX === undefined || endX === undefined) return null;
 
             let pathData = "";
-            if (conn.type.includes('midi')) {
+            if (conn.midPoint) {
+               const cx = 2 * conn.midPoint.x - 0.5 * startX - 0.5 * endX;
+               const cy = 2 * conn.midPoint.y - 0.5 * startY - 0.5 * endY;
+               pathData = `M ${startX} ${startY} Q ${cx} ${cy}, ${endX} ${endY}`;
+            } else if (conn.type.includes('midi')) {
                const controlY = startY - 100;
                pathData = `M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`;
             } else {
@@ -654,7 +753,7 @@ export default function AlienMindSetup() {
         {/* Cable Labels (Editable) */}
         {[
             ...Object.entries(connections).map(([id, conn]) => ({ id, conn, isLogical: false, isActive: routingMode === 'physical' })),
-            ...Object.entries(logicalConnections).map(([id, conn]) => ({ id, conn, isLogical: true, isActive: routingMode === 'logical' }))
+            ...Object.entries(computedLogicalConnections).map(([id, conn]) => ({ id, conn, isLogical: true, isActive: routingMode === 'logical' }))
           ].map(({ id, conn, isLogical }) => {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
@@ -670,7 +769,10 @@ export default function AlienMindSetup() {
             };
 
             let midX, midY;
-            if (conn.type.includes('midi')) {
+            if (conn.midPoint) {
+                midX = conn.midPoint.x;
+                midY = conn.midPoint.y;
+            } else if (conn.type.includes('midi')) {
                const controlY = startY - 100;
                midX = getBezier(0.5, startX, startX, endX, endX);
                midY = getBezier(0.5, startY, controlY, controlY, endY);
@@ -697,8 +799,9 @@ export default function AlienMindSetup() {
                    />
                  ) : (
                    <div 
+                     onPointerDown={(e) => { e.stopPropagation(); setDraggedLabel(id); }}
                      onDoubleClick={() => setEditingLabel(id)}
-                     className="px-2 py-1 rounded border backdrop-blur-sm text-[10px] font-bold cursor-text hover:scale-110 transition-transform whitespace-nowrap pointer-events-auto"
+                     className="px-2 py-1 rounded border backdrop-blur-sm text-[10px] font-bold cursor-move hover:scale-110 transition-transform whitespace-nowrap pointer-events-auto"
                      style={{ color: style.color, borderColor: style.color, backgroundColor: 'rgba(20,20,20,0.8)' }}
                    >
                      {conn.label}
@@ -766,65 +869,131 @@ export default function AlienMindSetup() {
                                 onChange={(e: any) => setNodes(p => ({...p, [nodeId]: {...p[nodeId]! as OverviewNode, overview: e.target.value}}))}
                             />
                          </div>
-                         <div className="grid grid-cols-2 gap-2 mt-1">
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[9px] text-cyan-600 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio IN</label>
-                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioIn')} onChange={(e: any) => handlePortSelect(nodeId, 'audioIn', e.target.value)}>
-                                   <option value="">- None -</option>
-                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[9px] text-orange-500 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio OUT</label>
-                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioOut')} onChange={(e: any) => handlePortSelect(nodeId, 'audioOut', e.target.value)}>
-                                   <option value="">- None -</option>
-                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[9px] text-emerald-600 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI IN</label>
-                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiIn')} onChange={(e: any) => handlePortSelect(nodeId, 'midiIn', e.target.value)}>
-                                   <option value="">- None -</option>
-                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[9px] text-blue-500 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI OUT/THRU</label>
-                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiOut')} onChange={(e: any) => handlePortSelect(nodeId, 'midiOut', e.target.value)}>
-                                   <option value="">- None -</option>
-                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
-                                </select>
-                             </div>
-                         </div>
-                         
-                         {/* Logical Routing */}
-                         <div className="flex flex-col gap-1 mt-1 border-t border-neutral-800 pt-2">
-                            <label className="text-[9px] text-yellow-500 uppercase font-bold">Logical MIDI Routing (Channels)</label>
-                            <textarea 
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 resize-none h-12 outline-none focus:border-neutral-500 leading-tight text-[10px]"
-                                value={nodeState.midiChannels || ''}
-                                placeholder="e.g. Expects Input Ch 3"
-                                onChange={(e: any) => setNodes(p => ({...p, [nodeId]: {...p[nodeId]! as OverviewNode, midiChannels: e.target.value}}))}
-                            />
-                         </div>
-                         
-                         {/* Origin Cable Managers */}
-                         <div className="mt-2 pt-2 border-t border-neutral-800 flex flex-col gap-1">
-                            <label className="text-[9px] text-neutral-500 uppercase font-bold">Outgoing Cables Manager</label>
-                            {Object.entries(connections).filter(([_, conn]) => conn.source === nodeId).map(([cId, conn]) => (
-                                <select 
-                                    key={cId}
-                                    value={conn.type}
-                                    onChange={(e: any) => setConnections(p => ({...p, [cId]: {...p[cId]! as OverviewConnection, type: e.target.value}}))}
-                                    className="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-neutral-300 outline-none w-full"
-                                    style={{ color: CABLE_TYPES[conn.type].color }}
-                                >
-                                    {Object.entries(CABLE_TYPES).map(([typeId, typeData]) => (
-                                        <option key={typeId} value={typeId}>{conn.label} ➜ {typeData.label}</option>
+                         {routingMode === 'physical' ? (
+                             <>
+                                 <div className="grid grid-cols-2 gap-2 mt-1">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] text-cyan-600 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio IN</label>
+                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioIn')} onChange={(e: any) => handlePortSelect(nodeId, 'audioIn', e.target.value)}>
+                                           <option value="">- None -</option>
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] text-orange-500 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio OUT</label>
+                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioOut')} onChange={(e: any) => handlePortSelect(nodeId, 'audioOut', e.target.value)}>
+                                           <option value="">- None -</option>
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] text-emerald-600 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI IN</label>
+                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiIn')} onChange={(e: any) => handlePortSelect(nodeId, 'midiIn', e.target.value)}>
+                                           <option value="">- None -</option>
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] text-blue-500 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI OUT/THRU</label>
+                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiOut')} onChange={(e: any) => handlePortSelect(nodeId, 'midiOut', e.target.value)}>
+                                           <option value="">- None -</option>
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                        </select>
+                                     </div>
+                                 </div>
+                                 
+                                 {/* Origin Cable Managers */}
+                                 <div className="mt-2 pt-2 border-t border-neutral-800 flex flex-col gap-1">
+                                    <label className="text-[9px] text-neutral-500 uppercase font-bold">Outgoing Cables Manager</label>
+                                    {Object.entries(connections).filter(([_, conn]) => conn.source === nodeId).map(([cId, conn]) => (
+                                        <select 
+                                            key={cId}
+                                            value={conn.type}
+                                            onChange={(e: any) => setConnections(p => ({...p, [cId]: {...p[cId]! as OverviewConnection, type: e.target.value}}))}
+                                            className="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-neutral-300 outline-none w-full"
+                                            style={{ color: CABLE_TYPES[conn.type]?.color }}
+                                        >
+                                            {Object.entries(CABLE_TYPES).map(([typeId, typeData]) => (
+                                                <option key={typeId} value={typeId}>{conn.label} ➜ {typeData.label}</option>
+                                            ))}
+                                        </select>
                                     ))}
-                                </select>
-                            ))}
-                         </div>
+                                 </div>
+                             </>
+                         ) : (
+                             <>
+                                 <div className="mt-2 pt-2 border-t border-neutral-800 flex flex-col gap-2">
+                                    <label className="text-[9px] text-indigo-400 uppercase font-bold">Logical MIDI Configuration</label>
+                                    <div className="flex flex-col gap-1">
+                                       <label className="text-[9px] text-neutral-400 uppercase font-bold">Input Channel (Receives)</label>
+                                       <select className="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-neutral-300 outline-none w-full"
+                                               value={nodeState.logicalInChannel || ''}
+                                               onChange={(e: any) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], logicalInChannel: e.target.value ? parseInt(e.target.value) : null} as OverviewNode}))}>
+                                           <option value="">- None -</option>
+                                           {[...Array(16)].map((_, i) => <option key={i+1} value={i+1}>Ch {i+1}</option>)}
+                                       </select>
+                                       {nodeState.logicalInChannel ? (() => {
+                                          const senders: string[] = [];
+                                          Object.values(nodes).forEach(n => {
+                                             if (n.id === nodeId) return;
+                                             if (n.type === 'circuit' && n.circuitLogicalOuts) {
+                                                if (n.circuitLogicalOuts.synth1 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (Synth 1)`);
+                                                if (n.circuitLogicalOuts.synth2 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (Synth 2)`);
+                                                if (n.circuitLogicalOuts.midi1 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (MIDI 1)`);
+                                                if (n.circuitLogicalOuts.midi2 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (MIDI 2)`);
+                                             } else if (n.logicalOutChannel === nodeState.logicalInChannel) {
+                                                senders.push(`${HARDWARE_LIBRARY[n.type].model}`);
+                                             }
+                                          });
+                                          return senders.length > 0 ? 
+                                            <div className="text-[9px] text-green-500 font-medium">Receiving from: {senders.join(', ')}</div> :
+                                            <div className="text-[9px] text-red-500 font-medium">No device sending on Ch {nodeState.logicalInChannel}</div>;
+                                       })() : null}
+                                    </div>
+
+                                    {nodeState.type === 'circuit' ? (
+                                        <div className="flex flex-col gap-2 mt-1">
+                                           {['synth1', 'synth2', 'midi1', 'midi2'].map((outKey) => {
+                                               const ch = nodeState.circuitLogicalOuts?.[outKey as keyof typeof nodeState.circuitLogicalOuts] || null;
+                                               return (
+                                                   <div key={outKey} className="flex flex-col gap-1 bg-black/20 p-1 rounded">
+                                                       <label className="text-[9px] text-neutral-400 uppercase font-bold capitalize">{outKey.replace(/([A-Za-z]+)(\d+)/, "$1 $2")} Output</label>
+                                                       <select className="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-neutral-300 outline-none w-full"
+                                                               value={ch || ''}
+                                                               onChange={(e: any) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], circuitLogicalOuts: {...(p[nodeId] as OverviewNode).circuitLogicalOuts, [outKey]: e.target.value ? parseInt(e.target.value) : null}} as OverviewNode}))}>
+                                                           <option value="">- None -</option>
+                                                           {[...Array(16)].map((_, i) => <option key={i+1} value={i+1}>Ch {i+1}</option>)}
+                                                       </select>
+                                                       {ch ? (() => {
+                                                           const listeners = Object.values(nodes).filter(n => n.id !== nodeId && n.logicalInChannel === ch);
+                                                           return listeners.length > 0 ? 
+                                                               <div className="text-[9px] text-green-500 font-medium">Sending to: {listeners.map(l => HARDWARE_LIBRARY[l.type].model).join(', ')}</div> :
+                                                               <div className="text-[9px] text-red-500 font-medium">No device listening on Ch {ch}</div>;
+                                                       })() : null}
+                                                   </div>
+                                               )
+                                           })}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-1 mt-1">
+                                           <label className="text-[9px] text-neutral-400 uppercase font-bold">Output Channel (Sends)</label>
+                                           <select className="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-neutral-300 outline-none w-full"
+                                                   value={nodeState.logicalOutChannel || ''}
+                                                   onChange={(e: any) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], logicalOutChannel: e.target.value ? parseInt(e.target.value) : null} as OverviewNode}))}>
+                                               <option value="">- None -</option>
+                                               {[...Array(16)].map((_, i) => <option key={i+1} value={i+1}>Ch {i+1}</option>)}
+                                           </select>
+                                           {nodeState.logicalOutChannel ? (() => {
+                                              const listeners = Object.values(nodes).filter(n => n.id !== nodeId && n.logicalInChannel === nodeState.logicalOutChannel);
+                                              return listeners.length > 0 ? 
+                                                <div className="text-[9px] text-green-500 font-medium">Sending to: {listeners.map(l => HARDWARE_LIBRARY[l.type].model).join(', ')}</div> :
+                                                <div className="text-[9px] text-red-500 font-medium">No device listening on Ch {nodeState.logicalOutChannel}</div>;
+                                           })() : null}
+                                        </div>
+                                    )}
+                                 </div>
+                             </>
+                         )}
                      </div>
                  )}
               </div>
@@ -832,6 +1001,25 @@ export default function AlienMindSetup() {
           );
         })}
         </div>
+        {/* Zoom Controls */}
+        <div className="absolute bottom-6 right-6 flex items-center gap-1 bg-neutral-900/90 text-white rounded-lg shadow-xl border border-neutral-700/50 p-1 backdrop-blur z-50 pointer-events-auto">
+          <button onClick={() => {
+            const z = Math.max(0.1, zoom * 0.8);
+            const rect = containerRef.current!.getBoundingClientRect();
+            const cx = rect.width / 2; const cy = rect.height / 2;
+            setPan({ x: cx - (cx - pan.x) * (z / zoom), y: cy - (cy - pan.y) * (z / zoom) });
+            setZoom(z);
+          }} className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded transition-colors text-neutral-400 hover:text-white font-bold" title="Zoom Out">-</button>
+          <span className="text-[10px] font-mono w-10 text-center cursor-pointer hover:text-cyan-400" onClick={() => { setZoom(1); setPan({x:0, y:0}); }} title="Reset View">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => {
+            const z = Math.min(3, zoom * 1.2);
+            const rect = containerRef.current!.getBoundingClientRect();
+            const cx = rect.width / 2; const cy = rect.height / 2;
+            setPan({ x: cx - (cx - pan.x) * (z / zoom), y: cy - (cy - pan.y) * (z / zoom) });
+            setZoom(z);
+          }} className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded transition-colors text-neutral-400 hover:text-white font-bold" title="Zoom In">+</button>
+        </div>
+
       </div>
     </div>
   );
