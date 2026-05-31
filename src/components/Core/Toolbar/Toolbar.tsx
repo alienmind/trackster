@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { del } from 'idb-keyval';
 import DisclaimerModal from '../../Core/DisclaimerModal/DisclaimerModal';
-import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS, DEFAULT_LOGICAL_CONNECTIONS } from '../../../stores/useOverviewStore';
+import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../../stores/useOverviewStore';
 
 export default function Toolbar() {
   const { rootHandle, activePack, workspaceMode, setWorkspaceMode } = useFileSystemStore();
@@ -217,7 +217,7 @@ export default function Toolbar() {
              </button>
            </div>
            <div className="flex items-center gap-2">
-             <Button variant="secondary" size="sm" onClick={() => resetLayout(DEFAULT_NODES, DEFAULT_CONNECTIONS, DEFAULT_LOGICAL_CONNECTIONS)}>
+             <Button variant="secondary" size="sm" onClick={() => resetLayout(DEFAULT_NODES, DEFAULT_CONNECTIONS)}>
                <Icons.RefreshCw size={14} className="mr-2" /> Reset
              </Button>
              <Button variant="secondary" size="sm" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })}>
