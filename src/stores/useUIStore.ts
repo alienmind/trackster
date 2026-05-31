@@ -4,7 +4,7 @@ import type { PageIndex, Notification, SampleFile } from '../types';
 
 interface UIState {
   activePage: PageIndex;
-  activeMainView: 'packs' | 'samples' | 'overview';
+  activeMainView: 'circuit' | 'overview';
   selectedPadIndex: number | null;
   isCommitDialogOpen: boolean;
   notifications: Notification[];
@@ -16,7 +16,7 @@ interface UIState {
   isDuplicateModalOpen: boolean;
   duplicateClusters: SampleFile[][];
 
-  setActiveMainView: (view: 'packs' | 'samples' | 'overview') => void;
+  setActiveMainView: (view: 'circuit' | 'overview') => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null) => void;
   openCommitDialog: () => void;

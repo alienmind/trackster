@@ -3,15 +3,13 @@ import { useUIStore } from '../../../stores/useUIStore';
 import { Button } from '../../Core/ui/button';
 import * as Icons from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
-import { useDroppable } from '@dnd-kit/core';
-import { useEffect, useState } from 'react';
+
 import clsx from 'clsx';
 import { del } from 'idb-keyval';
-import DisclaimerModal from '../../Core/DisclaimerModal/DisclaimerModal';
 import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../../stores/useOverviewStore';
 
 export default function Toolbar() {
-  const { rootHandle, activePack, workspaceMode, setWorkspaceMode } = useFileSystemStore();
+  const { rootHandle, workspaceMode, setWorkspaceMode } = useFileSystemStore();
   const { activeMainView, setActiveMainView } = useUIStore();
   
   const resetLayout = useOverviewStore(s => s.resetLayout);
@@ -21,37 +19,6 @@ export default function Toolbar() {
   const routingMode = useOverviewStore(s => s.routingMode);
   const setRoutingMode = useOverviewStore(s => s.setRoutingMode);
 
-  const hasPack = !!activePack;
-  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
-
-  const { isOver: isOverPacks, setNodeRef: setPacksRef } = useDroppable({
-    id: 'view-switcher-packs',
-  });
-
-  const { isOver: isOverSamples, setNodeRef: setSamplesRef } = useDroppable({
-    id: 'view-switcher-samples',
-  });
-
-  useEffect(() => {
-    if (sessionStorage.getItem('autoOpenDisclaimer') === 'true') {
-      sessionStorage.removeItem('autoOpenDisclaimer');
-      setIsDisclaimerOpen(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isOverPacks && activeMainView !== 'packs') {
-      const t = setTimeout(() => setActiveMainView('packs'), 500);
-      return () => clearTimeout(t);
-    }
-  }, [isOverPacks, activeMainView, setActiveMainView]);
-
-  useEffect(() => {
-    if (isOverSamples && hasPack && activeMainView !== 'samples') {
-      const t = setTimeout(() => setActiveMainView('samples'), 500);
-      return () => clearTimeout(t);
-    }
-  }, [isOverSamples, hasPack, activeMainView, setActiveMainView]);
 
   return (
     <div className="flex flex-col flex-none w-full border-b border-border bg-card">
@@ -70,36 +37,19 @@ export default function Toolbar() {
               Overview
             </button>
             <button
-              onClick={() => rootHandle && setActiveMainView('packs')}
+              onClick={() => rootHandle && setActiveMainView('circuit')}
               disabled={!rootHandle}
               className={clsx(
                 "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
-                (activeMainView === 'packs' || activeMainView === 'samples') ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
+                activeMainView === 'circuit' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
               )}
             >
               Circuit Tracks
             </button>
           </div>
 
-          {(activeMainView === 'packs' || activeMainView === 'samples') && (
-            <Tooltip>
-              <TooltipTrigger className="focus:outline-none ml-2">
-                <Button
-                  variant="default"
-                  onClick={() => setIsDisclaimerOpen(true)}
-                  className="font-semibold shadow-md"
-                >
-                  <Icons.HardDrive className="mr-2" size={16} />
-                  Mount SD Card
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                Select the root directory of your SD Card (or the 'Tracks' folder directly).
-              </TooltipContent>
-            </Tooltip>
-          )}
-          
-          {rootHandle && workspaceMode && (activeMainView === 'packs' || activeMainView === 'samples') && (
+
+          {rootHandle && workspaceMode && activeMainView === 'circuit' && (
             <div className="flex items-center ml-2">
               <Tooltip>
                 <TooltipTrigger className="focus:outline-none">
@@ -163,36 +113,7 @@ export default function Toolbar() {
         </div>
       </div>
       
-      {(activeMainView === 'packs' || activeMainView === 'samples') && (
-        <div className="h-12 px-4 flex items-center bg-card/50 border-t border-border/50 gap-4">
-          <div className="flex bg-muted p-1 rounded-md">
-            <button
-              ref={setPacksRef}
-              onClick={() => rootHandle && setActiveMainView('packs')}
-              disabled={!rootHandle}
-              className={clsx(
-                "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
-                activeMainView === 'packs' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50",
-                isOverPacks && rootHandle && "ring-2 ring-primary bg-primary/10"
-              )}
-            >
-              Packs
-            </button>
-            <button
-              ref={setSamplesRef}
-              onClick={() => hasPack && setActiveMainView('samples')}
-              disabled={!hasPack}
-              className={clsx(
-                "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
-                activeMainView === 'samples' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50",
-                isOverSamples && hasPack && "ring-2 ring-primary bg-primary/10"
-              )}
-            >
-              Samples
-            </button>
-          </div>
-        </div>
-      )}
+
       
       {activeMainView === 'overview' && (
         <div className="h-12 px-4 flex items-center justify-between bg-card/50 border-t border-border/50 gap-2">
@@ -229,7 +150,6 @@ export default function Toolbar() {
            </div>
         </div>
       )}
-      <DisclaimerModal isOpen={isDisclaimerOpen} onClose={() => setIsDisclaimerOpen(false)} />
-    </div>
+      </div>
   );
 }
