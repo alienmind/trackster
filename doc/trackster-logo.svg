@@ -24,6 +24,12 @@
     <filter id="lightShadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>
     </filter>
+    <style>
+      .logo-text { fill: #1f2937; }
+      @media (prefers-color-scheme: dark) {
+        .logo-text { fill: #f3f4f6; }
+      }
+    </style>
   </defs>
 
   <!-- ICON: Centered above text -->
@@ -74,6 +80,6 @@
     <rect x="36" y="72" width="36" height="36" rx="6" fill="#f97316" stroke="#1f2937" stroke-width="6"/>
 
     <!-- Rest of the text "racks(ter)" -->
-    <text x="120" y="95" font-family="system-ui, -apple-system, sans-serif" font-size="110" font-weight="900" fill="#1f2937" letter-spacing="-2">racks(ter)</text>
+    <text class="logo-text" x="120" y="95" font-family="system-ui, -apple-system, sans-serif" font-size="110" font-weight="900" letter-spacing="-2">racks(ter)</text>
   </g>
 </svg>
