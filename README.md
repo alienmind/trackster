@@ -13,7 +13,7 @@ Trackster is an advanced, fully client-side web application designed for organiz
 
 It leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server.
 
-![Trackster – Logical MIDI Routing canvas](doc/screenshot01.png)
+![Trackster – DAWless documentation diagrams](doc/screenshot01.png)
 
 ## Features
 
@@ -21,12 +21,13 @@ It leverages the File System Access API, Web Audio API, and IndexedDB to provide
 - **Persistent Workspace**: Uses IndexedDB to safely cache your session state, layouts, and SD card handles across reloads.
 - **DAWless Overview Canvas**: An interactive SVG-based drag-and-drop canvas to visually map out your hardware synths, mixers, audio cables, and MIDI routing.
 - **Hardware Integrations**: Hardware-specific sub-apps and features (e.g., Novation Circuit Tracks SD card management).
-- **Pack & Sample Organizer**: High-level views to manage all of your sample packs seamlessly, featuring a 64-pad grid mimicking the Circuit Tracks layout.
-- **Global Pending Changes**: Dedicated pane to review and commit file renaming and moves across your entire SD card at once.
-- **Drag & Drop**: Easily rearrange your samples on a virtual grid, or drag them between packs!
-- **Magic Sort**: Automatically tag and arrange your drum samples into a sensible layout.
-- **Waveform Preview**: Visualize and playback audio samples directly in the app.
-- **Duplicate Detection**: Scan for potential duplicates to save space on your SD card.
+- **Tracks: Pack & Sample Organizer**: High-level views to manage all of your Circuit Tracks sample packs seamlessly, featuring a 64-pad grid mimicking the original hardware layout, allowing to review and commit file renaming and moves across your entire SD card at once.
+- **Tracks: Drag & Drop between packs**: Easily rearrange your Circuit Tracks samples on a virtual grid, or drag them between packs!
+- **Tracks: Magic Sort**: Automatically tag and arrange your drum samples into a sensible layout.
+- **Tracks: Waveform Preview**: Visualize and playback audio samples directly in the app.
+- **Tracks: Duplicate Detection**: Scan for potential duplicates to save space on your SD card.
+
+More to come! (see [doc/FUTURE_IDEAS.md](https://github.com/alienmind/trackster/blob/main/doc/FUTURE_IDEAS.md)!)
 
 ## Development Setup
 
@@ -39,7 +40,7 @@ Trackster is built using React, TypeScript, and Vite.
 
 ## Deployment
 
-Trackster is a fully client-side application and is designed to be hosted statically on GitHub Pages.
+Although you can run it locally - is a fully client-side application - Trackster is prepared to be hosted statically on GitHub Pages.
 
 ### Deploying to GitHub Pages
 
