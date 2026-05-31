@@ -44,6 +44,7 @@ This document captures the audit findings and the phased roadmap to elevate Trac
 - Panel chrome: gunmetal `linear-gradient(180deg, #14141a, #0a0a0f)` with a 1px top highlight `inset 0 1px 0 rgba(255,255,255,0.04)`.
 - Typography: keep Geist for UI, add a tabular monospace face for slot numbers and BPM/duration to evoke the hardware LCD.
 - Optional: subtle SVG noise overlay (6-8% alpha) on the app background for tactile depth.
+- Include an SVG-driven "hardware overview" illustration in the app, with colored connector paths, equipment cards, and signal-flow markers to reinforce the physical setup.
 
 ### A3. GitHub Pages deploy gaps
 
@@ -100,9 +101,10 @@ The repo deploys to GitHub Pages but several things will break for a project rep
 - **3.3** Redesign `PageTabs` as hardware page buttons.
 - **3.4** Redesign panel chrome (`App.tsx` shell, `Toolbar`, `StatusBar`, `FileInspector`): gunmetal vertical gradient + 1px highlights.
 - **3.5** Add full-screen SVG noise overlay at 6-8% opacity.
-- **3.6** Responsive pass: 2x8 collapses to 4x4 below 640px; panes become tabs.
-- **3.7** Compact mode verified at 1366x768.
-- **3.8** Accessibility: WCAG AA contrast for text and focus rings.
+- **3.6** Add an "Overview" tab with a rich SVG system diagram: equipment cards, connector flows, color-coded signal paths, and Lucide icon-based status badges.
+- **3.7** Responsive pass: 2x8 collapses to 4x4 below 640px; panes become tabs.
+- **3.8** Compact mode verified at 1366x768.
+- **3.9** Accessibility: WCAG AA contrast for text and focus rings.
 
 ### Phase 4: Feature credibility
 
@@ -120,6 +122,7 @@ The repo deploys to GitHub Pages but several things will break for a project rep
 - `src/App.tsx`, `src/App.css`, `src/index.css` - shell layout and tokens.
 - `src/components/Grid/SortablePad.tsx`, `src/components/PackOrganizer/PackPad.tsx` - pad redesign + memo.
 - `src/components/PageTabs/PageTabs.tsx` - hardware page buttons.
+- `src/components/Overview/OverviewTab.tsx` (new) - SVG-driven system diagram for the app overview.
 - `src/components/Toolbar/`, `src/components/StatusBar/`, `src/components/FileInspector/` - panel chrome.
 - `src/stores/useFileSystemStore.ts` - split into `src/stores/fileSystem/`.
 - `src/domain/` (new) - `renameExecutor.ts`, `commitPlanner.ts`, `packModel.ts`.
