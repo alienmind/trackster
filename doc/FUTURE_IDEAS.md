@@ -7,15 +7,26 @@ This document contains a set of structured new feature ideas and concepts for ex
 ### 1. Overview
 The "Live Preview" module is a Web MIDI-powered interface for the "Trackster" web application. It allows users to remotely control a connected Novation Circuit Tracks via USB. The UI provides a track selector (Synth 1-2, MIDI 1-2, Drum 1-4) and a 64-pad grid. Clicking a pad automatically sends the specific MIDI protocol sequence to load that preset/sample on the hardware and immediately trigger a sound, simulating a physical pad press on the device.
 
-### 2. Architecture & Web MIDI Setup
+### 2. MIDI Previews on the Circuit Tracks
+
+#### Architecture & Web MIDI Setup
 * **API:** `navigator.requestMIDIAccess({ sysex: false })`
 * **Target Output:** Filter MIDI outputs for `name.includes("Circuit Tracks")`.
 * **Hardware Prerequisites:** The Circuit Tracks must have MIDI Rx (Receive) enabled for Notes, CC, and Program Change.
 
-### 3. MIDI Protocol Mapping
+#### MIDI Protocol Mapping
 * **Synth 1 & Synth 2:** PGM `0-63` (Ch 1/2) followed by Note `60` ON.
 * **Drums 1-4:** CC `8`, `18`, `44`, `50` (Ch 10) followed by Notes `60`, `62`, `64`, `65`.
 * **MIDI 1 & MIDI 2:** PGM `0-63` (Ch 3/4) followed by Note `60` ON.
+
+---
+
+### Add new gear! (LLM assisted)
+This feature would allow users to easily add new hardware synthesizers to the application. 
+* With one LLM we will receive a description of the device
+* An image of the gear will be added - LLM will generate an SVG optionally, but the image can still be used
+* LLM would also generate a set of cable routings for the new gear as a default
+* It will be added to the catalogue of available units
 
 ---
 
@@ -25,6 +36,12 @@ Draft: Expand the application to interface directly with other hardware synthesi
 * **Roland S-1**: Patch management, logical CC mapping control from the browser, and backup handling.
 * **Arturia MiniFreak**: Librarian features, syncing patches directly over WebMIDI, and visualizing routing parameters.
 * ...
+
+---
+
+## Grind Specific - Patch & Layout Saving
+* Save patches and physical layout parameters by MIDI.
+* Ability to take/upload a picture of the setup and document it with a custom name.
 
 ---
 
