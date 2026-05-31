@@ -12,22 +12,23 @@ The "Live Preview" module is a Web MIDI-powered interface for the "Trackster" we
 * **Target Output:** Filter MIDI outputs for `name.includes("Circuit Tracks")`.
 * **Hardware Prerequisites:** The Circuit Tracks must have MIDI Rx (Receive) enabled for Notes, CC, and Program Change.
 
-### 3. MIDI Protocol Mapping (The "Driver")
+### 3. MIDI Protocol Mapping
 * **Synth 1 & Synth 2:** PGM `0-63` (Ch 1/2) followed by Note `60` ON.
 * **Drums 1-4:** CC `8`, `18`, `44`, `50` (Ch 10) followed by Notes `60`, `62`, `64`, `65`.
 * **MIDI 1 & MIDI 2:** PGM `0-63` (Ch 3/4) followed by Note `60` ON.
 
 ---
 
-## Device Specific Features
+## More Device Specific Features for my Gear
 
 Draft: Expand the application to interface directly with other hardware synthesizers.
 * **Roland S-1**: Patch management, logical CC mapping control from the browser, and backup handling.
 * **Arturia MiniFreak**: Librarian features, syncing patches directly over WebMIDI, and visualizing routing parameters.
+* ...
 
 ---
 
-## Audio Preview
+## Circuit Tracks - Expand Audio Preview Features
 
 Draft: Create a fully featured, client-side web audio previewer for sample management.
 * Allow users to audition `.wav` samples in the browser before deploying them to SD cards.
@@ -36,7 +37,7 @@ Draft: Create a fully featured, client-side web audio previewer for sample manag
 
 ---
 
-## Sequencing Abilities
+## Sequencing Abilities!
 
 Draft: Your browser becomes your DAW!
 * Build a full multi-track sequencer into the browser that routes MIDI directly to the connected hardware.
@@ -47,7 +48,9 @@ Draft: Your browser becomes your DAW!
 
 ## Strudel.cc Integration
 
-Draft: Seamlessly add Strudel code to combine the setup with music coding.
-* Embed a live coding interface using the Strudel (TidalCycles) engine.
-* Map Strudel patterns directly to hardware MIDI channels (e.g., algorithmic drums sent to Circuit Tracks).
-* Save Strudel sketches alongside the hardware layout configurations.
+Draft: Seamlessly integrate Strudel live-coding to merge your hardware setup with algorithmic music generation. Drawing inspiration from the Algorave Hub architecture, this feature would include:
+* **AI-Assisted Composition**: Incorporate an LLM chat interface and the `strudel-mcp-server` to allow an AI to generate, play, and modify Strudel code on the fly via tools like "Play Music" or "Get Pattern".
+* **Algorave Workspace**: Integrate a dedicated view combining a Code Editor, Pattern Examples library, AI Chat, and the active Strudel Player.
+* **Hardware MIDI Mapping**: Map algorithmic Strudel patterns directly to the logical MIDI channels of connected hardware (e.g., routing algorithmic drum sequences to the Circuit Tracks or generative melodies to the MiniFreak).
+* **MIDI-to-Strudel Support**: Utilize scripts to convert recorded MIDI files into editable Strudel syntax for further algorithmic manipulation.
+* **Layout Syncing**: Save Strudel sketches alongside your DAWless hardware routing configurations to instantly recall entire studio states.
