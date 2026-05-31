@@ -14,20 +14,21 @@ import {
   DragOverlay,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
-import StatusBar from './components/StatusBar/StatusBar';
-import CommitDialog from './components/CommitDialog/CommitDialog';
-import DuplicateScanModal from './components/DuplicateScanModal/DuplicateScanModal';
-import BrowserWarning from './components/BrowserWarning/BrowserWarning';
-import Toolbar from './components/Toolbar/Toolbar';
-import { TagBadge } from './components/TagBadge/TagBadge';
-import logoUrl from '../doc/trackster-logo.png';
+import StatusBar from './components/Core/StatusBar/StatusBar';
+import CommitDialog from './components/Core/CommitDialog/CommitDialog';
+import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
+import BrowserWarning from './components/Core/BrowserWarning/BrowserWarning';
+import Toolbar from './components/Core/Toolbar/Toolbar';
+import { TagBadge } from './components/Core/TagBadge/TagBadge';
+import logoUrl from '../doc/trackster-logo.svg';
 import * as Icons from 'lucide-react';
-import { ThemeToggle } from './components/ThemeToggle';
+import { ThemeToggle } from './components/Core/ThemeToggle';
 import pkg from '../package.json';
 
-import PackOrganizer from './components/PackOrganizer/PackOrganizer';
-import SampleOrganizer from './components/SampleOrganizer/SampleOrganizer';
-import PendingChangesPane from './components/PendingChangesPane/PendingChangesPane';
+import PackOrganizer from './components/Circuit/PackOrganizer/PackOrganizer';
+import SampleOrganizer from './components/Circuit/SampleOrganizer/SampleOrganizer';
+import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
+import OverviewTab from './components/Overview/OverviewTab';
 
 export default function App() {
   const isSupported = 'showDirectoryPicker' in window;
@@ -154,7 +155,7 @@ export default function App() {
         <Toolbar />
 
         <div className="flex flex-1 overflow-hidden min-h-0">
-          {!rootHandle ? (
+          {!rootHandle && activeMainView !== 'overview' ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground bg-background">
               <Icons.FolderOpen size={48} className="opacity-20" />
               <h2 className="text-xl font-semibold">No SD Card Selected</h2>
@@ -162,12 +163,14 @@ export default function App() {
             </div>
           ) : (
             <>
-              {activeMainView === 'packs' ? (
+              {activeMainView === 'overview' ? (
+                <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
+              ) : activeMainView === 'packs' ? (
                 <PackOrganizer />
               ) : (
                 <SampleOrganizer />
               )}
-              <PendingChangesPane />
+              {activeMainView !== 'overview' && <PendingChangesPane />}
             </>
           )}
         </div>

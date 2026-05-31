@@ -1,4 +1,4 @@
-<img src="doc/trackster-logo.png" align="center" />
+<img src="doc/trackster-logo.svg" align="center" />
 # 🎛️ Tracks(ter)
 
 > **⚠️ EXPERIMENTAL WARNING: POTENTIAL DATA LOSS ⚠️**

@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
-  base: '/',
+  base: process.env.VITE_BASE || '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -16,8 +16,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      scope: process.env.VITE_BASE || '/',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
+        start_url: process.env.VITE_BASE || '/',
         name: 'Tracks(ter) - Circuit Tracks PCM Manager',
         short_name: 'Tracks(ter)',
         description: 'Manage, audition, and arrange samples for the Novation Circuit Tracks',

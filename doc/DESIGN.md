@@ -57,19 +57,14 @@ The hardware reads the SD card's `PCM` folder and maps files exclusively by thei
 trackster/
 ├── src/
 │   ├── components/
-│   │   ├── Toolbar/         # Top action bar: directory picker, magic sort, scan, commit, undo
-│   │   ├── Waveform/        # wavesurfer.js wrapper, shows selected pad's audio
-│   │   ├── PageTabs/        # 4 page-selection tabs with color indicators
-│   │   ├── Grid/            # DndContext wrappers and individual SortablePad tiles
-│   │   ├── StatusBar/       # Bottom bar: slot count, pending changes, scan progress
-│   │   ├── CommitDialog/    # Modal showing rename plan, confirm/cancel
-│   │   ├── BrowserWarning/  # Full-page fallback for unsupported browsers
-│   │   └── ui/              # Shared primitive UI components (Button, Badge, Modal, Tooltip, etc.)
-│   ├── stores/              # Zustand stores (useFileSystemStore, useAudioStore, useUIStore)
-│   ├── hooks/               # Custom hooks (useAudioPlayback, useKeyboardShortcuts, useBrowserSupport)
-│   ├── utils/               # Pure functions (fileNaming, autoTag, autoArrange, similarity)
+│   │   ├── Core/            # App shell, Toolbar, Modals, shared UI primitives
+│   │   ├── Circuit/         # Circuit Tracks specific (PackOrganizer, Grids, Waveform)
+│   │   └── Overview/        # Interactive DAWless routing canvas and hardware nodes
+│   ├── stores/              # Zustand stores (useFileSystemStore, useAudioStore, useUIStore, useOverviewStore)
+│   ├── hooks/               # Custom hooks (useAudioPlayback, useBrowserSupport)
+│   ├── utils/               # Pure functions (fileNaming, autoTag, similarity)
 │   ├── workers/             # Web Worker for Meyda feature extraction
-│   └── types/               # Shared TS types and ambient declarations for File System API
+│   └── types/               # Shared TS types and ambient declarations
 └── doc/                     # Design documentation
 ```
 
@@ -123,6 +118,7 @@ Using Zustand with selector-based subscriptions avoids cascading React Context r
 - **`useFileSystemStore`**: The primary store. Owns the directory handle, the 64 slots array, pending changes count, and an undo stack. Actions include `loadFiles`, `moveSlot`, `autoTag`, `autoArrange`, `commitChanges`, and `executeRenamePlan`.
 - **`useAudioStore`**: Manages the `AudioContext`, cached decoded buffers, active playback state, and duplicate analysis results. Exposes actions for lazy init, playing, stopping, and scanning duplicates.
 - **`useUIStore`**: Holds the active page, selected pad index, and UI states like modals and notifications.
+- **`useOverviewStore`**: Manages the interactive nodes and connections for the DAWless routing setup in the Overview tab.
 
 ---
 
@@ -159,13 +155,12 @@ Using Zustand with selector-based subscriptions avoids cascading React Context r
 ```
 
 ### 8.2 Component Architecture
-- **`App.tsx`**: Root layout orchestrating Toolbar, Waveform, PageTabs, SortableGrid, StatusBar, and conditional overlays.
-- **`Toolbar.tsx`**: Triggers file loading, magic sort, dup scan, undo, and commit actions. Tracks disabled states appropriately.
-- **`Waveform.tsx`**: Wraps `wavesurfer.js` with a fixed height. Color matches the active page's accent.
-- **`PageTabs.tsx`**: Four tabs updating the active page state and global `--accent` color.
-- **`SortableGrid.tsx`**: Wraps 16 pads per page with `@dnd-kit`'s `<DndContext>` and `<SortableContext>`.
-- **`SortablePad.tsx`**: Interactive square tile displaying content based on occupied status. Connects to `useSortable` for drag operations.
-- **`CommitDialog.tsx`**: Modal rendering the rename plan (From → To table) with confirmation actions.
+- **`App.tsx`**: Root layout orchestrating Toolbar and the main view switcher.
+- **`Core/Toolbar/Toolbar.tsx`**: Triggers file loading, magic sort, dup scan, undo, commit, and Overview layout controls depending on the active view.
+- **`Circuit/Waveform/Waveform.tsx`**: Wraps `wavesurfer.js` with a fixed height. Color matches the active page's accent.
+- **`Circuit/Grid/SortableGrid.tsx`**: Wraps 16 pads per page with `@dnd-kit`'s `<DndContext>`.
+- **`Circuit/Grid/SortablePad.tsx`**: Interactive square tile displaying content based on occupied status. Connects to `useSortable` for drag operations.
+- **`Overview/OverviewTab.tsx`**: Interactive SVG canvas rendering hardware nodes, draggable MIDI/Audio cables, and routing configurations.
 
 ### 8.3 Pad Anatomy
 

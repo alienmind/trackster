@@ -45,6 +45,13 @@ Trackster is a browser-based, offline-capable Progressive Web App for managing s
   const sample = useFileSystemStore((state) => state.slots[index]?.sample);
   ```
 
+### Feature-Based Architecture
+* **Strict Division:** Components must be isolated into feature domains under `src/components/`.
+  * `Core/` - App shell, navigation, global UI primitives (modals, buttons, toolbars).
+  * `Overview/` - The interactive DAWless routing canvas and hardware node elements.
+  * `Circuit/` - Circuit Tracks-specific views (Pack Organizer, Sample Organizer, Grids, Waveform).
+* **No Flat Structures:** Do not place domain components directly inside `src/components/`.
+
 ### File System Access API
 * **Fallback Check:** This API is Chromium-only. Every entry point must verify if `showDirectoryPicker` is available in `window` and gracefully render a full-page fallback (`BrowserWarning.tsx`) otherwise.
 * **Commit-Only Writing:** Never write or rename files on drag-and-drop actions. Perform all re-orderings in-memory first. Batch-write and rename files only when the user explicitly triggers a "Commit".

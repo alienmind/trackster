@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger";
 import { create, StateCreator } from 'zustand';
 import { persist, type PersistStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
@@ -140,33 +141,33 @@ export const useFileSystemStore = create<FileSystemState>()(
           if (mode === 'readwrite') {
             const status = await rootHandle.requestPermission({ mode: 'readwrite' });
             if (status === 'granted') {
-              console.info(`[Store] Workspace mode changed to readwrite`);
+              logger.info(`[Store] Workspace mode changed to readwrite`);
               set({ workspaceMode: 'readwrite' });
               return true;
             } else {
-              console.warn(`[Store] User denied readwrite permission`);
+              logger.warn(`[Store] User denied readwrite permission`);
               return false;
             }
           } else {
-            console.info(`[Store] Workspace mode changed to read`);
+            logger.info(`[Store] Workspace mode changed to read`);
             set({ workspaceMode: 'read' });
             return true;
           }
         } catch (e) {
-          console.error(`[Store] Error setting workspace mode:`, e);
+          logger.error(`[Store] Error setting workspace mode:`, e);
           return false;
         }
       },
       
       openRootDirectory: async (mode = 'read') => {
     try {
-      console.log(`[Store] Opening root directory with mode: ${mode}`);
+      logger.log(`[Store] Opening root directory with mode: ${mode}`);
       const dirHandle = await window.showDirectoryPicker({ mode });
       set({ rootHandle: dirHandle, workspaceMode: mode });
       await get().rescanRootDirectory();
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.error('Error opening directory:', err);
+        logger.error('Error opening directory:', err);
       }
     }
   },
@@ -212,13 +213,13 @@ export const useFileSystemStore = create<FileSystemState>()(
         }
       }
     } catch (err) {
-      console.error('Could not find Tracks folder or read packs', err);
+      logger.error('Could not find Tracks folder or read packs', err);
       alert('Could not find a top-level "Tracks" folder on this drive.');
     }
   },
   
   loadPack: async (packName: string) => {
-    console.log(`[Store] Loading pack: ${packName}`);
+    logger.log(`[Store] Loading pack: ${packName}`);
     const { rootHandle } = get();
     if (!rootHandle) return;
 
@@ -227,7 +228,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       const tracksHandle = await getTracksHandle(rootHandle);
       packHandle = await tracksHandle.getDirectoryHandle(packName);
     } catch (err) {
-      console.error('Error loading pack', packName, err);
+      logger.error('Error loading pack', packName, err);
       return;
     }
 
@@ -317,7 +318,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
   
   moveToPack: (file, targetPackName) => {
-    console.log(`[Store] Moving file ${file.displayName} to pack ${targetPackName}`);
+    logger.log(`[Store] Moving file ${file.displayName} to pack ${targetPackName}`);
     set((state) => {
       const { activePack } = state;
       if (!activePack || activePack === targetPackName) return state;
@@ -364,7 +365,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   copyToPack: async (file, targetPackName) => {
-    console.log(`[Store] Copying file ${file.displayName} to pack ${targetPackName}`);
+    logger.log(`[Store] Copying file ${file.displayName} to pack ${targetPackName}`);
     const { rootHandle, activePack } = get();
     if (!rootHandle || !activePack || activePack === targetPackName) return;
 
@@ -399,12 +400,12 @@ export const useFileSystemStore = create<FileSystemState>()(
       });
       
     } catch (err) {
-      console.error('Failed to copy to pack', err);
+      logger.error('Failed to copy to pack', err);
     }
   },
   
   movePackSlot: (fromIndex, toIndex) => {
-    console.log(`[Store] Moving pack slot from ${fromIndex} to ${toIndex}`);
+    logger.log(`[Store] Moving pack slot from ${fromIndex} to ${toIndex}`);
     if (fromIndex === toIndex) return;
 
     set((state) => {
@@ -422,7 +423,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   moveSlot: (fromIndex, toIndex) => {
-    console.log(`[Store] Moving slot from ${fromIndex} to ${toIndex}`);
+    logger.log(`[Store] Moving slot from ${fromIndex} to ${toIndex}`);
     if (fromIndex === toIndex) return;
 
     set((state) => {
@@ -451,7 +452,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   clearSlot: (index) => {
-    console.log(`[Store] Clearing slot ${index}`);
+    logger.log(`[Store] Clearing slot ${index}`);
     set((state) => {
       if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
@@ -481,7 +482,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   renameFile: (file, newDisplayName) => {
-    console.log(`[Store] Renaming file ${file.displayName} to ${newDisplayName}`);
+    logger.log(`[Store] Renaming file ${file.displayName} to ${newDisplayName}`);
     set((state) => {
       if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
@@ -527,7 +528,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   removeFile: (file) => {
-    console.log(`[Store] Removing file ${file.displayName}`);
+    logger.log(`[Store] Removing file ${file.displayName}`);
     set((state) => {
       if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
@@ -567,7 +568,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   assignToSlot: (file, slotIndex) => {
-    console.log(`[Store] Assigning file ${file.displayName} to slot ${slotIndex}`);
+    logger.log(`[Store] Assigning file ${file.displayName} to slot ${slotIndex}`);
     set((state) => {
       if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
@@ -599,7 +600,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
   
   assignTagToSlot: (tagId, slotIndex) => {
-    console.log(`[Store] Assigning tag ${tagId} to slot ${slotIndex}`);
+    logger.log(`[Store] Assigning tag ${tagId} to slot ${slotIndex}`);
     set((state) => {
       if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
@@ -626,7 +627,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   addTag: (label: string) => {
-    console.log(`[Store] Adding tag ${label}`);
+    logger.log(`[Store] Adding tag ${label}`);
     const upperLabel = label.toUpperCase();
     const id = upperLabel.toLowerCase().replace(/[^a-z0-9]/g, '-');
     const color = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
@@ -644,7 +645,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   removeTag: (tagId: string) => {
-    console.log(`[Store] Removing tag ${tagId}`);
+    logger.log(`[Store] Removing tag ${tagId}`);
     set((state) => {
       if (!state.activePack) return state;
       const newTags = state.tags.filter(t => t.id !== tagId);
@@ -677,7 +678,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
 
   autoTag: () => {
-    console.log(`[Store] Auto-tagging files`);
+    logger.log(`[Store] Auto-tagging files`);
     set((state) => {
       if (!state.activePack) return state;
       const snapshot = state.slots.map((s) => ({ ...s }));
@@ -732,7 +733,7 @@ export const useFileSystemStore = create<FileSystemState>()(
   },
   
   commitChanges: async () => {
-    console.log(`[Store] Committing changes... computing plan...`);
+    logger.log(`[Store] Committing changes... computing plan...`);
     const { rootHandle, slotsByPack, packSlots, applyTagsToFilenames } = get();
     if (!rootHandle) return { operations: [], createdAt: new Date() };
 
@@ -743,7 +744,7 @@ export const useFileSystemStore = create<FileSystemState>()(
     const { activePack } = get();
     if (!activePack) return;
 
-    console.log(`[executeRenamePlan] Starting with ${plan.operations.length} operations, activePack=${activePack}`);
+    logger.log(`[executeRenamePlan] Starting with ${plan.operations.length} operations, activePack=${activePack}`);
 
     // Build a map from originalFilename → packName BEFORE renaming anything.
     // We can't use parentDirHandle.name because files may live in subdirectories (e.g. "PCM")
@@ -766,7 +767,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       const op = plan.operations[opIdx]!;
       const dir = op.parentDirHandle;
       const tempName = `__tmp_${op.to}`;
-      console.log(`[executeRenamePlan] Pass1 op${opIdx}: ${op.type} "${op.from}" -> temp "${tempName}"`);
+      logger.log(`[executeRenamePlan] Pass1 op${opIdx}: ${op.type} "${op.from}" -> temp "${tempName}"`);
       try {
         if (op.type === 'file') {
           const file = await (op.handle as FileSystemFileHandle).getFile();
@@ -789,9 +790,9 @@ export const useFileSystemStore = create<FileSystemState>()(
           }
           await dir.removeEntry(op.from, { recursive: true });
         }
-        console.log(`[executeRenamePlan] Pass1 op${opIdx}: done`);
+        logger.log(`[executeRenamePlan] Pass1 op${opIdx}: done`);
       } catch (err) {
-        console.error(`[executeRenamePlan] Pass1 op${opIdx} FAILED:`, err);
+        logger.error(`[executeRenamePlan] Pass1 op${opIdx} FAILED:`, err);
       }
     }
 
@@ -810,7 +811,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       const op = plan.operations[opIdx]!;
       const dir = op.parentDirHandle;
       const tempName = `__tmp_${op.to}`;
-      console.log(`[executeRenamePlan] Pass2 op${opIdx}: temp "${tempName}" -> "${op.to}"`);
+      logger.log(`[executeRenamePlan] Pass2 op${opIdx}: temp "${tempName}" -> "${op.to}"`);
       try {
         if (op.type === 'file') {
           const tempHandle = await dir.getFileHandle(tempName);
@@ -824,7 +825,7 @@ export const useFileSystemStore = create<FileSystemState>()(
           const finalHandle = await dir.getFileHandle(op.to);
           const parsed = parseFilename(op.to);
           const resolvedPackName = fileToPackMap.get(op.from) || dir.name;
-          console.log(`[executeRenamePlan] Pass2 op${opIdx}: resolved pack="${resolvedPackName}" (dir.name="${dir.name}")`);
+          logger.log(`[executeRenamePlan] Pass2 op${opIdx}: resolved pack="${resolvedPackName}" (dir.name="${dir.name}")`);
           fileUpdates.push({
             packName: resolvedPackName,
             from: op.from,
@@ -848,13 +849,13 @@ export const useFileSystemStore = create<FileSystemState>()(
           }
           await dir.removeEntry(tempName, { recursive: true });
         }
-        console.log(`[executeRenamePlan] Pass2 op${opIdx}: done`);
+        logger.log(`[executeRenamePlan] Pass2 op${opIdx}: done`);
       } catch (err) {
-        console.error(`[executeRenamePlan] Pass2 op${opIdx} FAILED:`, err);
+        logger.error(`[executeRenamePlan] Pass2 op${opIdx} FAILED:`, err);
       }
     }
 
-    console.log(`[executeRenamePlan] File updates collected:`, fileUpdates.map(u => `"${u.from}" -> "${u.to}" (pack: ${u.packName})`));
+    logger.log(`[executeRenamePlan] File updates collected:`, fileUpdates.map(u => `"${u.from}" -> "${u.to}" (pack: ${u.packName})`));
 
     // Determine if any packs were renamed
     let newActivePack = activePack;
@@ -900,7 +901,7 @@ export const useFileSystemStore = create<FileSystemState>()(
           for (let i = 0; i < newPackSlots.length; i++) {
             const slot = newPackSlots[i];
             if (slot && slot.sample && slot.sample.originalFilename === update.from) {
-              console.log(`[executeRenamePlan] Updating slot ${i} in pack "${update.packName}": "${update.from}" -> "${update.to}"`);
+              logger.log(`[executeRenamePlan] Updating slot ${i} in pack "${update.packName}": "${update.from}" -> "${update.to}"`);
               newPackSlots[i] = {
                 ...slot,
                 sample: {
@@ -919,10 +920,10 @@ export const useFileSystemStore = create<FileSystemState>()(
           if (found) {
             newSlotsByPack[update.packName] = newPackSlots;
           } else {
-            console.warn(`[executeRenamePlan] Could not find slot with originalFilename="${update.from}" in pack "${update.packName}"`);
+            logger.warn(`[executeRenamePlan] Could not find slot with originalFilename="${update.from}" in pack "${update.packName}"`);
           }
         } else {
-          console.warn(`[executeRenamePlan] No slotsByPack entry for pack "${update.packName}"`);
+          logger.warn(`[executeRenamePlan] No slotsByPack entry for pack "${update.packName}"`);
         }
       }
 
@@ -939,7 +940,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       const finalUnassigned = newActivePack ? (newUnassignedByPack[newActivePack] || state.unassignedFiles) : state.unassignedFiles;
       
       const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
-      console.log(`[executeRenamePlan] After state update: pendingChanges=${pendingChanges}`);
+      logger.log(`[executeRenamePlan] After state update: pendingChanges=${pendingChanges}`);
 
       return {
         activePack: newActivePack,
@@ -953,7 +954,7 @@ export const useFileSystemStore = create<FileSystemState>()(
       };
     });
 
-    console.log(`[executeRenamePlan] Complete`);
+    logger.log(`[executeRenamePlan] Complete`);
   },
   
   undo: () => {
