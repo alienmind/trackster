@@ -48,12 +48,15 @@ The hardware reads the SD card's `PCM` folder and maps files exclusively by thei
 
 ### 3.1 Architectural Choice: Vite + React
 **Vite + React** is the chosen architecture for this project due to:
+- **Dev Server**: `pnpm dev`
+- **Build**: `pnpm build`
 - **Zero Server-Side Logic:** Every component uses browser-only APIs (`showDirectoryPicker`, Web Audio, drag events), making a client-only static architecture the optimal choice.
 - **Faster DX:** Vite's dev server provides instant HMR.
 - **Simpler Deployment:** The build output is a static `dist/` folder deployable anywhere.
 - **Smaller Bundle:** No framework runtime overhead for routing or SSR.
 
 ### 3.2 Technology Stack
+- **Package Manager:** `pnpm` (Strictly `pnpm`, no `npm` or `yarn`)
 - **Build tool:** Vite (Fast, zero-config for React + TS)
 - **UI Framework:** React 19.x
 - **Language:** TypeScript 5.x (Strict mode catches index math bugs at compile time)
@@ -498,3 +501,13 @@ Trackster is a browser-based, offline-capable Progressive Web App for managing s
 
 ---
 
+
+---
+
+## 12. Development & AI Guidelines (LLM Guardrails)
+
+> [!IMPORTANT]
+> **Git Commit Rules**
+> - Do **NOT** automatically add and commit files to the git repository without explicit permission from the user.
+> - Always request the user's explicit instruction to commit changes.
+> - Verify that only intentional files are staged (e.g. avoid staging temporary folders like `tmp/`).
