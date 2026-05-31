@@ -279,7 +279,7 @@ const HARDWARE_LIBRARY: Record<string, any> = {
         <Laptop size={32} className="text-neutral-500" />
         <div className="flex gap-1.5 items-center">
             <div className="flex gap-1">
-                {[...Array(4)].map((_,i) => <div key={`v-${i}`} className="w-1.5 h-6 bg-white rounded-sm"></div>)}
+                {[...Array(4)].map((_,i) => <div key={`v-${i}`} className="w-1.5 h-9 bg-white rounded-sm"></div>)}
             </div>
             <div className="flex flex-col gap-1">
                 {[...Array(4)].map((_,i) => <div key={`h-${i}`} className="w-6 h-1.5 bg-white rounded-sm"></div>)}
@@ -544,17 +544,17 @@ export default function AlienMindSetup() {
   };
 
   return (
-    <div className="flex-1 w-full bg-neutral-900 text-neutral-200 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">
+    <div className="flex-1 w-full bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">
       
       {/* Header & Controls have been moved to Toolbar */}
 
       {/* Main Interactive Canvas */}
       <div 
         ref={containerRef}
-        className="relative flex-1 w-full bg-neutral-950/50 rounded-xl border border-white/5 shadow-2xl overflow-hidden touch-none"
+        className="relative flex-1 w-full bg-white/50 dark:bg-neutral-950/50 rounded-xl border border-black/5 dark:border-white/5 shadow-2xl overflow-hidden touch-none text-black/5 dark:text-white/5"
         onPointerDown={handleCanvasMouseDown}
         style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
           backgroundPosition: `${pan.x}px ${pan.y}px`,
           backgroundSize: '20px 20px',
           cursor: isPanning ? 'grabbing' : 'grab'
