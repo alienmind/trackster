@@ -1,17 +1,16 @@
-<img src="doc/trackster-logo.svg" align="center" width="50%" />
 # 🎛️ Tracks(ter)
 
+<img src="doc/trackster-logo.svg" align="center" width="50%" />
+
 > **⚠️ EXPERIMENTAL WARNING: POTENTIAL DATA LOSS ⚠️**
-> 
 > **This application is highly experimental and directly modifies the file system of your SD card. Bugs or unexpected behavior CAN and WILL lead to unrecoverable data loss (obliterated packs, renamed/deleted samples).**
-> 
 > **It is MANDATORY to keep a backup of your SD card before using this tool. You have been warned! We strongly recommend using the default "Read-Only (Simulated)" mode unless you are 100% sure you want to write changes to your card.**
 
-Trackster is an advanced, fully client-side web application designed for organizing, previewing, and managing your hybrid DAWless setup. It combines hardware-specific functionalities (like managing samples directly on your Novation Circuit Tracks SD card) with a comprehensive, interactive routing canvas for your entire studio.
+Trackster is an advanced, fully client-side web application designed for organizing, previewing, and managing your hybrid DAWless setup. It combines comprehensive, interactive routing canvas for your entire studio wit hardware-specific functionalities (ie: managing samples directly on your Novation Circuit Tracks SD card)
 
 🌍 **Latest available**: [https://alienmind.github.io/trackster/](https://alienmind.github.io/trackster/)
 
-It leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server.
+The application leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server.
 
 ![Trackster – DAWless documentation diagrams](doc/screenshot01.png)
 
