@@ -34,7 +34,7 @@ interface UIState {
 
 const storeCreator: StateCreator<UIState> = (set) => ({
   activePage: 0,
-  activeMainView: 'packs',
+  activeMainView: 'overview',
   selectedPadIndex: null,
   isCommitDialogOpen: false,
   notifications: [],
