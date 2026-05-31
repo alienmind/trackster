@@ -39,9 +39,17 @@ Draft: Expand the application to interface directly with other hardware synthesi
 
 ---
 
-## Grind Specific - Patch & Layout Saving
-* Save patches and physical layout parameters by MIDI.
-* Ability to take/upload a picture of the setup and document it with a custom name.
+## Grind / Grindr Specific - Visual Engine Map & Interactive Patch Bay Guide
+
+* **Patch & Layout Saving**:
+  * Save patches and physical layout parameters by MIDI.
+  * Ability to take/upload a picture of the setup and document it with a custom name.
+* **Visual Engine Map & Knob Guide**:
+  * Interactive selector to visualize different synth engines (e.g., Wavetable, FM, Karplus-Strong).
+  * Hovering or clicking on a knob explains its exact function and sonic behavior in the context of the selected engine.
+* **Interactive Patch Bay Overlay**:
+  * Visual hot-spots mapped directly on top of the physical patch bay ports in the device image.
+  * Hovering over a port reveals a tooltip explaining its role (CV/Gate input, output modulation), voltage specifications, and patching tips/suggestions.
 
 ---
 
