@@ -391,6 +391,160 @@ export default function AlienMindSetup() {
   const panRef = useRef(pan);
   useEffect(() => { panRef.current = pan; }, [pan]);
 
+  // Touch gesture & pointer tracking
+  const activePointers = useRef<Map<number, PointerEvent>>(new Map());
+  const [isPinching, setIsPinching] = useState(false);
+  const isPinchingRef = useRef(isPinching);
+  useEffect(() => { isPinchingRef.current = isPinching; }, [isPinching]);
+  const pinchStartRef = useRef<{
+    distance: number;
+    zoom: number;
+    pan: { x: number; y: number };
+    midpoint: { x: number; y: number };
+  } | null>(null);
+
+  // Auto-fit function to adjust zoom/pan to fit all nodes on screen
+  const fitToContainer = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const containerWidth = rect.width;
+    const containerHeight = rect.height;
+
+    if (containerWidth === 0 || containerHeight === 0) return;
+
+    const activeNodes = Object.values(nodes);
+    if (activeNodes.length === 0) return;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    activeNodes.forEach(node => {
+      const blueprint = HARDWARE_LIBRARY[node.type];
+      const width = blueprint?.width || 300;
+      const height = 400; // estimated height
+      
+      if (node.x < minX) minX = node.x;
+      if (node.x + width > maxX) maxX = node.x + width;
+      if (node.y < minY) minY = node.y;
+      if (node.y + height > maxY) maxY = node.y + height;
+    });
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+
+    const padding = 60;
+    const targetWidth = contentWidth + padding * 2;
+    const targetHeight = contentHeight + padding * 2;
+
+    const zoomX = containerWidth / targetWidth;
+    const zoomY = containerHeight / targetHeight;
+    const newZoom = Math.max(0.1, Math.min(3, Math.min(zoomX, zoomY)));
+
+    const newPanX = (containerWidth - contentWidth * newZoom) / 2 - minX * newZoom;
+    const newPanY = (containerHeight - contentHeight * newZoom) / 2 - minY * newZoom;
+
+    setZoom(newZoom);
+    setPan({ x: newPanX, y: newPanY });
+  };
+
+  // Run fit once initially on load
+  const initialFitRef = useRef(false);
+  useEffect(() => {
+    if (Object.keys(nodes).length > 0 && containerRef.current && !initialFitRef.current) {
+      const timer = setTimeout(() => {
+        fitToContainer();
+        initialFitRef.current = true;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [nodes]);
+
+  // Maintain fitting on resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (initialFitRef.current) {
+        fitToContainer();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [nodes]);
+
+  // Global tracking of pointer events to coordinate gestures properly
+  useEffect(() => {
+    const handleGlobalPointerDown = (e: PointerEvent) => {
+      activePointers.current.set(e.pointerId, e);
+
+      if (activePointers.current.size === 2) {
+        // Cancel ongoing node/cable drags
+        setDraggingNode(null);
+        setDraggedCable(null);
+        setDraggedLabel(null);
+        setIsPanning(false);
+        setHoveredNodeId(null);
+        
+        setIsPinching(true);
+        
+        const pointers = Array.from(activePointers.current.values());
+        const p1 = pointers[0]!;
+        const p2 = pointers[1]!;
+        const dx = p1.clientX - p2.clientX;
+        const dy = p1.clientY - p2.clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        const midpoint = {
+          x: (p1.clientX + p2.clientX) / 2,
+          y: (p1.clientY + p2.clientY) / 2
+        };
+
+        pinchStartRef.current = {
+          distance,
+          zoom: zoomRef.current,
+          pan: { ...panRef.current },
+          midpoint
+        };
+      }
+    };
+
+    const handleGlobalPointerUp = (e: PointerEvent) => {
+      activePointers.current.delete(e.pointerId);
+      
+      if (activePointers.current.size < 2) {
+        setIsPinching(false);
+        pinchStartRef.current = null;
+      }
+      
+      if (activePointers.current.size === 0) {
+        setIsPanning(false);
+        setPanStart(null);
+      } else if (activePointers.current.size === 1) {
+        // If we were pinching, transition the remaining pointer to panning
+        if (isPinchingRef.current) {
+          const remainingPointer = Array.from(activePointers.current.values())[0]!;
+          setIsPanning(true);
+          setPanStart({
+            x: remainingPointer.clientX - panRef.current.x,
+            y: remainingPointer.clientY - panRef.current.y
+          });
+        }
+      }
+    };
+
+    window.addEventListener('pointerdown', handleGlobalPointerDown);
+    window.addEventListener('pointerup', handleGlobalPointerUp, { capture: true });
+    window.addEventListener('pointercancel', handleGlobalPointerUp, { capture: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleGlobalPointerDown);
+      window.removeEventListener('pointerup', handleGlobalPointerUp, { capture: true });
+      window.removeEventListener('pointercancel', handleGlobalPointerUp, { capture: true });
+    };
+  }, []);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -508,7 +662,7 @@ export default function AlienMindSetup() {
     e.stopPropagation();
     const nodeState = nodes[nodeId]!;
     if (nodeState.type === 'circuit') {
-       setActiveMainView('packs');
+       setActiveMainView('circuit');
     } else {
        alert(`The configuration panel for the ${HARDWARE_LIBRARY[nodeState.type].model} is not yet implemented.`);
     }
@@ -537,6 +691,48 @@ export default function AlienMindSetup() {
   };
 
   const handleMouseMove = (e: any) => {
+    // Keep track of moving touch points
+    if (activePointers.current.has(e.pointerId)) {
+      activePointers.current.set(e.pointerId, e);
+    }
+
+    // Handle 2-finger pinch gesture calculations
+    if (isPinchingRef.current && pinchStartRef.current && activePointers.current.size === 2) {
+      const pointers = Array.from(activePointers.current.values());
+      const p1 = pointers[0]!;
+      const p2 = pointers[1]!;
+      
+      const dx = p1.clientX - p2.clientX;
+      const dy = p1.clientY - p2.clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      const midpoint = {
+        x: (p1.clientX + p2.clientX) / 2,
+        y: (p1.clientY + p2.clientY) / 2
+      };
+
+      const scale = distance / pinchStartRef.current.distance;
+      const newZoom = Math.max(0.1, Math.min(3, pinchStartRef.current.zoom * scale));
+
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const localX = midpoint.x - rect.left;
+        const localY = midpoint.y - rect.top;
+        
+        const midDeltaX = midpoint.x - pinchStartRef.current.midpoint.x;
+        const midDeltaY = midpoint.y - pinchStartRef.current.midpoint.y;
+
+        const zoomRatio = newZoom / pinchStartRef.current.zoom;
+        const newPanX = localX - (localX - (pinchStartRef.current.pan.x + midDeltaX)) * zoomRatio;
+        const newPanY = localY - (localY - (pinchStartRef.current.pan.y + midDeltaY)) * zoomRatio;
+
+        setZoom(newZoom);
+        setPan({ x: newPanX, y: newPanY });
+      }
+      return;
+    }
+
     if (draggedLabel && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const mouseX = (e.clientX - rect.left - pan.x) / zoomRef.current;
@@ -590,6 +786,25 @@ export default function AlienMindSetup() {
   };
 
   const handleMouseUp = (e: any) => {
+    // Register touch release
+    activePointers.current.delete(e.pointerId);
+
+    // If another pointer is still active (e.g. multi-touch), don't end interaction yet
+    if (activePointers.current.size > 0) {
+      if (activePointers.current.size === 1 && isPinchingRef.current) {
+        // Transition remaining pointer to panning
+        const remainingPointer = Array.from(activePointers.current.values())[0]!;
+        setIsPanning(true);
+        setPanStart({
+          x: remainingPointer.clientX - panRef.current.x,
+          y: remainingPointer.clientY - panRef.current.y
+        });
+        setIsPinching(false);
+        pinchStartRef.current = null;
+      }
+      return;
+    }
+
     // Handle cable drop target assignment
     if (routingMode !== 'logical' && draggedCable && containerRef.current) {
        const elements = document.elementsFromPoint(e.clientX, e.clientY);
@@ -628,6 +843,8 @@ export default function AlienMindSetup() {
     setPanStart(null);
     setHoveredNodeId(null);
     setDraggingNode(null);
+    setIsPinching(false);
+    pinchStartRef.current = null;
   };
 
   const handleMouseMoveRef = useRef(handleMouseMove);
@@ -639,7 +856,7 @@ export default function AlienMindSetup() {
   });
 
   useEffect(() => {
-    if (draggingNode || draggedCable || draggedLabel || isPanning) {
+    if (draggingNode || draggedCable || draggedLabel || isPanning || isPinching) {
       document.body.style.userSelect = 'none';
       const moveHandler = (e: any) => handleMouseMoveRef.current(e);
       const upHandler = (e: any) => handleMouseUpRef.current(e);
@@ -655,12 +872,20 @@ export default function AlienMindSetup() {
         window.removeEventListener('pointercancel', upHandler);
       };
     }
-  }, [!!draggingNode, !!draggedCable, !!draggedLabel, isPanning]);
+  }, [!!draggingNode, !!draggedCable, !!draggedLabel, isPanning, isPinching]);
 
   const handleCanvasMouseDown = (e: any) => {
     if ((e.target as Element).closest('.hardware-node') || (e.target as Element).closest('header') || (e.target as Element).closest('button')) return;
-    setIsPanning(true);
-    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    
+    // Disable pointer capture for touch events to avoid scrolling interference
+    if (e.pointerType === 'touch') {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    }
+    
+    if (activePointers.current.size <= 1) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
   };
 
   return (
@@ -1010,7 +1235,7 @@ export default function AlienMindSetup() {
             setPan({ x: cx - (cx - pan.x) * (z / zoom), y: cy - (cy - pan.y) * (z / zoom) });
             setZoom(z);
           }} className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded transition-colors text-neutral-400 hover:text-white font-bold" title="Zoom Out">-</button>
-          <span className="text-[10px] font-mono w-10 text-center cursor-pointer hover:text-cyan-400" onClick={() => { setZoom(1); setPan({x:0, y:0}); }} title="Reset View">{Math.round(zoom * 100)}%</span>
+          <span className="text-[10px] font-mono w-10 text-center cursor-pointer hover:text-cyan-400 font-bold" onClick={fitToContainer} title="Reset View & Fit to Screen">{Math.round(zoom * 100)}%</span>
           <button onClick={() => {
             const z = Math.min(3, zoom * 1.2);
             const rect = containerRef.current!.getBoundingClientRect();
