@@ -25,8 +25,7 @@ import * as Icons from 'lucide-react';
 import { ThemeToggle } from './components/Core/ThemeToggle';
 import pkg from '../package.json';
 
-import PackOrganizer from './components/Circuit/PackOrganizer/PackOrganizer';
-import SampleOrganizer from './components/Circuit/SampleOrganizer/SampleOrganizer';
+import CircuitTracksLayout from './components/Circuit/CircuitTracksLayout';
 import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
 import OverviewTab from './components/Overview/OverviewTab';
 
@@ -165,10 +164,8 @@ export default function App() {
             <>
               {activeMainView === 'overview' ? (
                 <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
-              ) : activeMainView === 'packs' ? (
-                <PackOrganizer />
               ) : (
-                <SampleOrganizer />
+                <CircuitTracksLayout />
               )}
               {activeMainView !== 'overview' && <PendingChangesPane />}
             </>
