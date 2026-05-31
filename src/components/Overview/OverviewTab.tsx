@@ -750,7 +750,18 @@ export default function AlienMindSetup() {
                                    <option value="">- None -</option>
                                    {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
                                 </select>
-                            </div>
+                             </div>
+                         </div>
+                         
+                         {/* Logical Routing */}
+                         <div className="flex flex-col gap-1 mt-1 border-t border-neutral-800 pt-2">
+                            <label className="text-[9px] text-yellow-500 uppercase font-bold">Logical MIDI Routing (Channels)</label>
+                            <textarea 
+                                className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 resize-none h-12 outline-none focus:border-neutral-500 leading-tight text-[10px]"
+                                value={nodeState.midiChannels || ''}
+                                placeholder="e.g. Expects Input Ch 3"
+                                onChange={(e: any) => setNodes(p => ({...p, [nodeId]: {...p[nodeId]! as OverviewNode, midiChannels: e.target.value}}))}
+                            />
                          </div>
                          
                          {/* Origin Cable Managers */}
