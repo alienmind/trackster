@@ -26,6 +26,26 @@ const CABLE_TYPES: Record<string, any> = {
   midi_usb: { label: "MIDI: USB Data", category: "midi", color: "#3b82f6", stroke: 3, dash: "3 3", marker: "url(#arrowBlue)", filter: "none" }
 };
 
+// Logical MIDI Cables
+const LOGICAL_CABLE_TYPES: Record<string, any> = {
+  channel_1: { label: "Ch 1", category: "logical", color: "#f87171", stroke: 3, dash: "4 4", marker: "url(#arrowRed)", filter: "none" },
+  channel_2: { label: "Ch 2", category: "logical", color: "#fb923c", stroke: 3, dash: "4 4", marker: "url(#arrowOrange)", filter: "none" },
+  channel_3: { label: "Ch 3", category: "logical", color: "#fbbf24", stroke: 3, dash: "4 4", marker: "url(#arrowYellow)", filter: "none" },
+  channel_4: { label: "Ch 4", category: "logical", color: "#a3e635", stroke: 3, dash: "4 4", marker: "url(#arrowLime)", filter: "none" },
+  channel_5: { label: "Ch 5", category: "logical", color: "#4ade80", stroke: 3, dash: "4 4", marker: "url(#arrowGreen)", filter: "none" },
+  channel_6: { label: "Ch 6", category: "logical", color: "#34d399", stroke: 3, dash: "4 4", marker: "url(#arrowEmerald)", filter: "none" },
+  channel_7: { label: "Ch 7", category: "logical", color: "#2dd4bf", stroke: 3, dash: "4 4", marker: "url(#arrowTeal)", filter: "none" },
+  channel_8: { label: "Ch 8", category: "logical", color: "#22d3ee", stroke: 3, dash: "4 4", marker: "url(#arrowCyan)", filter: "none" },
+  channel_9: { label: "Ch 9", category: "logical", color: "#38bdf8", stroke: 3, dash: "4 4", marker: "url(#arrowSky)", filter: "none" },
+  channel_10: { label: "Ch 10", category: "logical", color: "#60a5fa", stroke: 3, dash: "4 4", marker: "url(#arrowBlue)", filter: "none" },
+  channel_11: { label: "Ch 11", category: "logical", color: "#818cf8", stroke: 3, dash: "4 4", marker: "url(#arrowIndigo)", filter: "none" },
+  channel_12: { label: "Ch 12", category: "logical", color: "#a78bfa", stroke: 3, dash: "4 4", marker: "url(#arrowViolet)", filter: "none" },
+  channel_13: { label: "Ch 13", category: "logical", color: "#c084fc", stroke: 3, dash: "4 4", marker: "url(#arrowPurple)", filter: "none" },
+  channel_14: { label: "Ch 14", category: "logical", color: "#e879f9", stroke: 3, dash: "4 4", marker: "url(#arrowFuchsia)", filter: "none" },
+  channel_15: { label: "Ch 15", category: "logical", color: "#f472b6", stroke: 3, dash: "4 4", marker: "url(#arrowPink)", filter: "none" },
+  channel_16: { label: "Ch 16", category: "logical", color: "#fb7185", stroke: 3, dash: "4 4", marker: "url(#arrowRose)", filter: "none" },
+};
+
 // Stable Visual Hardware Library
 const HARDWARE_LIBRARY: Record<string, any> = {
   minifreak: {
@@ -309,8 +329,12 @@ export default function AlienMindSetup() {
   const { setActiveMainView } = useUIStore();
   const nodes = useOverviewStore((s) => s.nodes);
   const connections = useOverviewStore((s) => s.connections);
+  const logicalConnections = useOverviewStore((s) => s.logicalConnections);
+  const routingMode = useOverviewStore((s) => s.routingMode);
+
   const setNodes = useOverviewStore((s) => s.setNodes);
   const setConnections = useOverviewStore((s) => s.setConnections);
+  const setLogicalConnections = useOverviewStore((s) => s.setLogicalConnections);
   const [draggingNode, setDraggingNode] = useState<any>(null);
   const [draggedCable, setDraggedCable] = useState<any>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<any>(null);
@@ -495,7 +519,8 @@ export default function AlienMindSetup() {
            const canvasX = e.clientX - rect.left - pan.x;
            const canvasY = e.clientY - rect.top - pan.y;
            
-           setConnections(prev => {
+           const activeSetter = routingMode === 'physical' ? setConnections : setLogicalConnections;
+           activeSetter(prev => {
                const newConns = { ...prev };
                const conn = { ...newConns[draggedCable.id] };
                const targetNode = nodes[nodeId]!;
@@ -571,13 +596,27 @@ export default function AlienMindSetup() {
             <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a855f7" /></marker>
             <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3b82f6" /></marker>
             <marker id="arrowEmerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#10b981" /></marker>
+            <marker id="arrowRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f87171" /></marker>
+            <marker id="arrowYellow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24" /></marker>
+            <marker id="arrowLime" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a3e635" /></marker>
+            <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4ade80" /></marker>
+            <marker id="arrowTeal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf" /></marker>
+            <marker id="arrowSky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#38bdf8" /></marker>
+            <marker id="arrowIndigo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#818cf8" /></marker>
+            <marker id="arrowViolet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a78bfa" /></marker>
+            <marker id="arrowFuchsia" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e879f9" /></marker>
+            <marker id="arrowPink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f472b6" /></marker>
+            <marker id="arrowRose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fb7185" /></marker>
             
             <filter id="glowCyan"><feGaussianBlur stdDeviation="2" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
             <filter id="glowOrange"><feGaussianBlur stdDeviation="2" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
             <filter id="glowPurple"><feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
           </defs>
 
-          {Object.entries(connections).map(([id, conn]) => {
+          {[
+            ...Object.entries(connections).map(([id, conn]) => ({ id, conn, isLogical: false, isActive: routingMode === 'physical' })),
+            ...Object.entries(logicalConnections).map(([id, conn]) => ({ id, conn, isLogical: true, isActive: routingMode === 'logical' }))
+          ].map(({ id, conn, isLogical, isActive }) => {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
 
@@ -596,9 +635,10 @@ export default function AlienMindSetup() {
                pathData = `M ${startX} ${startY} C ${startX + 100} ${startY}, ${endX - 100} ${endY}, ${endX} ${endY}`;
             }
             
-            const style = CABLE_TYPES[conn.type];
+            const style = isLogical ? LOGICAL_CABLE_TYPES[conn.type] : CABLE_TYPES[conn.type];
+            if (!style) return null;
             return (
-              <g key={`cable-${id}`}>
+              <g key={`cable-${id}`} style={{ opacity: isActive ? 1 : 0.15, pointerEvents: isActive ? "auto" : "none", transition: "opacity 0.3s" }}>
                 <path d={pathData} stroke={style.color} strokeWidth={style.stroke} fill="none" markerEnd={isDraggingEnd ? "" : style.marker} filter={style.filter} strokeDasharray={style.dash} className={style.animate ? "animate-pulse" : ""} />
                 {/* Draggable Handles */}
                 <circle cx={startX} cy={startY} r="6" fill={style.color} className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onPointerDown={(e: any) => handleCableDragStart(e, id, 'source')} />
@@ -612,7 +652,10 @@ export default function AlienMindSetup() {
         </svg>
 
         {/* Cable Labels (Editable) */}
-        {Object.entries(connections).map(([id, conn]) => {
+        {[
+            ...Object.entries(connections).map(([id, conn]) => ({ id, conn, isLogical: false, isActive: routingMode === 'physical' })),
+            ...Object.entries(logicalConnections).map(([id, conn]) => ({ id, conn, isLogical: true, isActive: routingMode === 'logical' }))
+          ].map(({ id, conn, isLogical }) => {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
             const startX = isDraggingStart ? draggedCable.x : nodes[conn.source]!.x + conn.startOffset.x;
@@ -636,7 +679,8 @@ export default function AlienMindSetup() {
                midY = getBezier(0.5, startY, startY, endY, endY);
             }
             
-            const style = CABLE_TYPES[conn.type];
+            const style = isLogical ? LOGICAL_CABLE_TYPES[conn.type] : CABLE_TYPES[conn.type];
+            if (!style) return null;
 
             return (
               <div key={`label-${id}`} className="absolute z-20 pointer-events-none" style={{ left: midX, top: midY, transform: 'translate(-50%, -50%)' }}>

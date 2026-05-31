@@ -8,8 +8,7 @@ import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { del } from 'idb-keyval';
 import DisclaimerModal from '../../Core/DisclaimerModal/DisclaimerModal';
-import { useOverviewStore } from '../../../stores/useOverviewStore';
-import { DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../../stores/useOverviewStore';
+import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS, DEFAULT_LOGICAL_CONNECTIONS } from '../../../stores/useOverviewStore';
 
 export default function Toolbar() {
   const { rootHandle, activePack, workspaceMode, setWorkspaceMode } = useFileSystemStore();
@@ -19,6 +18,8 @@ export default function Toolbar() {
   const autoArrange = useOverviewStore(s => s.autoArrange);
   const saveLayout = useOverviewStore(s => s.saveLayout);
   const copyLayout = useOverviewStore(s => s.copyLayout);
+  const routingMode = useOverviewStore(s => s.routingMode);
+  const setRoutingMode = useOverviewStore(s => s.setRoutingMode);
 
   const hasPack = !!activePack;
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
@@ -194,16 +195,38 @@ export default function Toolbar() {
       )}
       
       {activeMainView === 'overview' && (
-        <div className="h-12 px-4 flex items-center justify-end bg-card/50 border-t border-border/50 gap-2">
-           <Button variant="secondary" size="sm" onClick={() => resetLayout(DEFAULT_NODES, DEFAULT_CONNECTIONS)}>
-             <Icons.RefreshCw size={14} className="mr-2" /> Reset
-           </Button>
-           <Button variant="secondary" size="sm" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })}>
-             <Icons.LayoutGrid size={14} className="mr-2" /> Rearrange
-           </Button>
-           <Button variant="default" size="sm" onClick={saveLayout} onDoubleClick={copyLayout}>
-             <Icons.Save size={14} className="mr-2" /> Save
-           </Button>
+        <div className="h-12 px-4 flex items-center justify-between bg-card/50 border-t border-border/50 gap-2">
+           <div className="flex bg-muted p-1 rounded-md">
+             <button
+               onClick={() => setRoutingMode('physical')}
+               className={clsx(
+                 "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
+                 routingMode === 'physical' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
+               )}
+             >
+               Physical Cabling
+             </button>
+             <button
+               onClick={() => setRoutingMode('logical')}
+               className={clsx(
+                 "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
+                 routingMode === 'logical' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
+               )}
+             >
+               Logical MIDI Routing
+             </button>
+           </div>
+           <div className="flex items-center gap-2">
+             <Button variant="secondary" size="sm" onClick={() => resetLayout(DEFAULT_NODES, DEFAULT_CONNECTIONS, DEFAULT_LOGICAL_CONNECTIONS)}>
+               <Icons.RefreshCw size={14} className="mr-2" /> Reset
+             </Button>
+             <Button variant="secondary" size="sm" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })}>
+               <Icons.LayoutGrid size={14} className="mr-2" /> Rearrange
+             </Button>
+             <Button variant="default" size="sm" onClick={saveLayout} onDoubleClick={copyLayout}>
+               <Icons.Save size={14} className="mr-2" /> Save
+             </Button>
+           </div>
         </div>
       )}
       <DisclaimerModal isOpen={isDisclaimerOpen} onClose={() => setIsDisclaimerOpen(false)} />

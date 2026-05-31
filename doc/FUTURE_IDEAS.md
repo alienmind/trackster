@@ -48,9 +48,9 @@ Draft: Your browser becomes your DAW!
 
 ## Strudel.cc Integration
 
-Draft: Seamlessly integrate Strudel live-coding to merge your hardware setup with algorithmic music generation. Drawing inspiration from the Algorave Hub architecture, this feature would include:
+Draft: Seamlessly integrate Strudel live-coding to merge your hardware setup with algorithmic music generation. This feature would include:
+* **Basic Strudel.cc integration**: Add a coding canvas where we live code the music directly (no LLM aid).
 * **AI-Assisted Composition**: Incorporate an LLM chat interface and the `strudel-mcp-server` to allow an AI to generate, play, and modify Strudel code on the fly via tools like "Play Music" or "Get Pattern".
-* **Algorave Workspace**: Integrate a dedicated view combining a Code Editor, Pattern Examples library, AI Chat, and the active Strudel Player.
 * **Hardware MIDI Mapping**: Map algorithmic Strudel patterns directly to the logical MIDI channels of connected hardware (e.g., routing algorithmic drum sequences to the Circuit Tracks or generative melodies to the MiniFreak).
 * **MIDI-to-Strudel Support**: Utilize scripts to convert recorded MIDI files into editable Strudel syntax for further algorithmic manipulation.
 * **Layout Syncing**: Save Strudel sketches alongside your DAWless hardware routing configurations to instantly recall entire studio states.
