@@ -41,12 +41,12 @@ interface OverviewState {
 }
 
 export const DEFAULT_NODES: Record<string, OverviewNode> = {
-  n_circuit: { id: 'n_circuit', type: 'circuit', x: 450, y: 500, zIndex: 10, isExpanded: true, overview: 'Brain. Sequences drums & handles sidechain ducking.', audioIn: 'S-1 / Grind (Mono)', audioOut: 'Flow8 Ch 3/4', midiIn: '-', midiOut: 'Thru chain', midiThru: '-' },
-  n_grind: { id: 'n_grind', type: 'grind', x: 50, y: 400, zIndex: 11, isExpanded: true, overview: 'Aggressive bass/lead synth. Needs sidechain.', audioIn: '-', audioOut: 'Circuit In 1', midiIn: 'From MiniFreak', midiOut: '-', midiThru: 'To S-1' },
-  n_s1: { id: 'n_s1', type: 's1', x: 50, y: 680, zIndex: 12, isExpanded: true, overview: 'Sub bass or portable chord stabber.', audioIn: '-', audioOut: 'Circuit In 2', midiIn: 'From Grind Thru', midiOut: '-', midiThru: '-' },
-  n_minifreak: { id: 'n_minifreak', type: 'minifreak', x: 50, y: 100, zIndex: 13, isExpanded: true, overview: 'Polyphonic pads. Keeps full stereo image.', audioIn: '-', audioOut: 'Flow8 Ch 1/2', midiIn: 'From Circuit', midiOut: '-', midiThru: 'To Grind' },
-  n_flow8: { id: 'n_flow8', type: 'flow8', x: 800, y: 250, zIndex: 14, isExpanded: true, overview: 'Central mixer. Maintains stereo & EQs.', audioIn: 'Synths + Circuit', audioOut: 'USB Multitrack', midiIn: '-', midiOut: '-', midiThru: '-' },
-  n_ableton: { id: 'n_ableton', type: 'ableton', x: 1100, y: 300, zIndex: 15, isExpanded: true, overview: 'Final recording, FX, and mastering.', audioIn: 'USB Flow8', audioOut: 'Master', midiIn: '-', midiOut: '-', midiThru: '-' },
+  n_circuit: { id: 'n_circuit', type: 'circuit', x: 1486, y: 484, zIndex: 38, isExpanded: true, overview: 'Brain. Sequences drums & handles sidechain ducking.', audioIn: 'S-1 / Grind (Mono)', audioOut: 'Flow8 Ch 3/4', midiIn: '-', midiOut: 'Thru chain', midiThru: '-' },
+  n_grind: { id: 'n_grind', type: 'grind', x: 87, y: 688, zIndex: 40, isExpanded: true, overview: 'Aggressive bass/lead synth. Needs sidechain.', audioIn: '-', audioOut: 'Circuit In 1', midiIn: 'From MiniFreak', midiOut: '-', midiThru: 'To S-1' },
+  n_s1: { id: 'n_s1', type: 's1', x: 1002, y: 744, zIndex: 41, isExpanded: true, overview: 'Sub bass or portable chord stabber.', audioIn: '-', audioOut: 'Circuit In 2', midiIn: 'From Grind Thru', midiOut: '-', midiThru: '-' },
+  n_minifreak: { id: 'n_minifreak', type: 'minifreak', x: 81, y: 38, zIndex: 42, isExpanded: true, overview: 'Polyphonic pads. Keeps full stereo image.', audioIn: '-', audioOut: 'Flow8 Ch 1/2', midiIn: 'From Circuit', midiOut: '-', midiThru: 'To Grind' },
+  n_flow8: { id: 'n_flow8', type: 'flow8', x: 2090, y: 225, zIndex: 37, isExpanded: true, overview: 'Central mixer. Maintains stereo & EQs.', audioIn: 'Synths + Circuit', audioOut: 'USB Multitrack', midiIn: '-', midiOut: '-', midiThru: '-' },
+  n_ableton: { id: 'n_ableton', type: 'ableton', x: 2730, y: 282, zIndex: 36, isExpanded: true, overview: 'Final recording, FX, and mastering.', audioIn: 'USB Flow8', audioOut: 'Master', midiIn: '-', midiOut: '-', midiThru: '-' },
 };
 
 export const DEFAULT_CONNECTIONS: Record<string, OverviewConnection> = {
