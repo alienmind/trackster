@@ -32,20 +32,19 @@ This feature would allow users to easily add new hardware synthesizers to the ap
 
 ## More Device Specific Features for my Gear
 
-Draft: Expand the application to interface directly with other hardware synthesizers.
+Draft: Expand the application to interface directly with other hardware synthesizers specific features.
 * **Roland S-1**: Patch management, logical CC mapping control from the browser, and backup handling.
 * **Arturia MiniFreak**: Librarian features, syncing patches directly over WebMIDI, and visualizing routing parameters.
-* ...
+* In general, the ability to "listen to midi" and save the sequenced pattern on any MIDI device.
 
 ---
 
-## Grind / Grindr Specific - Visual Engine Map & Interactive Patch Bay Guide
+## Behringer Grind Specific - Visual Engine Map & Interactive Patch Bay Guide
 
 * **Patch & Layout Saving**:
-  * Save patches and physical layout parameters by MIDI.
-  * Ability to take/upload a picture of the setup and document it with a custom name.
+  * Save patches and physical layout parameters by a picture. I.e. Ability to take/upload a picture of the setup and document it with a custom name.
 * **Visual Engine Map & Knob Guide**:
-  * Interactive selector to visualize different synth engines (e.g., Wavetable, FM, Karplus-Strong).
+  * Interactive selector to visualize different synth engines (e.g., Wavetable, FM, Karplus-Strong) and their related controls.
   * Hovering or clicking on a knob explains its exact function and sonic behavior in the context of the selected engine.
 * **Interactive Patch Bay Overlay**:
   * Visual hot-spots mapped directly on top of the physical patch bay ports in the device image.
@@ -55,25 +54,25 @@ Draft: Expand the application to interface directly with other hardware synthesi
 
 ## Circuit Tracks - Expand Audio Preview Features
 
-Draft: Create a fully featured, client-side web audio previewer for sample management.
-* Allow users to audition `.wav` samples in the browser before deploying them to SD cards.
-* Waveform rendering using WaveSurfer.js.
+Currently we can preview the samples on each bank, extend the ability to work with samples in general on a sample collection.
+* Allow users to audition any `.wav` samples in a collection before deploying them to SD cards.
 * ADSR envelope preview (applying fake envelopes to hear how it sounds truncated).
 
 ---
 
-## Sequencing Abilities!
+## Sequencer
 
-Draft: Your browser becomes your DAW!
+Your browser becomes your DAW!
 * Build a full multi-track sequencer into the browser that routes MIDI directly to the connected hardware.
-* Piano roll and step sequencer interfaces.
+* Piano roll, step sequencer interfaces or ... a Circuit Tracks emulation.
 * Clock synchronization to act as the master tempo for the DAWless setup.
+* Translate to/from Strudel (see next feature)
 
 ---
 
 ## Strudel.cc Integration
 
-Draft: Seamlessly integrate Strudel live-coding to merge your hardware setup with algorithmic music generation. This feature would include:
+Seamlessly integrate Strudel live-coding to merge your hardware setup with algorithmic music generation. This feature would include:
 * **Basic Strudel.cc integration**: Add a coding canvas where we live code the music directly (no LLM aid).
 * **AI-Assisted Composition**: Incorporate an LLM chat interface and the `strudel-mcp-server` to allow an AI to generate, play, and modify Strudel code on the fly via tools like "Play Music" or "Get Pattern".
 * **Hardware MIDI Mapping**: Map algorithmic Strudel patterns directly to the logical MIDI channels of connected hardware (e.g., routing algorithmic drum sequences to the Circuit Tracks or generative melodies to the MiniFreak).
