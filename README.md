@@ -9,9 +9,11 @@
 
 Trackster is an advanced, fully client-side web application designed for organizing, previewing, and managing your hybrid DAWless setup. It combines hardware-specific functionalities (like managing samples directly on your Novation Circuit Tracks SD card) with a comprehensive, interactive routing canvas for your entire studio.
 
-🌍 **Latest available**: [https://trackster.github.io/](https://trackster.github.io/) (or your configured GitHub Pages URL)
+🌍 **Latest available**: [https://alienmind.github.io/trackster/](https://alienmind.github.io/trackster/)
 
 It leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server.
+
+![Trackster – Logical MIDI Routing canvas](doc/screenshot01.png)
 
 ## Features
 
@@ -41,12 +43,10 @@ Trackster is a fully client-side application and is designed to be hosted static
 
 ### Deploying to GitHub Pages
 
-If you plan to fork this code and host your own version, a GitHub Actions workflow is already configured to automatically build and deploy the `main` branch to GitHub Pages.
+If you plan to fork this code and host your own version, a GitHub Actions workflow (`.github/workflows/deploy.yml`) is already configured to automatically build and deploy the `main` branch to GitHub Pages using **pnpm**.
 
-To enable GitHub Pages for this repository:
+To enable GitHub Pages for your fork:
 
-1. Go to the repository **Settings** on GitHub.
-2. In the left sidebar, click on **Pages**.
-3. Under the **Build and deployment** section, change the Source from "Deploy from a branch" to **GitHub Actions**.
-4. If you are deploying to a project repository (e.g., `https://your-username.github.io/trackster/`), you will need to update the `base` path in `vite.config.ts`. Add `base: '/trackster/'` (or your repository name) to the configuration object. If deploying to a user site (`https://your-username.github.io/`), no changes are needed.
-5. Push your changes to the `main` branch or trigger the workflow manually from the **Actions** tab on GitHub.
+1. Make the repository **public** (GitHub Pages requires a paid plan for private repos).
+2. Enable Pages via **Settings → Pages** and set the source to **GitHub Actions**.
+3. Push to `main` (or trigger the workflow manually from the **Actions** tab) — the `VITE_BASE` env var is set automatically to match your repo name.
