@@ -20,7 +20,7 @@ import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateSc
 import BrowserWarning from './components/Core/BrowserWarning/BrowserWarning';
 import Toolbar from './components/Core/Toolbar/Toolbar';
 import { TagBadge } from './components/Core/TagBadge/TagBadge';
-import logoUrl from '../doc/trackster-logo.svg';
+import Logo from './components/Core/Logo';
 import * as Icons from 'lucide-react';
 import { ThemeToggle } from './components/Core/ThemeToggle';
 import pkg from '../package.json';
@@ -116,7 +116,7 @@ export default function App() {
         <div className="h-16 flex-none border-b border-border bg-card flex items-center px-4 justify-between">
           {/* Left part (logo) */}
           <div className="flex-1 flex items-center space-x-3">
-            <img src={logoUrl} alt="Trackster Logo" className="h-8 w-auto" />
+            <Logo className="h-8 w-auto text-foreground" />
           </div>
 
           {/* Center part */}
