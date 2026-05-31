@@ -6,7 +6,9 @@
 > **This application is highly experimental and directly modifies the file system of your SD card. Bugs or unexpected behavior CAN and WILL lead to unrecoverable data loss (obliterated packs, renamed/deleted samples).**
 > **It is MANDATORY to keep a backup of your SD card before using this tool. You have been warned! We strongly recommend using the default "Read-Only (Simulated)" mode unless you are 100% sure you want to write changes to your card.**
 
-Trackster is an advanced, fully client-side web application designed for organizing, previewing, and managing your hybrid DAWless setup. It combines comprehensive, interactive routing canvas for your entire studio wit hardware-specific functionalities (ie: managing samples directly on your Novation Circuit Tracks SD card)
+Trackster is an advanced, fully client-side web application designed for organizing, previewing, and managing a hybrid DAWless setup. 
+
+**Note**: This is a personal pet project created to keep track of all the needed information and serve as a "legend" for my specific hybrid dawless setup. It will obviously not work directly for you out of the box, as it's hardcoded for my hardware configuration! However, I may add options to customize the layout with new device types in the future.
 
 🌍 **Latest available**: [https://alienmind.github.io/trackster/](https://alienmind.github.io/trackster/)
 

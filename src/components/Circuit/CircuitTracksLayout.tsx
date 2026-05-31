@@ -11,7 +11,7 @@ import DisclaimerModal from '../Core/DisclaimerModal/DisclaimerModal';
 import { useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../Core/ui/tooltip';
 export default function CircuitTracksLayout() {
-  const { activePack, autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useFileSystemStore();
+  const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useFileSystemStore();
   const scanDuplicates = useAudioStore((s) => s.scanDuplicates);
   const { activePage, setActivePage } = useUIStore();
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
@@ -45,12 +45,6 @@ export default function CircuitTracksLayout() {
             </TooltipContent>
           </Tooltip>
 
-          {activePack && (
-            <div className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-md font-semibold text-foreground border border-border">
-              <Icons.FolderOpen size={16} />
-              <span className="truncate">{activePack}</span>
-            </div>
-          )}
 
           <div className="flex flex-col gap-2">
             <Button variant="default" className="justify-start" onClick={() => { autoTag(); autoArrange(); }}>

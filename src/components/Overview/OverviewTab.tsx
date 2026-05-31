@@ -13,9 +13,14 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Circle, Square, ChevronDown, ChevronRight, Laptop } from 'lucide-react';
+import { OverviewConnection, OverviewNode } from '../../stores/useOverviewStore';
+import { HARDWARE_LIBRARY } from '../../devices';
+import { Circle, Square, ChevronDown, ChevronRight } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
-import { useOverviewStore, OverviewNode, OverviewConnection, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../stores/useOverviewStore';
+import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../stores/useOverviewStore';
+import { Button } from '../Core/ui/button';
+import RemoveButton from '../Core/ui/RemoveButton';
+import * as Icons from 'lucide-react';
 
 // Technical Cable Dictionary
 const CABLE_TYPES: Record<string, any> = {
@@ -50,273 +55,32 @@ const LOGICAL_CABLE_TYPES: Record<string, any> = {
   channel_16: { label: "Ch 16", category: "logical", color: "#fb7185", stroke: 3, dash: "4 4", marker: "url(#arrowRose)", filter: "none" },
 };
 
-// Stable Visual Hardware Library
-const HARDWARE_LIBRARY: Record<string, any> = {
-  minifreak: {
-    brand: "Arturia", model: "MiniFreak Stellar", tagline: "POLYPHONIC SYNTH", width: 300,
-    theme: { border: "border-t-zinc-500", header: "bg-zinc-950", title: "text-zinc-300", badge: "bg-zinc-800 text-zinc-400" },
-    visual: () => (
-      <div className="w-full h-28 bg-neutral-900 rounded border border-neutral-700 flex flex-col justify-between p-2 shadow-inner pointer-events-none">
-         {/* Top Section */}
-         <div className="flex justify-between w-full px-1">
-           {/* Mod Matrix */}
-           <div className="grid grid-cols-5 gap-[2px] w-1/4">
-               {[...Array(25)].map((_,i) => <div key={`mod-${i}`} className="w-1 h-1 bg-neutral-600 rounded-full"></div>)}
-           </div>
-           {/* Center Knobs & Screen */}
-           <div className="flex flex-col items-center gap-1 w-1/2">
-               <div className="flex gap-2">
-                 {[...Array(4)].map((_,i) => (
-                   <div key={`oknob-${i}`} className="w-4 h-4 rounded-full bg-neutral-800 border-2 border-orange-500 flex items-center justify-center relative">
-                     <div className="absolute top-0 w-0.5 h-1.5 bg-white rounded-full"></div>
-                   </div>
-                 ))}
-               </div>
-               <div className="w-16 h-4 bg-cyan-950 rounded border border-cyan-800 flex items-center justify-center">
-                 <span className="text-[5px] text-cyan-400 font-mono">INIT_PRESET</span>
-               </div>
-           </div>
-           {/* Right Filter Knobs */}
-           <div className="grid grid-cols-3 gap-1 w-1/4">
-               {[...Array(6)].map((_,i) => <div key={`fknob-${i}`} className="w-3 h-3 rounded-full bg-neutral-700 border border-neutral-500"></div>)}
-           </div>
-         </div>
-         {/* Orange Stripe */}
-         <div className="w-full h-1 bg-orange-500 mt-auto mb-1 rounded-sm shadow-[0_0_5px_#f97316]"></div>
-         {/* Stellar Dark Keys */}
-         <div className="flex w-full bg-[#111] rounded h-8 border-t border-neutral-800">
-            {[...Array(15)].map((_,i) => (
-              <div key={`key-${i}`} className="flex-1 border-r border-neutral-800 relative bg-neutral-900">
-                {/* Black Key Simulation (Stellar edition implies inverted/dark look) */}
-                {[1,2,4,5,6,8,9,11,12,13].includes(i) && (
-                  <div className="absolute top-0 -left-1 w-2 h-4 bg-black rounded-b-sm z-10 shadow-sm border-x border-b border-neutral-800"></div>
-                )}
-              </div>
-            ))}
-         </div>
-      </div>
-    )
-  },
-  grind: {
-    brand: "Behringer", model: "Grind", tagline: "HYBRID SEMI-MODULAR", width: 340,
-    theme: { border: "border-t-[#8b4513]", header: "bg-[#2a1a10]", title: "text-orange-400", badge: "bg-[#3a2010] text-orange-200" },
-    visual: () => (
-      <div className="w-full bg-[#222] border-x-8 border-[#8b4513] p-2 flex flex-col gap-2 relative pointer-events-none rounded-sm shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
-        {/* Top Row: MIDI & Patchbay (2x16) */}
-        <div className="flex justify-between items-start w-full relative">
-            <div className="flex gap-1.5 ml-1 mt-1">
-                <div className="w-7 h-7 rounded-full bg-[#111] border border-neutral-600 shadow-inner flex items-center justify-center"><Circle size={10} className="text-neutral-500"/></div>
-                <div className="w-7 h-7 rounded-full bg-[#111] border border-neutral-600 shadow-inner flex items-center justify-center"><Circle size={10} className="text-neutral-500"/></div>
-            </div>
-            {/* 2x16 Patchbay */}
-            <div className="grid grid-cols-16 grid-rows-2 gap-[3px] border border-neutral-700 p-1.5 bg-[#151515] rounded-sm relative overflow-hidden">
-               {[...Array(32)].map((_,i) => (
-                 <div key={`patch-${i}`} className="w-2.5 h-2.5 rounded-full bg-black border border-neutral-600 shadow-[inset_0_1px_2px_rgba(0,0,0,1)]"></div>
-               ))}
-               {/* Overlapping Patch Cables */}
-               <svg className="absolute inset-0 w-full h-full z-10" style={{ overflow: 'visible' }}>
-                  <path d="M 10 5 C 30 -10, 50 -10, 70 5" stroke="#ef4444" strokeWidth="2" fill="none" strokeLinecap="round" className="drop-shadow-md" />
-                  <path d="M 120 5 C 130 20, 150 20, 160 15" stroke="#3b82f6" strokeWidth="2" fill="none" strokeLinecap="round" className="drop-shadow-md" />
-                  <path d="M 40 18 C 60 30, 90 30, 100 18" stroke="#10b981" strokeWidth="2" fill="none" strokeLinecap="round" className="drop-shadow-md" />
-               </svg>
-            </div>
-        </div>
-        <div className="w-full bg-orange-500 h-[2px] rounded-full opacity-80"></div>
-        
-        {/* Middle Row: Knobs 2x8 */}
-        <div className="grid grid-cols-8 gap-y-3 gap-x-2 w-full px-1">
-            {[...Array(16)].map((_,i) => (
-                <div key={`grind-knob-${i}`} className="flex flex-col items-center">
-                    <div className="w-7 h-7 rounded-full bg-[#1a1a1a] border-[3px] border-[#111] shadow-[0_2px_3px_rgba(0,0,0,0.5)] relative flex items-center justify-center">
-                        <div className="absolute top-0 w-0.5 h-2.5 bg-white rounded-full"></div>
-                    </div>
-                </div>
-            ))}
-        </div>
-        <div className="w-full bg-orange-500 h-[2px] rounded-full opacity-80 mt-1"></div>
-        
-        {/* Bottom Row: Sequencer Keys (Red) */}
-        <div className="flex justify-between items-end gap-1 mt-1 w-full px-1">
-            <div className="grid grid-cols-4 gap-1">
-                {[...Array(4)].map((_,i) => <div key={`seq-ctrl-${i}`} className="w-5 h-3 bg-neutral-800 rounded-sm border-b-2 border-neutral-950"></div>)}
-            </div>
-            <div className="flex gap-1.5">
-                {[...Array(8)].map((_,i) => (
-                  <div key={`seq-key-${i}`} className="w-6 h-5 bg-red-600 rounded-sm shadow-[0_0_8px_#ef4444] border-b-[3px] border-red-900 flex items-center justify-center">
-                    <div className="w-1.5 h-0.5 bg-white/50 rounded-full"></div>
-                  </div>
-                ))}
-            </div>
-        </div>
-      </div>
-    )
-  },
-  s1: {
-    brand: "Roland", model: "S-1 Tweak Synth", tagline: "AIRA COMPACT", width: 240,
-    theme: { border: "border-t-emerald-500", header: "bg-emerald-950", title: "text-emerald-400", badge: "bg-emerald-900 text-emerald-200" },
-    visual: () => (
-      <div className="w-full bg-[#151515] rounded border border-neutral-700 flex flex-col p-2 gap-2 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] pointer-events-none">
-         {/* Top Jacks */}
-         <div className="flex justify-between items-center w-full">
-           <span className="text-[7px] font-bold text-white tracking-widest italic ml-1">Roland <span className="font-normal text-emerald-500">S-1</span></span>
-           <div className="flex gap-1.5 mr-1">
-             {[...Array(5)].map((_,i) => <div key={`jack-${i}`} className="w-2.5 h-2.5 rounded-full bg-black border border-neutral-600 shadow-inner"></div>)}
-           </div>
-         </div>
-         
-         {/* Main controls (Screen + Knobs) */}
-         <div className="flex gap-2 w-full mt-1">
-           <div className="w-1/3 flex flex-col gap-1.5 items-center">
-             <div className="w-full bg-black border border-neutral-800 rounded p-1.5 flex justify-center shadow-inner">
-               <span className="text-red-500 font-mono text-[11px] font-bold tracking-widest leading-none drop-shadow-[0_0_4px_rgba(239,68,68,0.9)]">1.2.8.0</span>
-             </div>
-             <div className="w-6 h-6 mt-1 rounded-full bg-neutral-800 border-2 border-neutral-600 shadow-md relative"><div className="absolute top-1 w-1 h-1 bg-white rounded-full"></div></div>
-           </div>
-           <div className="w-2/3 grid grid-cols-4 gap-y-2 gap-x-1 pl-1">
-             {[...Array(12)].map((_,i) => (
-               <div key={`s1knob-${i}`} className="flex flex-col items-center">
-                 <div className={`w-4 h-4 rounded-full bg-neutral-800 border-2 border-neutral-600 flex items-center justify-center relative ${i%4===1 || i%4===2 ? 'border-t-teal-500/80' : 'border-t-orange-500/80'}`}>
-                   <div className="absolute top-0 w-0.5 h-1.5 bg-white rounded-full"></div>
-                 </div>
-               </div>
-             ))}
-           </div>
-         </div>
-         
-         {/* Upper sequence buttons */}
-         <div className="flex justify-between px-1 mt-1">
-           {[...Array(8)].map((_,i) => <div key={`btn-u-${i}`} className="w-4 h-2.5 bg-neutral-700 rounded-sm border-b-2 border-neutral-900 shadow-sm"></div>)}
-         </div>
-         
-         {/* Lower rubber piano buttons */}
-         <div className="grid grid-cols-16 gap-[2px] w-full h-5 mt-1">
-           {[1,1,0,0,1,0,1,0,1,1,1,1,1,1,0,1].map((isOrange, i) => (
-             <div key={`btn-l-${i}`} className={`rounded-sm border-b-[3px] shadow-sm flex items-center justify-center
-               ${isOrange ? 'bg-orange-500 border-orange-700' : 'bg-neutral-300 border-neutral-500'}`}>
-                 <span className="text-[4px] font-bold text-black/50">{i+1}</span>
-             </div>
-           ))}
-         </div>
-      </div>
-    )
-  },
-  circuit: {
-    brand: "Novation", model: "Circuit Tracks", tagline: "GROOVEBOX / SEQUENCER", width: 280,
-    theme: { border: "border-t-purple-500", header: "bg-purple-950", title: "text-purple-400", badge: "bg-purple-900 text-purple-200" },
-    visual: () => (
-      <div className="w-full bg-[#1c1c21] rounded-md border border-neutral-800 p-2 shadow-inner flex flex-col gap-2 pointer-events-none">
-         {/* Knobs */}
-         <div className="flex justify-between items-start mb-1 px-1">
-            <div className="w-6 h-6 rounded-full bg-neutral-800 border-2 border-neutral-600 flex items-center justify-center shadow-md"><div className="w-0.5 h-2 bg-white rounded-full -mt-2"></div></div>
-            <div className="flex flex-col gap-1 w-2/3">
-                <div className="flex justify-between px-1">
-                   {[...Array(4)].map((_,i) => <div key={`t-${i}`} className="w-5 h-5 rounded-full bg-neutral-800 border-2 border-purple-900/50 shadow-sm relative"><div className="absolute inset-1 rounded-full border border-purple-500/30"></div></div>)}
-                </div>
-                <div className="flex justify-between px-2">
-                   {[...Array(4)].map((_,i) => <div key={`b-${i}`} className="w-5 h-5 rounded-full bg-neutral-800 border-2 border-purple-900/50 shadow-sm relative"><div className="absolute inset-1 rounded-full border border-purple-500/30"></div></div>)}
-                </div>
-            </div>
-            <div className="w-7 h-7 rounded-full bg-neutral-800 border-2 border-neutral-600 flex items-center justify-center shadow-md"><div className="w-0.5 h-3 bg-white rounded-full -mt-2"></div></div>
-         </div>
-         {/* System buttons */}
-         <div className="flex flex-col gap-0.5">
-             <div className="flex justify-between gap-0.5">
-                 {[1,1,1,1,2,1,1].map((flex, i) => <div key={`sys1-${i}`} className="h-3 bg-[#111] rounded-sm border border-[#222]" style={{flex: flex}}></div>)}
-             </div>
-             <div className="flex justify-between gap-0.5">
-                 <div className="flex-1 h-3 bg-[#111] rounded-sm border border-[#222]"></div>
-                 <div className="flex-1 h-3 bg-purple-900/40 rounded-sm border border-[#222]"></div>
-                 <div className="flex-1 h-3 bg-[#111] rounded-sm border border-[#222]"></div>
-                 <div className="flex-1 h-3 bg-[#111] rounded-sm border border-[#222]"></div>
-                 <div className="flex-1 h-3 bg-[#111] rounded-sm border border-[#222]"></div>
-                 <div className="flex-[4] flex gap-0.5">{[...Array(4)].map((_,i) => <div key={`sys2-${i}`} className="flex-1 h-3 bg-[#111] rounded-sm border border-[#222]"></div>)}</div>
-                 <div className="flex-1 h-3 bg-[#111] rounded-sm border border-[#222]"></div>
-             </div>
-         </div>
-         {/* 4x8 Pads Grid */}
-         <div className="flex gap-1 mt-1">
-             <div className="w-4 flex flex-col gap-0.5">{[...Array(4)].map((_,i) => <div key={`L-${i}`} className="w-full flex-1 bg-[#111] rounded-sm border border-[#222]"></div>)}</div>
-             <div className="flex-1 grid grid-rows-4 grid-cols-8 gap-1 aspect-[2/1]">
-                 {[...Array(32)].map((_,i) => (
-                    <div key={`pad-${i}`} className={`rounded-sm shadow-[inset_0_0_4px_rgba(255,255,255,0.2)] ${i < 8 ? 'bg-[#00f0ff]' : i < 16 ? 'bg-[#00a2ff]' : 'bg-[#f000ff]'}`}></div>
-                 ))}
-             </div>
-             <div className="w-4 flex flex-col gap-0.5">
-                 <div className="w-full flex-1 bg-[#111] rounded-sm border border-[#222]"></div>
-                 <div className="w-full flex-1 bg-[#111] rounded-sm border border-[#222]"></div>
-                 <div className="w-full flex-1 bg-[#111] rounded-sm border border-[#222] flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div></div>
-                 <div className="w-full flex-1 bg-[#111] rounded-sm border border-[#222] flex items-center justify-center"><div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-green-400 border-b-[3px] border-b-transparent"></div></div>
-             </div>
-         </div>
-      </div>
-    )
-  },
-  flow8: {
-    brand: "Behringer", model: "Flow 8", tagline: "DIGITAL MIXER", width: 250,
-    theme: { border: "border-t-slate-300", header: "bg-slate-800", title: "text-white", badge: "bg-slate-700 text-slate-300" },
-    visual: () => (
-      <div className="w-full h-36 bg-zinc-200 rounded border-2 border-zinc-400 flex flex-col p-1.5 pointer-events-none relative overflow-hidden shadow-inner">
-        <div className="absolute top-0 left-0 w-full h-10 bg-zinc-300 border-b border-zinc-400"></div>
-        {/* Top XLRs */}
-        <div className="flex justify-between w-full mb-3 z-10 px-1">
-            <div className="flex gap-1.5">
-                {[...Array(4)].map((_,i) => <div key={`xlr-${i}`} className="w-5 h-5 rounded-full bg-black border border-neutral-400 flex items-center justify-center"><div className="w-1 h-1 rounded-full bg-zinc-700"></div></div>)}
-            </div>
-            <div className="flex gap-1.5">
-                {[...Array(2)].map((_,i) => <div key={`xlrout-${i}`} className="w-5 h-5 rounded-full bg-black border border-neutral-400 flex items-center justify-center"><div className="w-1 h-1 rounded-full bg-zinc-700"></div></div>)}
-            </div>
-        </div>
-        {/* Faders & Screen */}
-        <div className="flex w-full gap-2 z-10">
-            <div className="flex-1 flex gap-1">
-                {[...Array(6)].map((_,i) => (
-                    <div key={`fader-${i}`} className="flex-1 flex flex-col items-center">
-                        <div className="w-1.5 h-16 bg-neutral-900 rounded-full relative shadow-inner border border-neutral-700">
-                           <div className={`absolute w-4 h-5 bg-neutral-800 rounded shadow-[0_2px_4px_rgba(0,0,0,0.8)] -left-[5px] border-b-2 border-neutral-600 flex items-center justify-center ${i===5 ? 'bottom-2 border-red-500' : 'bottom-4'}`}>
-                               <div className="w-full h-0.5 bg-white/30"></div>
-                           </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <div className="w-1/3 flex flex-col items-center justify-end gap-1.5 pb-1">
-                 <div className="w-10 h-6 bg-cyan-950 border-2 border-neutral-800 rounded flex items-center justify-center shadow-inner">
-                     <span className="text-[4px] text-cyan-400">MAIN FX</span>
-                 </div>
-                 <div className="w-10 h-10 rounded-full bg-neutral-800 border-2 border-neutral-900 relative flex items-center justify-center shadow-lg">
-                    <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
-                        <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_3px_#22c55e]"></div>
-                        <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_3px_#22c55e]"></div>
-                        <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_3px_#22c55e]"></div>
-                    </div>
-                 </div>
-            </div>
-        </div>
-      </div>
-    )
-  },
-  ableton: {
-    brand: "Ableton", model: "Live 12", tagline: "DAW / MASTERING", width: 200,
-    theme: { border: "border-t-neutral-100", header: "bg-neutral-800", title: "text-white", badge: "bg-neutral-700 text-neutral-300" },
-    visual: () => (
-      <div className="w-full flex flex-col items-center justify-center py-6 pointer-events-none bg-neutral-900 rounded shadow-inner border border-neutral-800 gap-3">
-        <Laptop size={32} className="text-neutral-500" />
-        <div className="flex gap-1.5 items-center">
-            <div className="flex gap-1">
-                {[...Array(4)].map((_,i) => <div key={`v-${i}`} className="w-1.5 h-9 bg-white rounded-sm"></div>)}
-            </div>
-            <div className="flex flex-col gap-1">
-                {[...Array(4)].map((_,i) => <div key={`h-${i}`} className="w-6 h-1.5 bg-white rounded-sm"></div>)}
-            </div>
-        </div>
-      </div>
-    )
-  }
+
+const getPortsForNode = (blueprint: any) => {
+  if (!blueprint || !blueprint.ports) return [];
+  // Resolve side and offset into x,y coordinates relative to node top-left
+  return blueprint.ports.map((p: any) => {
+    let x = 0;
+    let y = 0;
+    if (p.side === 'left') {
+      x = 0;
+      y = p.offset;
+    } else if (p.side === 'right') {
+      x = blueprint.width;
+      y = p.offset;
+    } else if (p.side === 'top') {
+      x = p.offset;
+      y = 0;
+    } else if (p.side === 'bottom') {
+      x = p.offset;
+      // rough estimate of height since it's variable. Let's assume nodes are visually ~150px-200px tall. We'll stick to left/right for now for reliability.
+      y = 150; 
+    }
+    return { ...p, x, y };
+  });
 };
 
-// Defaults moved to useOverviewStore.ts
-
-export default function AlienMindSetup() {
+export default function OverviewTab() {
 
   useEffect(() => {
     // Initialize if empty
@@ -331,15 +95,10 @@ export default function AlienMindSetup() {
   }, []);
 
   const { setActiveMainView } = useUIStore();
-  const nodes = useOverviewStore((s) => s.nodes);
-  const connections = useOverviewStore((s) => s.connections);
-  const routingMode = useOverviewStore((s) => s.routingMode);
-
-  const setNodes = useOverviewStore((s) => s.setNodes);
-  const setConnections = useOverviewStore((s) => s.setConnections);
+  const { nodes, connections, routingMode, setNodes, setConnections, setRoutingMode, resetLayout, autoArrange, saveLayout, copyLayout, removeNode } = useOverviewStore();
   const [draggingNode, setDraggingNode] = useState<any>(null);
   const [draggedCable, setDraggedCable] = useState<any>(null);
-  const [hoveredNodeId, setHoveredNodeId] = useState<any>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const computedLogicalConnections = useMemo(() => {
     if (routingMode !== 'logical') return {};
@@ -664,7 +423,7 @@ export default function AlienMindSetup() {
     if (nodeState.type === 'circuit') {
        setActiveMainView('circuit');
     } else {
-       alert(`The configuration panel for the ${HARDWARE_LIBRARY[nodeState.type].model} is not yet implemented.`);
+       alert(`The configuration panel for the ${HARDWARE_LIBRARY[nodeState.type]?.model} is not yet implemented.`);
     }
   };
 
@@ -817,19 +576,47 @@ export default function AlienMindSetup() {
                const canvasX = e.clientX - rect.left - pan.x;
                const canvasY = e.clientY - rect.top - pan.y;
                
-               setConnections(prev => {
-                   const newConns = { ...prev };
-                   const conn = { ...newConns[draggedCable.id] };
-                   const targetNode = nodes[nodeId]!;
-                   
-                   if (draggedCable.endpoint === 'source') {
-                       conn.source = nodeId;
-                       conn.startOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
-                   } else {
-                       conn.target = nodeId;
-                       conn.endOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
-                   }
-                   newConns[draggedCable.id] = conn as OverviewConnection;
+                setConnections(prev => {
+                    const newConns = { ...prev };
+                    const conn = { ...newConns[draggedCable.id] };
+                    const targetNode = nodes[nodeId]!;
+                    const blueprint = HARDWARE_LIBRARY[targetNode.type];
+                    
+                    let closestPort = null;
+                    let minDistance = Infinity;
+                    if (blueprint) {
+                        const ports = getPortsForNode(blueprint);
+                        for (const p of ports) {
+                           const px = targetNode.x + p.x;
+                           const py = targetNode.y + p.y;
+                           const dist = Math.hypot(px - canvasX, py - canvasY);
+                           if (dist < minDistance) {
+                               minDistance = dist;
+                               closestPort = p;
+                           }
+                        }
+                    }
+                    
+                    if (draggedCable.endpoint === 'source') {
+                        conn.source = nodeId;
+                        if (closestPort && minDistance < 50) {
+                            conn.sourcePort = closestPort.id;
+                            conn.startOffset = { x: closestPort.x, y: closestPort.y };
+                        } else {
+                            conn.sourcePort = undefined;
+                            conn.startOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
+                        }
+                    } else {
+                        conn.target = nodeId;
+                        if (closestPort && minDistance < 50) {
+                            conn.targetPort = closestPort.id;
+                            conn.endOffset = { x: closestPort.x, y: closestPort.y };
+                        } else {
+                            conn.targetPort = undefined;
+                            conn.endOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
+                        }
+                    }
+                    newConns[draggedCable.id] = conn as OverviewConnection;
                    return newConns;
                });
            }
@@ -889,44 +676,82 @@ export default function AlienMindSetup() {
   };
 
   return (
-    <div className="flex-1 w-full bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">
-      
-      {/* Header & Controls have been moved to Toolbar */}
+    <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden text-neutral-800 dark:text-neutral-200">
+      <div className="flex flex-1 min-h-0">
+        
+        {/* Left Panel */}
+        <div className="w-64 bg-card border-r border-border p-4 flex flex-col gap-4 overflow-y-auto z-10 shrink-0 text-card-foreground">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Routing Mode</h2>
+            <Button
+              variant={routingMode === 'physical' ? 'default' : 'secondary'}
+              onClick={() => setRoutingMode('physical')}
+              className="w-full justify-start font-semibold shadow-md"
+            >
+              <Icons.Cable className="mr-2" size={16} />
+              Physical Cabling
+            </Button>
+            <Button
+              variant={routingMode === 'logical' ? 'default' : 'secondary'}
+              onClick={() => setRoutingMode('logical')}
+              className="w-full justify-start font-semibold shadow-md"
+            >
+              <Icons.Network className="mr-2" size={16} />
+              Logical MIDI
+            </Button>
+          </div>
 
-      {/* Main Interactive Canvas */}
-      <div 
-        ref={containerRef}
-        className="relative flex-1 w-full bg-white/50 dark:bg-neutral-950/50 rounded-xl border border-black/5 dark:border-white/5 shadow-2xl overflow-hidden touch-none text-black/5 dark:text-white/5"
-        onPointerDown={handleCanvasMouseDown}
-        style={{
-          backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
-          backgroundPosition: `${pan.x}px ${pan.y}px`,
-          backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
-          cursor: isPanning ? 'grabbing' : 'grab'
-        }}
-      >
-        <div className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }}>
+          <hr className="border-border my-2" />
+
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Layout Actions</h2>
+            <Button variant="secondary" onClick={() => resetLayout(DEFAULT_NODES, DEFAULT_CONNECTIONS)} className="w-full justify-start shadow-sm">
+              <Icons.RefreshCw size={14} className="mr-2" /> Reset
+            </Button>
+            <Button variant="secondary" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })} className="w-full justify-start shadow-sm">
+              <Icons.LayoutGrid size={14} className="mr-2" /> Rearrange
+            </Button>
+            <Button variant="default" onClick={saveLayout} onDoubleClick={copyLayout} className="w-full justify-start shadow-md">
+              <Icons.Save size={14} className="mr-2" /> Save
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Canvas Area */}
+        <div className="flex-1 w-full bg-neutral-100 dark:bg-neutral-900 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">
+          <div 
+            ref={containerRef}
+            className="relative flex-1 w-full bg-white/50 dark:bg-neutral-950/50 rounded-xl border border-black/5 dark:border-white/5 shadow-2xl overflow-hidden touch-none text-black/5 dark:text-white/5"
+            onPointerDown={handleCanvasMouseDown}
+            style={{
+              backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
+              backgroundPosition: `${pan.x}px ${pan.y}px`,
+              backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+              cursor: isPanning ? 'grabbing' : 'grab'
+            }}
+          >
+            <div className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }}>
         
         {/* SVG Canvas for Cables */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
           <defs>
-            {/* Reduced Marker sizes */}
-            <marker id="arrowCyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#06b6d4" /></marker>
-            <marker id="arrowOrange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f97316" /></marker>
-            <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a855f7" /></marker>
-            <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3b82f6" /></marker>
-            <marker id="arrowEmerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#10b981" /></marker>
-            <marker id="arrowRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f87171" /></marker>
-            <marker id="arrowYellow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24" /></marker>
-            <marker id="arrowLime" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a3e635" /></marker>
-            <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4ade80" /></marker>
-            <marker id="arrowTeal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf" /></marker>
-            <marker id="arrowSky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#38bdf8" /></marker>
-            <marker id="arrowIndigo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#818cf8" /></marker>
-            <marker id="arrowViolet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a78bfa" /></marker>
-            <marker id="arrowFuchsia" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e879f9" /></marker>
-            <marker id="arrowPink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f472b6" /></marker>
-            <marker id="arrowRose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fb7185" /></marker>
+            {/* Enlarged Marker sizes for clearer arrows */}
+            <marker id="arrowCyan" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#06b6d4" /></marker>
+            <marker id="arrowOrange" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f97316" /></marker>
+            <marker id="arrowPurple" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a855f7" /></marker>
+            <marker id="arrowBlue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3b82f6" /></marker>
+            <marker id="arrowEmerald" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#10b981" /></marker>
+            <marker id="arrowRed" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f87171" /></marker>
+            <marker id="arrowYellow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fbbf24" /></marker>
+            <marker id="arrowLime" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a3e635" /></marker>
+            <marker id="arrowGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4ade80" /></marker>
+            <marker id="arrowTeal" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf" /></marker>
+            <marker id="arrowSky" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#38bdf8" /></marker>
+            <marker id="arrowIndigo" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#818cf8" /></marker>
+            <marker id="arrowViolet" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a78bfa" /></marker>
+            <marker id="arrowFuchsia" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e879f9" /></marker>
+            <marker id="arrowPink" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f472b6" /></marker>
+            <marker id="arrowRose" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fb7185" /></marker>
             
             <filter id="glowCyan"><feGaussianBlur stdDeviation="2" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
             <filter id="glowOrange"><feGaussianBlur stdDeviation="2" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
@@ -940,10 +765,20 @@ export default function AlienMindSetup() {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
 
-            const startX = isDraggingStart ? draggedCable.x : nodes[conn.source]!.x + conn.startOffset.x;
-            const startY = isDraggingStart ? draggedCable.y : nodes[conn.source]!.y + conn.startOffset.y;
-            const endX = isDraggingEnd ? draggedCable.x : nodes[conn.target]!.x + conn.endOffset.x;
-            const endY = isDraggingEnd ? draggedCable.y : nodes[conn.target]!.y + conn.endOffset.y;
+            const sourceNode = nodes[conn.source];
+            const targetNode = nodes[conn.target];
+            if (!sourceNode || !targetNode) return null;
+
+            const sourcePorts = getPortsForNode(HARDWARE_LIBRARY[sourceNode.type]);
+            const targetPorts = getPortsForNode(HARDWARE_LIBRARY[targetNode.type]);
+
+            const sourcePortDef = conn.sourcePort ? sourcePorts.find((p: any) => p.id === conn.sourcePort) : null;
+            const targetPortDef = conn.targetPort ? targetPorts.find((p: any) => p.id === conn.targetPort) : null;
+
+            const startX = isDraggingStart ? draggedCable.x : sourceNode.x + (sourcePortDef ? sourcePortDef.x : conn.startOffset.x);
+            const startY = isDraggingStart ? draggedCable.y : sourceNode.y + (sourcePortDef ? sourcePortDef.y : conn.startOffset.y);
+            const endX = isDraggingEnd ? draggedCable.x : targetNode.x + (targetPortDef ? targetPortDef.x : conn.endOffset.x);
+            const endY = isDraggingEnd ? draggedCable.y : targetNode.y + (targetPortDef ? targetPortDef.y : conn.endOffset.y);
             
             if(startX === undefined || endX === undefined) return null;
 
@@ -952,11 +787,18 @@ export default function AlienMindSetup() {
                const cx = 2 * conn.midPoint.x - 0.5 * startX - 0.5 * endX;
                const cy = 2 * conn.midPoint.y - 0.5 * startY - 0.5 * endY;
                pathData = `M ${startX} ${startY} Q ${cx} ${cy}, ${endX} ${endY}`;
-            } else if (conn.type.includes('midi')) {
-               const controlY = startY - 100;
-               pathData = `M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`;
             } else {
-               pathData = `M ${startX} ${startY} C ${startX + 100} ${startY}, ${endX - 100} ${endY}, ${endX} ${endY}`;
+               // Dynamic control points based on port side
+               const startSide = sourcePortDef ? sourcePortDef.side : 'right';
+               const endSide = targetPortDef ? targetPortDef.side : 'left';
+
+               const startControlX = startX + (startSide === 'left' ? -100 : startSide === 'right' ? 100 : 0);
+               const startControlY = startY + (startSide === 'top' ? -100 : startSide === 'bottom' ? 100 : 0);
+               
+               const endControlX = endX + (endSide === 'left' ? -100 : endSide === 'right' ? 100 : 0);
+               const endControlY = endY + (endSide === 'top' ? -100 : endSide === 'bottom' ? 100 : 0);
+               
+               pathData = `M ${startX} ${startY} C ${startControlX} ${startControlY}, ${endControlX} ${endControlY}, ${endX} ${endY}`;
             }
             
             const style = isLogical ? LOGICAL_CABLE_TYPES[conn.type] : CABLE_TYPES[conn.type];
@@ -1048,19 +890,37 @@ export default function AlienMindSetup() {
             <div 
               key={nodeId}
               data-id={nodeId}
-              className={`hardware-node pointer-events-auto absolute bg-neutral-900 rounded-xl border-t-4 shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing transition-transform duration-200 ${hoveredNodeId === nodeId ? 'ring-4 ring-cyan-500 shadow-[0_0_40px_rgba(6,182,212,0.6)] scale-[1.02] z-[100]' : 'hover:ring-2 ring-white/10'} ${blueprint.theme.border}`}
+              className={`hardware-node group pointer-events-auto absolute bg-neutral-900 rounded-xl border-t-4 shadow-2xl flex flex-col cursor-grab active:cursor-grabbing transition-transform duration-200 ${hoveredNodeId === nodeId ? 'ring-4 ring-cyan-500 shadow-[0_0_40px_rgba(6,182,212,0.6)] scale-[1.02] z-[100]' : 'hover:ring-2 ring-white/10'} ${blueprint.theme.border}`}
               style={{ left: nodeState.x, top: nodeState.y, zIndex: hoveredNodeId === nodeId ? 100 : nodeState.zIndex, width: blueprint.width }}
               onPointerDown={(e: any) => handleNodeMouseDown(nodeId, e)}
               onDoubleClick={(e: any) => handleNodeDoubleClick(nodeId, e)}
             >
+              <RemoveButton onClick={() => removeNode(nodeId)} title="Remove Device" />
+
+              {/* Port Dots */}
+              {getPortsForNode(blueprint).map((port: any) => (
+                 <div 
+                   key={port.id}
+                   className="absolute w-3 h-3 rounded-full border-2 border-neutral-900 z-50 pointer-events-none shadow-md"
+                   style={{
+                     backgroundColor: port.color,
+                     left: port.side === 'left' ? -6 : (port.side === 'top' || port.side === 'bottom') ? port.x - 6 : 'auto',
+                     right: port.side === 'right' ? -6 : 'auto',
+                     top: port.side === 'top' ? -6 : (port.side === 'left' || port.side === 'right') ? port.y - 6 : 'auto',
+                     bottom: port.side === 'bottom' ? -6 : 'auto'
+                   }}
+                   title={port.title}
+                 />
+              ))}
+
               {/* Header */}
-              <div className={`p-2 flex justify-between items-center ${blueprint.theme.header}`}>
+              <div className={`p-2 flex justify-between items-center rounded-t-lg ${blueprint.theme.header}`}>
                 <div>
                   <h3 className={`font-black tracking-tight leading-none ${blueprint.theme.title}`}>{blueprint.model}</h3>
                   <span className="text-[10px] text-neutral-400">{blueprint.brand}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold tracking-widest ${blueprint.theme.badge}`}>{blueprint.tagline}</span>
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold tracking-widest whitespace-nowrap ${blueprint.theme.badge}`}>{blueprint.tagline}</span>
                   <button onClick={(e: any) => toggleHardwareExpand(nodeId, e)} className="text-neutral-400 hover:text-white transition-colors focus:outline-none ml-1">
                     {isHardwareExpanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
                   </button>
@@ -1101,28 +961,28 @@ export default function AlienMindSetup() {
                                         <label className="text-[9px] text-cyan-600 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio IN</label>
                                         <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioIn')} onChange={(e: any) => handlePortSelect(nodeId, 'audioIn', e.target.value)}>
                                            <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <label className="text-[9px] text-orange-500 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio OUT</label>
                                         <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioOut')} onChange={(e: any) => handlePortSelect(nodeId, 'audioOut', e.target.value)}>
                                            <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <label className="text-[9px] text-emerald-600 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI IN</label>
                                         <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiIn')} onChange={(e: any) => handlePortSelect(nodeId, 'midiIn', e.target.value)}>
                                            <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <label className="text-[9px] text-blue-500 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI OUT/THRU</label>
                                         <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiOut')} onChange={(e: any) => handlePortSelect(nodeId, 'midiOut', e.target.value)}>
                                            <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
                                         </select>
                                      </div>
                                  </div>
@@ -1162,12 +1022,12 @@ export default function AlienMindSetup() {
                                           Object.values(nodes).forEach(n => {
                                              if (n.id === nodeId) return;
                                              if (n.type === 'circuit' && n.circuitLogicalOuts) {
-                                                if (n.circuitLogicalOuts.synth1 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (Synth 1)`);
-                                                if (n.circuitLogicalOuts.synth2 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (Synth 2)`);
-                                                if (n.circuitLogicalOuts.midi1 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (MIDI 1)`);
-                                                if (n.circuitLogicalOuts.midi2 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type].model} (MIDI 2)`);
+                                                if (n.circuitLogicalOuts.synth1 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type]?.model} (Synth 1)`);
+                                                if (n.circuitLogicalOuts.synth2 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type]?.model} (Synth 2)`);
+                                                if (n.circuitLogicalOuts.midi1 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type]?.model} (MIDI 1)`);
+                                                if (n.circuitLogicalOuts.midi2 === nodeState.logicalInChannel) senders.push(`${HARDWARE_LIBRARY[n.type]?.model} (MIDI 2)`);
                                              } else if (n.logicalOutChannel === nodeState.logicalInChannel) {
-                                                senders.push(`${HARDWARE_LIBRARY[n.type].model}`);
+                                                senders.push(`${HARDWARE_LIBRARY[n.type]?.model}`);
                                              }
                                           });
                                           return senders.length > 0 ? 
@@ -1192,7 +1052,7 @@ export default function AlienMindSetup() {
                                                        {ch ? (() => {
                                                            const listeners = Object.values(nodes).filter(n => n.id !== nodeId && n.logicalInChannel === ch);
                                                            return listeners.length > 0 ? 
-                                                               <div className="text-[9px] text-green-500 font-medium">Sending to: {listeners.map(l => HARDWARE_LIBRARY[l.type].model).join(', ')}</div> :
+                                                               <div className="text-[9px] text-green-500 font-medium">Sending to: {listeners.map(l => HARDWARE_LIBRARY[l.type]?.model).join(', ')}</div> :
                                                                <div className="text-[9px] text-red-500 font-medium">No device listening on Ch {ch}</div>;
                                                        })() : null}
                                                    </div>
@@ -1211,7 +1071,7 @@ export default function AlienMindSetup() {
                                            {nodeState.logicalOutChannel ? (() => {
                                               const listeners = Object.values(nodes).filter(n => n.id !== nodeId && n.logicalInChannel === nodeState.logicalOutChannel);
                                               return listeners.length > 0 ? 
-                                                <div className="text-[9px] text-green-500 font-medium">Sending to: {listeners.map(l => HARDWARE_LIBRARY[l.type].model).join(', ')}</div> :
+                                                <div className="text-[9px] text-green-500 font-medium">Sending to: {listeners.map(l => HARDWARE_LIBRARY[l.type]?.model).join(', ')}</div> :
                                                 <div className="text-[9px] text-red-500 font-medium">No device listening on Ch {nodeState.logicalOutChannel}</div>;
                                            })() : null}
                                         </div>
@@ -1245,7 +1105,9 @@ export default function AlienMindSetup() {
           }} className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded transition-colors text-neutral-400 hover:text-white font-bold" title="Zoom In">+</button>
         </div>
 
+        </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

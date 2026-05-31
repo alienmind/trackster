@@ -3,22 +3,32 @@ import { useUIStore } from '../../../stores/useUIStore';
 import { Button } from '../../Core/ui/button';
 import * as Icons from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
+import ConfirmModal from '../ConfirmModal/ConfirmModal';
+import InfoModal from '../InfoModal/InfoModal';
+import NewDeviceModal from '../NewDeviceModal/NewDeviceModal';
+import { useState } from 'react';
 
 import clsx from 'clsx';
 import { del } from 'idb-keyval';
-import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../../stores/useOverviewStore';
 
 export default function Toolbar() {
   const { rootHandle, workspaceMode, setWorkspaceMode } = useFileSystemStore();
   const { activeMainView, setActiveMainView } = useUIStore();
   
-  const resetLayout = useOverviewStore(s => s.resetLayout);
-  const autoArrange = useOverviewStore(s => s.autoArrange);
-  const saveLayout = useOverviewStore(s => s.saveLayout);
-  const copyLayout = useOverviewStore(s => s.copyLayout);
-  const routingMode = useOverviewStore(s => s.routingMode);
-  const setRoutingMode = useOverviewStore(s => s.setRoutingMode);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, description: React.ReactNode, onConfirm: () => void, destructive?: boolean }>({ isOpen: false, title: '', description: '', onConfirm: () => {} });
+  const [infoModal, setInfoModal] = useState<{ isOpen: boolean, title: string, description: string }>({ isOpen: false, title: '', description: '' });
+  const [newDeviceModalOpen, setNewDeviceModalOpen] = useState(false);
 
+  const DEVICES: { id: string; label: string; requiresMount?: boolean }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'circuit', label: 'Circuit Tracks', requiresMount: true },
+    { id: 'grind', label: 'Behringer Grind' },
+    { id: 's1', label: 'Roland S-1' },
+    { id: 'minifreak', label: 'Arturia Minifreak' },
+    { id: 'flow8', label: 'Flow 8' },
+    { id: 'ableton', label: 'Ableton Live' },
+  ];
+  
 
   return (
     <div className="flex flex-col flex-none w-full border-b border-border bg-card">
@@ -26,25 +36,29 @@ export default function Toolbar() {
         <div className="flex items-center space-x-4">
 
 
-          <div className="flex bg-muted p-1 rounded-md">
+          <div className="flex bg-muted p-1 rounded-md overflow-x-auto max-w-[60vw]">
+            {DEVICES.map(device => (
+              <button
+                key={device.id}
+                onClick={() => {
+                  if (device.requiresMount && !rootHandle) return;
+                  setActiveMainView(device.id as any);
+                }}
+                disabled={device.requiresMount && !rootHandle}
+                className={clsx(
+                  "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors whitespace-nowrap",
+                  activeMainView === device.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
+                )}
+              >
+                {device.label}
+              </button>
+            ))}
+            
             <button
-              onClick={() => setActiveMainView('overview')}
-              className={clsx(
-                "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
-                activeMainView === 'overview' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
+              onClick={() => setNewDeviceModalOpen(true)}
+              className="px-4 py-1.5 text-sm font-medium rounded-sm transition-colors whitespace-nowrap text-muted-foreground hover:text-foreground ml-2 flex items-center"
             >
-              Overview
-            </button>
-            <button
-              onClick={() => rootHandle && setActiveMainView('circuit')}
-              disabled={!rootHandle}
-              className={clsx(
-                "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
-                activeMainView === 'circuit' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
-              )}
-            >
-              Circuit Tracks
+              <Icons.Plus size={14} className="mr-1" /> Add new device
             </button>
           </div>
 
@@ -60,13 +74,20 @@ export default function Toolbar() {
                       "font-bold",
                       workspaceMode === 'read' ? "text-green-600 border-green-600 hover:bg-green-50" : "text-destructive border-destructive hover:bg-destructive/10"
                     )}
-                    onClick={async () => {
+                    onClick={() => {
                       if (workspaceMode === 'read') {
-                        if (window.confirm("Switch to Read/Write mode? This is dangerous and allows modifying files on the SD card.")) {
-                          await setWorkspaceMode('readwrite');
-                        }
+                        setConfirmModal({
+                          isOpen: true,
+                          title: "Switch to Read/Write mode?",
+                          description: "This is dangerous and allows modifying files on the SD card directly. Are you sure?",
+                          destructive: true,
+                          onConfirm: async () => {
+                            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                            await setWorkspaceMode('readwrite');
+                          }
+                        });
                       } else {
-                        await setWorkspaceMode('read');
+                        setWorkspaceMode('read');
                       }
                     }}
                   >
@@ -93,13 +114,20 @@ export default function Toolbar() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={async () => {
-                  if (window.confirm("Are you sure you want to clear your workspace cache? This will reset the app and reload.")) {
-                    await del('trackster-storage');
-                    await del('trackster-ui-storage');
-                    sessionStorage.setItem('autoOpenDisclaimer', 'true');
-                    window.location.reload();
-                  }
+                onClick={() => {
+                  setConfirmModal({
+                    isOpen: true,
+                    title: "Clear Workspace Cache?",
+                    description: "Are you sure you want to clear your workspace cache? This will reset the app and reload.",
+                    destructive: true,
+                    onConfirm: async () => {
+                      setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                      await del('trackster-storage');
+                      await del('trackster-ui-storage');
+                      sessionStorage.setItem('autoOpenDisclaimer', 'true');
+                      window.location.reload();
+                    }
+                  });
                 }}
                 className="text-muted-foreground hover:text-destructive transition-colors"
               >
@@ -114,42 +142,24 @@ export default function Toolbar() {
       </div>
       
 
-      
-      {activeMainView === 'overview' && (
-        <div className="h-12 px-4 flex items-center justify-between bg-card/50 border-t border-border/50 gap-2">
-           <div className="flex bg-muted p-1 rounded-md">
-             <button
-               onClick={() => setRoutingMode('physical')}
-               className={clsx(
-                 "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
-                 routingMode === 'physical' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
-               )}
-             >
-               Physical Cabling
-             </button>
-             <button
-               onClick={() => setRoutingMode('logical')}
-               className={clsx(
-                 "px-4 py-1.5 text-sm font-medium rounded-sm transition-colors",
-                 routingMode === 'logical' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground disabled:opacity-50"
-               )}
-             >
-               Logical MIDI Routing
-             </button>
-           </div>
-           <div className="flex items-center gap-2">
-             <Button variant="secondary" size="sm" onClick={() => resetLayout(DEFAULT_NODES, DEFAULT_CONNECTIONS)}>
-               <Icons.RefreshCw size={14} className="mr-2" /> Reset
-             </Button>
-             <Button variant="secondary" size="sm" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })}>
-               <Icons.LayoutGrid size={14} className="mr-2" /> Rearrange
-             </Button>
-             <Button variant="default" size="sm" onClick={saveLayout} onDoubleClick={copyLayout}>
-               <Icons.Save size={14} className="mr-2" /> Save
-             </Button>
-           </div>
-        </div>
-      )}
+      <ConfirmModal 
+        isOpen={confirmModal.isOpen} 
+        title={confirmModal.title} 
+        description={confirmModal.description} 
+        destructive={confirmModal.destructive}
+        onConfirm={confirmModal.onConfirm} 
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
+      />
+      <InfoModal 
+        isOpen={infoModal.isOpen} 
+        title={infoModal.title} 
+        description={infoModal.description} 
+        onClose={() => setInfoModal(prev => ({ ...prev, isOpen: false }))} 
+      />
+      <NewDeviceModal
+        isOpen={newDeviceModalOpen}
+        onClose={() => setNewDeviceModalOpen(false)}
+      />
       </div>
   );
 }
