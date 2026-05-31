@@ -1,8 +1,4 @@
-# Trackster Overview Tab Proposal
 
-The following React component is a proposed visual overview tab for Trackster. It is saved here as reference code only and is not yet wired into the application.
-
-```tsx
 /* 
  * ALIENMIND HYBRID SETUP BUILDER (v4.0)
  * -------------------------------------
@@ -17,10 +13,12 @@ The following React component is a proposed visual overview tab for Trackster. I
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, RefreshCw, Circle, Square, ChevronDown, ChevronRight, Laptop } from 'lucide-react';
+import { Circle, Square, ChevronDown, ChevronRight, Laptop } from 'lucide-react';
+import { useUIStore } from '../../stores/useUIStore';
+import { useOverviewStore, OverviewNode, OverviewConnection } from '../../stores/useOverviewStore';
 
 // Technical Cable Dictionary
-const CABLE_TYPES = {
+const CABLE_TYPES: Record<string, any> = {
   audio_ts: { label: "Audio: TS (Mono)", category: "audio", color: "#f97316", stroke: 3, dash: "none", marker: "url(#arrowOrange)", filter: "url(#glowOrange)" },
   audio_trs: { label: "Audio: TRS (Stereo)", category: "audio", color: "#06b6d4", stroke: 4, dash: "none", marker: "url(#arrowCyan)", filter: "url(#glowCyan)" },
   audio_sidechain: { label: "Audio: Sidechain (Pump)", category: "audio", color: "#a855f7", stroke: 4, dash: "none", marker: "url(#arrowPurple)", filter: "url(#glowPurple)", animate: true },
@@ -29,7 +27,7 @@ const CABLE_TYPES = {
 };
 
 // Stable Visual Hardware Library
-const HARDWARE_LIBRARY = {
+const HARDWARE_LIBRARY: Record<string, any> = {
   minifreak: {
     brand: "Arturia", model: "MiniFreak Stellar", tagline: "POLYPHONIC SYNTH", width: 300,
     theme: { border: "border-t-zinc-500", header: "bg-zinc-950", title: "text-zinc-300", badge: "bg-zinc-800 text-zinc-400" },
@@ -292,7 +290,7 @@ const HARDWARE_LIBRARY = {
   }
 };
 
-const DEFAULT_NODES = {
+export const DEFAULT_NODES: Record<string, OverviewNode> = {
   n_circuit: { id: 'n_circuit', type: 'circuit', x: 450, y: 500, zIndex: 10, isExpanded: true, overview: 'Brain. Sequences drums & handles sidechain ducking.', audioIn: 'S-1 / Grind (Mono)', audioOut: 'Flow8 Ch 3/4', midiIn: '-', midiOut: 'Thru chain', midiThru: '-' },
   n_grind: { id: 'n_grind', type: 'grind', x: 50, y: 400, zIndex: 11, isExpanded: true, overview: 'Aggressive bass/lead synth. Needs sidechain.', audioIn: '-', audioOut: 'Circuit In 1', midiIn: 'From MiniFreak', midiOut: '-', midiThru: 'To S-1' },
   n_s1: { id: 'n_s1', type: 's1', x: 50, y: 680, zIndex: 12, isExpanded: true, overview: 'Sub bass or portable chord stabber.', audioIn: '-', audioOut: 'Circuit In 2', midiIn: 'From Grind Thru', midiOut: '-', midiThru: '-' },
@@ -301,7 +299,7 @@ const DEFAULT_NODES = {
   n_ableton: { id: 'n_ableton', type: 'ableton', x: 1100, y: 300, zIndex: 15, isExpanded: true, overview: 'Final recording, FX, and mastering.', audioIn: 'USB Flow8', audioOut: 'Master', midiIn: '-', midiOut: '-', midiThru: '-' },
 };
 
-const DEFAULT_CONNECTIONS = {
+export const DEFAULT_CONNECTIONS: Record<string, OverviewConnection> = {
   c_grind_audio: { id: 'c_grind_audio', source: 'n_grind', target: 'n_circuit', type: 'audio_ts', label: 'Audio TS', startOffset: {x:300,y:100}, endOffset: {x:20,y:20} },
   c_s1_audio: { id: 'c_s1_audio', source: 'n_s1', target: 'n_circuit', type: 'audio_ts', label: 'Audio TS', startOffset: {x:230,y:50}, endOffset: {x:20,y:50} },
   c_circuit_audio: { id: 'c_circuit_audio', source: 'n_circuit', target: 'n_flow8', type: 'audio_sidechain', label: 'Stereo (Pump)', startOffset: {x:260,y:50}, endOffset: {x:20,y:150} },
@@ -313,13 +311,33 @@ const DEFAULT_CONNECTIONS = {
 };
 
 export default function AlienMindSetup() {
-  const [nodes, setNodes] = useState(DEFAULT_NODES);
-  const [connections, setConnections] = useState(DEFAULT_CONNECTIONS);
-  const [draggingNode, setDraggingNode] = useState(null);
-  const [draggedCable, setDraggedCable] = useState(null);
+
+  useEffect(() => {
+    // Initialize if empty
+    const savedNodes = localStorage.getItem('alienmind_nodes_v4');
+    const savedConnections = localStorage.getItem('alienmind_connections_v4');
+    if (Object.keys(nodes).length === 0) {
+       if (savedNodes) setNodes(() => JSON.parse(savedNodes));
+       else setNodes(() => DEFAULT_NODES);
+       if (savedConnections) setConnections(() => JSON.parse(savedConnections));
+       else setConnections(() => DEFAULT_CONNECTIONS);
+    }
+  }, []);
+
+  const { setActiveMainView } = useUIStore();
+  const nodes = useOverviewStore((s) => s.nodes);
+  const connections = useOverviewStore((s) => s.connections);
+  const setNodes = useOverviewStore((s) => s.setNodes);
+  const setConnections = useOverviewStore((s) => s.setConnections);
+  const [draggingNode, setDraggingNode] = useState<any>(null);
+  const [draggedCable, setDraggedCable] = useState<any>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<any>(null);
+  const [pan, setPan] = useState<{x: number, y: number}>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState<any>(null);
   const [maxZIndex, setMaxZIndex] = useState(30);
-  const [editingLabel, setEditingLabel] = useState(null);
-  const containerRef = useRef(null);
+  const [editingLabel, setEditingLabel] = useState<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Load from local storage
   useEffect(() => {
@@ -329,27 +347,70 @@ export default function AlienMindSetup() {
       try {
         setNodes(JSON.parse(savedNodes));
         setConnections(JSON.parse(savedConns));
-      } catch (e) {
+      } catch (e: any) {
         console.error("Failed to load layout");
       }
     }
   }, []);
 
-  const saveLayout = () => {
-    localStorage.setItem('alienmind_nodes_v4', JSON.stringify(nodes));
-    localStorage.setItem('alienmind_connections_v4', JSON.stringify(connections));
-    alert("Layout Saved successfully!");
+  const getConnectedNode = (nodeId: string, portType: string) => {
+     const conns = Object.values(connections);
+     if (portType === 'audioIn') {
+        const c = conns.find(c => c.target === nodeId && c.type.includes('audio'));
+        return c ? c.source : "";
+     }
+     if (portType === 'audioOut') {
+        const c = conns.find(c => c.source === nodeId && c.type.includes('audio'));
+        return c ? c.target : "";
+     }
+     if (portType === 'midiIn') {
+        const c = conns.find(c => c.target === nodeId && c.type.includes('midi'));
+        return c ? c.source : "";
+     }
+     if (portType === 'midiOut') {
+        const c = conns.find(c => c.source === nodeId && c.type.includes('midi'));
+        return c ? c.target : "";
+     }
+     return "";
   };
 
-  const resetLayout = () => {
-    setNodes(DEFAULT_NODES);
-    setConnections(DEFAULT_CONNECTIONS);
-    localStorage.removeItem('alienmind_nodes_v4');
-    localStorage.removeItem('alienmind_connections_v4');
-  };
+  const handlePortSelect = (nodeId: string, portType: string, selectedNodeId: string) => {
+    setConnections(prev => {
+      const newConns = { ...prev };
+      
+      let existingId = null;
+      for (const [id, c] of Object.entries(newConns)) {
+         if (portType === 'audioIn' && c.target === nodeId && c.type.includes('audio')) { existingId = id; break; }
+         if (portType === 'audioOut' && c.source === nodeId && c.type.includes('audio')) { existingId = id; break; }
+         if (portType === 'midiIn' && c.target === nodeId && c.type.includes('midi')) { existingId = id; break; }
+         if (portType === 'midiOut' && c.source === nodeId && c.type.includes('midi')) { existingId = id; break; }
+      }
 
-  const handleNodeMouseDown = (nodeId, e) => {
-    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'svg', 'path', 'circle'].includes(e.target.tagName) || e.target.closest('button')) return;
+      if (!selectedNodeId) {
+         if (existingId) delete newConns[existingId];
+      } else {
+         if (existingId) {
+            if (portType.includes('In')) newConns[existingId]!.source = selectedNodeId;
+            if (portType.includes('Out')) newConns[existingId]!.target = selectedNodeId;
+         } else {
+            const newId = `c_auto_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            const isAudio = portType.includes('audio');
+            newConns[newId] = {
+               id: newId,
+               source: portType.includes('In') ? selectedNodeId : nodeId,
+               target: portType.includes('In') ? nodeId : selectedNodeId,
+               type: isAudio ? 'audio_ts' : 'midi_din',
+               label: isAudio ? 'Audio' : 'MIDI',
+               startOffset: { x: 50, y: 50 },
+               endOffset: { x: 50, y: 50 }
+            };
+         }
+      }
+      return newConns;
+    });
+  };
+  const handleNodeMouseDown = (nodeId: string, e: React.PointerEvent) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'svg', 'path', 'circle'].includes((e.target as Element).tagName) || (e.target as Element).closest('button')) return;
     
     e.stopPropagation();
     const newZIndex = maxZIndex + 1;
@@ -359,20 +420,37 @@ export default function AlienMindSetup() {
       id: nodeId,
       startX: e.clientX,
       startY: e.clientY,
-      initialNodeX: nodes[nodeId].x,
-      initialNodeY: nodes[nodeId].y,
+      initialNodeX: nodes[nodeId]!.x,
+      initialNodeY: nodes[nodeId]!.y,
     });
-    setNodes(prev => ({ ...prev, [nodeId]: { ...prev[nodeId], zIndex: newZIndex } }));
+    setNodes(prev => ({ ...prev, [nodeId]: { ...prev[nodeId]! as OverviewNode, zIndex: newZIndex } }));
   };
 
-  const toggleExpand = (nodeId, e) => {
+  const handleNodeDoubleClick = (nodeId: string, e: React.MouseEvent) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'svg', 'path', 'circle'].includes((e.target as Element).tagName) || (e.target as Element).closest('button')) return;
+    
     e.stopPropagation();
-    setNodes(prev => ({...prev, [nodeId]: {...prev[nodeId], isExpanded: !prev[nodeId].isExpanded}}));
+    const nodeState = nodes[nodeId]!;
+    if (nodeState.type === 'circuit') {
+       setActiveMainView('packs');
+    } else {
+       alert(`The configuration panel for the ${HARDWARE_LIBRARY[nodeState.type].model} is not yet implemented.`);
+    }
   };
 
-  const handleCableDragStart = (e, connId, endpoint) => {
+  const toggleExpand = (nodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const rect = containerRef.current.getBoundingClientRect();
+    setNodes(prev => ({...prev, [nodeId]: {...prev[nodeId]! as OverviewNode, isExpanded: !prev[nodeId]!.isExpanded}}));
+  };
+
+  const toggleHardwareExpand = (nodeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes(prev => ({...prev, [nodeId]: {...prev[nodeId]! as OverviewNode, isHardwareExpanded: prev[nodeId]!.isHardwareExpanded === false ? true : false}}));
+  };
+
+  const handleCableDragStart = (e: React.PointerEvent, connId: string, endpoint: string) => {
+    e.stopPropagation();
+    const rect = containerRef.current!.getBoundingClientRect();
     setDraggedCable({
         id: connId,
         endpoint: endpoint,
@@ -381,101 +459,129 @@ export default function AlienMindSetup() {
     });
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: any) => {
+    if (isPanning && panStart) {
+       setPan({
+          x: e.clientX - panStart.x,
+          y: e.clientY - panStart.y
+       });
+       return;
+    }
+
     if (draggingNode) {
-      const dx = e.clientX - draggingNode.startX;
-      const dy = e.clientY - draggingNode.startY;
       setNodes(prev => ({
         ...prev,
         [draggingNode.id]: {
           ...prev[draggingNode.id],
-          x: draggingNode.initialNodeX + dx,
-          y: draggingNode.initialNodeY + dy
+          x: draggingNode.initialNodeX + (e.clientX - draggingNode.startX),
+          y: draggingNode.initialNodeY + (e.clientY - draggingNode.startY)
         }
       }));
     } else if (draggedCable && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setDraggedCable(prev => ({
+      const rect = containerRef.current!.getBoundingClientRect();
+      setDraggedCable((prev: any) => ({
           ...prev,
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
+          x: e.clientX - rect.left - pan.x,
+          y: e.clientY - rect.top - pan.y
       }));
+
+      const elements = document.elementsFromPoint(e.clientX, e.clientY);
+      const hitNodeEl = elements.find(el => el.classList && el.classList.contains('hardware-node'));
+      if (hitNodeEl) {
+         setHoveredNodeId(hitNodeEl.getAttribute('data-id'));
+      } else {
+         setHoveredNodeId(null);
+      }
     }
   };
 
-  const handleMouseUp = (e) => {
+  const handleMouseUp = (e: any) => {
+    if (isPanning) {
+       setIsPanning(false);
+       setPanStart(null);
+       return;
+    }
+    
     if (draggedCable && containerRef.current) {
        const elements = document.elementsFromPoint(e.clientX, e.clientY);
        const hitNodeEl = elements.find(el => el.classList && el.classList.contains('hardware-node'));
        
        if (hitNodeEl) {
            const nodeId = hitNodeEl.getAttribute('data-id');
-           const rect = containerRef.current.getBoundingClientRect();
-           const canvasX = e.clientX - rect.left;
-           const canvasY = e.clientY - rect.top;
+           if (!nodeId) return;
+           const rect = containerRef.current!.getBoundingClientRect();
+           const canvasX = e.clientX - rect.left - pan.x;
+           const canvasY = e.clientY - rect.top - pan.y;
            
            setConnections(prev => {
                const newConns = { ...prev };
                const conn = { ...newConns[draggedCable.id] };
-               const targetNode = nodes[nodeId];
+               const targetNode = nodes[nodeId]!;
                
                if (draggedCable.endpoint === 'source') {
-                   conn.source = nodeId;
+                   conn.source = nodeId!;
                    conn.startOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
                } else {
-                   conn.target = nodeId;
+                   conn.target = nodeId!;
                    conn.endOffset = { x: canvasX - targetNode.x, y: canvasY - targetNode.y };
                }
-               newConns[draggedCable.id] = conn;
+               newConns[draggedCable.id] = conn as OverviewConnection;
                return newConns;
            });
        }
        setDraggedCable(null);
     }
+    setHoveredNodeId(null);
     setDraggingNode(null);
   };
 
   useEffect(() => {
-    if (draggingNode || draggedCable) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('window:mouseup', handleMouseUp);
-      window.addEventListener('mouseup', handleMouseUp);
+    if (draggingNode || draggedCable || isPanning) {
+      document.body.style.userSelect = 'none';
+      window.addEventListener('pointermove', handleMouseMove);
+      window.addEventListener('pointerup', handleMouseUp);
+      window.addEventListener('pointercancel', handleMouseUp);
     } else {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', handleMouseMove);
+      window.removeEventListener('pointerup', handleMouseUp);
+      window.removeEventListener('pointercancel', handleMouseUp);
     }
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', handleMouseMove);
+      window.removeEventListener('pointerup', handleMouseUp);
+      window.removeEventListener('pointercancel', handleMouseUp);
     };
-  }, [draggingNode, draggedCable]);
+  }, [draggingNode, draggedCable, isPanning, panStart]);
+
+  const handleCanvasMouseDown = (e: any) => {
+    if ((e.target as Element).closest('.hardware-node') || (e.target as Element).closest('header') || (e.target as Element).closest('button')) return;
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-neutral-200 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">
+    <div className="flex-1 w-full bg-neutral-900 text-neutral-200 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">
       
-      {/* Header & Controls */}
-      <header className="max-w-6xl w-full mb-6 flex justify-between items-end border-b border-neutral-800 pb-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-white uppercase flex items-center gap-3">
-            AlienMind <span className="text-cyan-500">Setup Builder</span>
-          </h1>
-          <p className="text-neutral-400 text-sm mt-1">Interactive DAWless Routing Architecture v4.0</p>
-        </div>
-        <div className="flex gap-3">
-            <button onClick={resetLayout} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-md transition-colors text-sm"><RefreshCw size={14}/> Reset Layout</button>
-            <button onClick={saveLayout} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-bold transition-colors shadow-lg text-sm"><Save size={14}/> Save to Browser</button>
-        </div>
-      </header>
+      {/* Header & Controls have been moved to Toolbar */}
 
       {/* Main Interactive Canvas */}
       <div 
         ref={containerRef}
-        className="w-full max-w-[1400px] h-[900px] bg-neutral-950 rounded-xl border border-neutral-800 shadow-2xl relative overflow-hidden"
-        style={{ backgroundImage: 'linear-gradient(#262626 1px, transparent 1px), linear-gradient(90deg, #262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+        className="relative flex-1 w-full bg-neutral-950/50 rounded-xl border border-white/5 shadow-2xl overflow-hidden touch-none"
+        onPointerDown={handleCanvasMouseDown}
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+          backgroundPosition: `${pan.x}px ${pan.y}px`,
+          backgroundSize: '20px 20px',
+          cursor: isPanning ? 'grabbing' : 'grab'
+        }}
       >
+        <div className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}>
         
         {/* SVG Canvas for Cables */}
-        <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none" preserveAspectRatio="none">
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
           <defs>
             {/* Reduced Marker sizes */}
             <marker id="arrowCyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#06b6d4" /></marker>
@@ -493,10 +599,10 @@ export default function AlienMindSetup() {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
 
-            const startX = isDraggingStart ? draggedCable.x : nodes[conn.source]?.x + conn.startOffset.x;
-            const startY = isDraggingStart ? draggedCable.y : nodes[conn.source]?.y + conn.startOffset.y;
-            const endX = isDraggingEnd ? draggedCable.x : nodes[conn.target]?.x + conn.endOffset.x;
-            const endY = isDraggingEnd ? draggedCable.y : nodes[conn.target]?.y + conn.endOffset.y;
+            const startX = isDraggingStart ? draggedCable.x : nodes[conn.source]!.x + conn.startOffset.x;
+            const startY = isDraggingStart ? draggedCable.y : nodes[conn.source]!.y + conn.startOffset.y;
+            const endX = isDraggingEnd ? draggedCable.x : nodes[conn.target]!.x + conn.endOffset.x;
+            const endY = isDraggingEnd ? draggedCable.y : nodes[conn.target]!.y + conn.endOffset.y;
             
             if(startX === undefined || endX === undefined) return null;
 
@@ -513,44 +619,60 @@ export default function AlienMindSetup() {
               <g key={`cable-${id}`}>
                 <path d={pathData} stroke={style.color} strokeWidth={style.stroke} fill="none" markerEnd={isDraggingEnd ? "" : style.marker} filter={style.filter} strokeDasharray={style.dash} className={style.animate ? "animate-pulse" : ""} />
                 {/* Draggable Handles */}
-                <circle cx={startX} cy={startY} r="6" fill={style.color} className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onMouseDown={(e) => handleCableDragStart(e, id, 'source')} />
-                <circle cx={endX} cy={endY} r="6" fill={style.color} className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onMouseDown={(e) => handleCableDragStart(e, id, 'target')} />
+                <circle cx={startX} cy={startY} r="6" fill={style.color} className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onPointerDown={(e: any) => handleCableDragStart(e, id, 'source')} />
+                <circle cx={endX} cy={endY} r="6" fill={style.color} className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onPointerDown={(e: any) => handleCableDragStart(e, id, 'target')} />
               </g>
             );
           })}
+          {draggedCable && (
+             <circle cx={draggedCable.x} cy={draggedCable.y} r="5" fill="#06b6d4" />
+          )}
         </svg>
 
         {/* Cable Labels (Editable) */}
         {Object.entries(connections).map(([id, conn]) => {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
-            const startX = isDraggingStart ? draggedCable.x : nodes[conn.source]?.x + conn.startOffset.x;
-            const startY = isDraggingStart ? draggedCable.y : nodes[conn.source]?.y + conn.startOffset.y;
-            const endX = isDraggingEnd ? draggedCable.x : nodes[conn.target]?.x + conn.endOffset.x;
-            const endY = isDraggingEnd ? draggedCable.y : nodes[conn.target]?.y + conn.endOffset.y;
+            const startX = isDraggingStart ? draggedCable.x : nodes[conn.source]!.x + conn.startOffset.x;
+            const startY = isDraggingStart ? draggedCable.y : nodes[conn.source]!.y + conn.startOffset.y;
+            const endX = isDraggingEnd ? draggedCable.x : nodes[conn.target]!.x + conn.endOffset.x;
+            const endY = isDraggingEnd ? draggedCable.y : nodes[conn.target]!.y + conn.endOffset.y;
             if(startX === undefined || endX === undefined) return null;
 
-            const midX = (startX + endX) / 2;
-            const midY = conn.type.includes('midi') ? Math.min(startY, endY) - 50 : (startY + endY) / 2;
+            const getBezier = (t: number, p0: number, p1: number, p2: number, p3: number) => {
+               const mt = 1 - t;
+               return mt*mt*mt*p0 + 3*mt*mt*t*p1 + 3*mt*t*t*p2 + t*t*t*p3;
+            };
+
+            let midX, midY;
+            if (conn.type.includes('midi')) {
+               const controlY = startY - 100;
+               midX = getBezier(0.5, startX, startX, endX, endX);
+               midY = getBezier(0.5, startY, controlY, controlY, endY);
+            } else {
+               midX = getBezier(0.5, startX, startX + 100, endX - 100, endX);
+               midY = getBezier(0.5, startY, startY, endY, endY);
+            }
+            
             const style = CABLE_TYPES[conn.type];
 
             return (
-              <div key={`label-${id}`} className="absolute z-20" style={{ left: midX, top: midY, transform: 'translate(-50%, -50%)' }}>
+              <div key={`label-${id}`} className="absolute z-20 pointer-events-none" style={{ left: midX, top: midY, transform: 'translate(-50%, -50%)' }}>
                  {editingLabel === id ? (
                    <input
                      autoFocus
                      defaultValue={conn.label}
-                     className="bg-neutral-900 text-white text-xs px-2 py-1 rounded border border-neutral-500 outline-none w-28 text-center"
-                     onBlur={(e) => {
-                       setConnections(prev => ({...prev, [id]: {...prev[id], label: e.target.value}}));
+                     className="bg-neutral-900 text-white text-xs px-2 py-1 rounded border border-neutral-500 outline-none w-28 text-center pointer-events-auto"
+                     onBlur={(e: any) => {
+                       setConnections(prev => ({...prev, [id]: {...prev[id]! as OverviewConnection, label: e.target.value}}));
                        setEditingLabel(null);
                      }}
-                     onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                     onKeyDown={(e: any) => e.key === 'Enter' && e.target.blur()}
                    />
                  ) : (
                    <div 
                      onDoubleClick={() => setEditingLabel(id)}
-                     className="px-2 py-1 rounded border backdrop-blur-sm text-[10px] font-bold cursor-text hover:scale-110 transition-transform whitespace-nowrap"
+                     className="px-2 py-1 rounded border backdrop-blur-sm text-[10px] font-bold cursor-text hover:scale-110 transition-transform whitespace-nowrap pointer-events-auto"
                      style={{ color: style.color, borderColor: style.color, backgroundColor: 'rgba(20,20,20,0.8)' }}
                    >
                      {conn.label}
@@ -561,18 +683,21 @@ export default function AlienMindSetup() {
         })}
 
         {/* Hardware Nodes Rendering */}
-        {Object.entries(nodes).map(([nodeId, nodeState]) => {
+        {Object.keys(nodes).map(nodeId => {
+          const nodeState = nodes[nodeId]!;
           const blueprint = HARDWARE_LIBRARY[nodeState.type];
           if (!blueprint) return null;
           const isExpanded = nodeState.isExpanded !== false;
+          const isHardwareExpanded = nodeState.isHardwareExpanded !== false;
 
           return (
             <div 
               key={nodeId}
               data-id={nodeId}
-              className={`hardware-node absolute bg-neutral-900 rounded-xl border-t-4 shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing hover:ring-2 ring-white/10 ${blueprint.theme.border}`}
-              style={{ left: nodeState.x, top: nodeState.y, zIndex: nodeState.zIndex, width: blueprint.width }}
-              onMouseDown={(e) => handleNodeMouseDown(nodeId, e)}
+              className={`hardware-node pointer-events-auto absolute bg-neutral-900 rounded-xl border-t-4 shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing transition-transform duration-200 ${hoveredNodeId === nodeId ? 'ring-4 ring-cyan-500 shadow-[0_0_40px_rgba(6,182,212,0.6)] scale-[1.02] z-[100]' : 'hover:ring-2 ring-white/10'} ${blueprint.theme.border}`}
+              style={{ left: nodeState.x, top: nodeState.y, zIndex: hoveredNodeId === nodeId ? 100 : nodeState.zIndex, width: blueprint.width }}
+              onPointerDown={(e: any) => handleNodeMouseDown(nodeId, e)}
+              onDoubleClick={(e: any) => handleNodeDoubleClick(nodeId, e)}
             >
               {/* Header */}
               <div className={`p-2 flex justify-between items-center ${blueprint.theme.header}`}>
@@ -580,18 +705,25 @@ export default function AlienMindSetup() {
                   <h3 className={`font-black tracking-tight leading-none ${blueprint.theme.title}`}>{blueprint.model}</h3>
                   <span className="text-[10px] text-neutral-400">{blueprint.brand}</span>
                 </div>
-                <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold tracking-widest ${blueprint.theme.badge}`}>{blueprint.tagline}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold tracking-widest ${blueprint.theme.badge}`}>{blueprint.tagline}</span>
+                  <button onClick={(e: any) => toggleHardwareExpand(nodeId, e)} className="text-neutral-400 hover:text-white transition-colors focus:outline-none ml-1">
+                    {isHardwareExpanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                  </button>
+                </div>
               </div>
 
               {/* Graphic SVG Component */}
-              <div className="p-3 bg-neutral-800">
-                <blueprint.visual />
-              </div>
+              {isHardwareExpanded && (
+                <div className="p-3 bg-neutral-800">
+                  <blueprint.visual />
+                </div>
+              )}
 
               {/* Collapsible I/O Data */}
               <div className="bg-neutral-950 flex flex-col">
                  <button 
-                    onClick={(e) => toggleExpand(nodeId, e)}
+                    onClick={(e: any) => toggleExpand(nodeId, e)}
                     className="w-full flex items-center justify-between p-2 px-3 text-[10px] text-neutral-400 hover:text-neutral-200 hover:bg-white/5 transition-colors border-t border-neutral-800 focus:outline-none"
                  >
                     <span className="font-bold uppercase tracking-wider">Routing & I/O Data</span>
@@ -605,25 +737,37 @@ export default function AlienMindSetup() {
                             <textarea 
                                 className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 resize-none h-12 outline-none focus:border-neutral-500"
                                 value={nodeState.overview}
-                                onChange={(e) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], overview: e.target.value}}))}
+                                onChange={(e: any) => setNodes(p => ({...p, [nodeId]: {...p[nodeId]! as OverviewNode, overview: e.target.value}}))}
                             />
                          </div>
                          <div className="grid grid-cols-2 gap-2 mt-1">
                             <div className="flex flex-col gap-1">
                                 <label className="text-[9px] text-cyan-600 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio IN</label>
-                                <input className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none" value={nodeState.audioIn} onChange={(e) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], audioIn: e.target.value}}))}/>
+                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioIn')} onChange={(e: any) => handlePortSelect(nodeId, 'audioIn', e.target.value)}>
+                                   <option value="">- None -</option>
+                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                </select>
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-[9px] text-orange-500 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio OUT</label>
-                                <input className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none" value={nodeState.audioOut} onChange={(e) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], audioOut: e.target.value}}))}/>
+                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioOut')} onChange={(e: any) => handlePortSelect(nodeId, 'audioOut', e.target.value)}>
+                                   <option value="">- None -</option>
+                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                </select>
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-[9px] text-emerald-600 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI IN</label>
-                                <input className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none" value={nodeState.midiIn} onChange={(e) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], midiIn: e.target.value}}))}/>
+                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiIn')} onChange={(e: any) => handlePortSelect(nodeId, 'midiIn', e.target.value)}>
+                                   <option value="">- None -</option>
+                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                </select>
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-[9px] text-blue-500 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI OUT/THRU</label>
-                                <input className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none" value={nodeState.midiOut} onChange={(e) => setNodes(p => ({...p, [nodeId]: {...p[nodeId], midiOut: e.target.value}}))}/>
+                                <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiOut')} onChange={(e: any) => handlePortSelect(nodeId, 'midiOut', e.target.value)}>
+                                   <option value="">- None -</option>
+                                   {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type].model}</option>)}
+                                </select>
                             </div>
                          </div>
                          
@@ -634,7 +778,7 @@ export default function AlienMindSetup() {
                                 <select 
                                     key={cId}
                                     value={conn.type}
-                                    onChange={(e) => setConnections(p => ({...p, [cId]: {...p[cId], type: e.target.value}}))}
+                                    onChange={(e: any) => setConnections(p => ({...p, [cId]: {...p[cId]! as OverviewConnection, type: e.target.value}}))}
                                     className="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-neutral-300 outline-none w-full"
                                     style={{ color: CABLE_TYPES[conn.type].color }}
                                 >
@@ -650,17 +794,8 @@ export default function AlienMindSetup() {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
 }
-```
-
-## Implementation Notes
-
-When this component is wired into Trackster, consider:
-- Extract equipment data into a configuration object to make it reusable
-- Use `useWindowSize()` hook to responsively scale the SVG canvas
-- Add click handlers to equipment cards to navigate or expand details
-- Animate the SVG paths on mount with `framer-motion` for polish
-- Memoize the SVG connectors as a separate component for performance
