@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import ScaleFit from '../Core/ui/ScaleFit';
+import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
 
 // --- ICONS & SVGS ---
 
@@ -277,10 +278,26 @@ export default function BehringerGrind() {
   };
 
   return (
-    <div className="min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
-      <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
-      {/* Synth Chassis with Wood Panels */}
-      <div className="flex shadow-2xl relative shrink-0 origin-center transition-transform">
+    <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden">
+      <div className="flex flex-1 min-h-0">
+        
+        {/* Left Panel */}
+        <ResponsiveDrawer className="bg-card border-r border-border">
+          <div className="mt-2 px-1 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-2">Actions</h3>
+              <div className="text-xs text-neutral-400 p-2 border border-neutral-800 rounded bg-neutral-900/50">
+                Sequencer and patch management for Behringer Grind will appear here.
+              </div>
+            </div>
+          </div>
+        </ResponsiveDrawer>
+
+        {/* Center Panel */}
+        <div className="flex-1 min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
+          <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
+          {/* Synth Chassis with Wood Panels */}
+          <div className="flex shadow-2xl relative shrink-0 origin-center transition-transform">
         
         {/* Left Wood Panel */}
         <div className="w-4 rounded-l-md border-r border-[#3a1f10] shadow-[inset_-2px_0_4px_rgba(0,0,0,0.5)]" 
@@ -561,8 +578,10 @@ export default function BehringerGrind() {
         <div className="w-4 rounded-r-md border-l border-[#3a1f10] shadow-[inset_2px_0_4px_rgba(0,0,0,0.5)]" 
              style={{ background: 'linear-gradient(to left, #6d3a1c, #8b4a24)' }}></div>
       
+          </div>
+          </ScaleFit>
+        </div>
       </div>
-      </ScaleFit>
     </div>
   );
 }
