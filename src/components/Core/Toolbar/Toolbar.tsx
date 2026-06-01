@@ -62,7 +62,7 @@ export default function Toolbar() {
           {rootHandle && workspaceMode && activeMainView === 'circuit' && (
             <div className="flex items-center ml-2">
               <Tooltip>
-                <TooltipTrigger className="focus:outline-none">
+                <TooltipTrigger render={<div className="inline-flex focus:outline-none" />}>
                   <Button
                     variant="outline"
                     size="sm"
@@ -106,7 +106,7 @@ export default function Toolbar() {
 
         <div className="flex items-center space-x-2">
           <Tooltip>
-            <TooltipTrigger className="focus:outline-none">
+            <TooltipTrigger render={<div className="inline-flex focus:outline-none" />}>
               <Button
                 variant="ghost"
                 size="icon"
