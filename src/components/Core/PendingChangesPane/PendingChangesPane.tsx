@@ -65,14 +65,50 @@ export default function PendingChangesPane() {
   }, [totalChanges, isCollapsed, setRightPaneCollapsed]);
 
   return (
-    <div className={cn(
-      "border-l border-border bg-card flex flex-col h-full overflow-hidden flex-none transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-16" : "w-80"
-    )}>
+    <>
+      {/* Mobile Floating Toggle Button */}
+      <div className="md:hidden absolute top-4 right-4 z-50">
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={toggleCollapse}
+          className="rounded-full shadow-xl bg-neutral-900 border border-neutral-700 text-white hover:bg-neutral-800 relative h-10 w-10"
+        >
+          {!isCollapsed ? (
+            <Icons.X size={20} />
+          ) : (
+            <>
+              <Icons.ListChecks size={20} />
+              {totalChanges > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-neutral-900">
+                  {totalChanges}
+                </span>
+              )}
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Mobile Backdrop */}
+      {!isCollapsed && (
+        <div 
+          className="md:hidden absolute inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={toggleCollapse}
+        />
+      )}
+
+      {/* Main Drawer Container */}
       <div className={cn(
-        "flex-none border-b border-border flex items-center bg-muted/30",
-        isCollapsed ? "flex-col justify-center gap-2 py-4 h-auto" : "justify-between px-4 h-14"
+        "bg-card flex flex-col h-full overflow-hidden flex-none transition-all duration-300 ease-in-out z-40",
+        "border-l border-border md:relative",
+        isCollapsed 
+          ? "hidden md:flex md:w-16" 
+          : "absolute right-0 top-0 bottom-0 w-80 md:w-80 max-w-[85vw] shadow-2xl md:shadow-none animate-in slide-in-from-right md:animate-none pt-16 md:pt-0"
       )}>
+        <div className={cn(
+          "flex-none border-b border-border flex items-center bg-muted/30",
+          isCollapsed ? "flex-col justify-center gap-2 py-4 h-auto" : "justify-between px-4 h-14"
+        )}>
         <div className="flex items-center gap-2">
           <Icons.ListChecks size={16} className={cn("text-primary", isCollapsed && "mb-2")} />
           {!isCollapsed && <h2 className="font-semibold text-sm">Pending Changes</h2>}
@@ -88,7 +124,7 @@ export default function PendingChangesPane() {
             variant="ghost" 
             size="icon" 
             onClick={toggleCollapse}
-            className="flex-none h-8 w-8"
+            className="flex-none h-8 w-8 hidden md:flex"
           >
             {isCollapsed ? <Icons.PanelRightOpen size={16} /> : <Icons.PanelRightClose size={16} />}
           </Button>
@@ -171,6 +207,7 @@ export default function PendingChangesPane() {
       </ScrollArea>
       </>
       )}
-    </div>
+      </div>
+    </>
   );
 }

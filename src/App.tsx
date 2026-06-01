@@ -113,7 +113,7 @@ export default function App() {
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="min-h-screen bg-background text-foreground flex flex-col font-sans h-screen overflow-hidden" onClick={initAudioContext}>
         {/* Header */}
-        <div className="h-16 flex-none border-b border-border bg-card flex items-center px-4 justify-between">
+        <div className="hidden md:flex h-16 flex-none border-b border-border bg-card items-center px-4 justify-between order-1">
           {/* Left part (logo) */}
           <div className="flex-1 flex items-center space-x-3">
             <Logo className="h-8 w-auto text-foreground" />
@@ -152,9 +152,11 @@ export default function App() {
           </div>
         </div>
 
-        <Toolbar />
+        <div className="order-3 md:order-2 flex-none z-20">
+          <Toolbar />
+        </div>
 
-        <div className="flex flex-1 overflow-hidden min-h-0">
+        <div className="flex flex-1 overflow-hidden min-h-0 order-2 md:order-3 relative z-0">
           {!rootHandle && activeMainView !== 'overview' ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground bg-background">
               <Icons.FolderOpen size={48} className="opacity-20" />
@@ -176,7 +178,9 @@ export default function App() {
         </div>
 
         {/* Footer */}
-        <StatusBar />
+        <div className="order-4 md:order-4 hidden md:block">
+          <StatusBar />
+        </div>
 
         <CommitDialog />
         <DuplicateScanModal />
