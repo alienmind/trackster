@@ -9,7 +9,7 @@ export default function StatusBar() {
   const analysisProgress = useAudioStore((s) => s.analysisProgress);
   const activeMainView = useUIStore((s) => s.activeMainView);
 
-  if (activeMainView === 'overview') return null;
+  if (activeMainView !== 'circuit') return null;
 
   const filledSlots = slots.filter((s) => s.sample !== null).length;
 
