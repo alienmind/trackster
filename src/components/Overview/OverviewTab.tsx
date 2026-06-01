@@ -421,10 +421,8 @@ export default function OverviewTab() {
     
     e.stopPropagation();
     const nodeState = nodes[nodeId]!;
-    if (nodeState.type === 'circuit') {
-       setActiveMainView('circuit');
-    } else {
-       alert(`The configuration panel for the ${HARDWARE_LIBRARY[nodeState.type]?.model} is not yet implemented.`);
+    if (nodeState.type) {
+       setActiveMainView(nodeState.type as any);
     }
   };
 
