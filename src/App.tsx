@@ -30,6 +30,7 @@ import PendingChangesPane from './components/Core/PendingChangesPane/PendingChan
 import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
 import BehringerGrind from './components/Grind/BehringerGrind';
+import ArturiaMiniFreak from './components/MiniFreak/ArturiaMiniFreak';
 
 export default function App() {
   const isSupported = 'showDirectoryPicker' in window;
@@ -162,8 +163,10 @@ export default function App() {
             <CircuitTracksLayout />
           ) : activeMainView === 'grind' ? (
             <BehringerGrind />
+          ) : activeMainView === 'minifreak' ? (
+            <ArturiaMiniFreak />
           ) : (
-            <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'minifreak' ? 'Arturia Minifreak' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
+            <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
           )}
           {activeMainView !== 'overview' && <PendingChangesPane />}
         </div>
