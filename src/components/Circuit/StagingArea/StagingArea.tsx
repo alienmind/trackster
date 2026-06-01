@@ -39,7 +39,7 @@ function DraggableSample({ sample }: DraggableSampleProps) {
         useUIStore.getState().selectPad(-1);
       }}
       className={clsx(
-        "flex items-center gap-2 p-2 rounded-md border bg-muted cursor-grab hover:border-border min-w-[150px] touch-none outline-none focus:outline-none",
+        "flex items-center gap-2 p-2 rounded-md border bg-muted cursor-grab hover:border-border min-w-0 w-full touch-none outline-none focus:outline-none",
         isDragging ? "opacity-50 ring-2 ring-primary" : "border-border"
       )}
     >
@@ -63,15 +63,15 @@ export default function StagingArea() {
   if (!rootHandle) return null;
 
   return (
-    <div className="h-40 border-t border-border bg-card flex flex-col flex-none">
-      <div className="px-4 py-2 border-b border-border flex items-center justify-between">
-        <div className="text-sm font-semibold text-foreground">Staging Area (Unassigned Files)</div>
-        <div className="text-xs text-muted-foreground">{unassignedFiles.length} files</div>
+    <div className="flex flex-col mt-4 border border-border/50 rounded-lg overflow-hidden flex-1 min-h-[200px] bg-black/20">
+      <div className="px-3 py-2 border-b border-border/50 bg-black/40 flex items-center justify-between">
+        <div className="text-sm font-semibold text-foreground">Staging Area</div>
+        <div className="text-xs font-mono text-muted-foreground">{unassignedFiles.length}</div>
       </div>
       
-      <div className="flex-1 overflow-x-auto p-4 flex items-start gap-3">
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
         {unassignedFiles.length === 0 ? (
-          <div className="text-sm text-muted-foreground m-auto">No unassigned files in this pack.</div>
+          <div className="text-[11px] text-muted-foreground m-auto text-center px-4">No unassigned files in this pack.</div>
         ) : (
           unassignedFiles.map(f => (
             <DraggableSample key={f.originalFilename} sample={f} />
