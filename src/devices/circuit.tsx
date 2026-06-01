@@ -1,7 +1,7 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
 export const circuit: HardwareBlueprint = {
-  brand: "Novation", model: "Circuit Tracks", tagline: "GROOVEBOX / SEQUENCER", width: 280,
+  brand: "Novation", model: "Circuit Tracks", tagline: "GROOVEBOX", width: 280,
   theme: { border: "border-t-purple-500", header: "bg-purple-950", title: "text-purple-400", badge: "bg-purple-900 text-purple-200" },
   ports: [
     { id: 'audioIn1', title: 'Audio In 1', color: '#f97316', side: 'left', offset: 40 },

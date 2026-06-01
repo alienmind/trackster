@@ -1,7 +1,7 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
 export const s1: HardwareBlueprint = {
-  brand: "Roland", model: "S1 Aira Compact", tagline: "HYBRID DIGITAL ANALOG + FX SYNTH", width: 240,
+  brand: "Roland", model: "S1 Aira Compact", tagline: "SYNTH", width: 240,
   theme: { border: "border-t-emerald-500", header: "bg-emerald-950", title: "text-emerald-400", badge: "bg-emerald-900 text-emerald-200" },
   ports: [
     { id: 'audioOut', title: 'Audio Out', color: '#06b6d4', side: 'right', offset: 50 },

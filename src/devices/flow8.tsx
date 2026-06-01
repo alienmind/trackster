@@ -1,7 +1,7 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
 export const flow8: HardwareBlueprint = {
-  brand: "Behringer", model: "Behringer Flow 8", tagline: "DIGITAL MIXER", width: 320,
+  brand: "Behringer", model: "Behringer Flow 8", tagline: "MIXER", width: 320,
   theme: { border: "border-t-yellow-500", header: "bg-yellow-950", title: "text-yellow-400", badge: "bg-yellow-900 text-yellow-200" },
   ports: [
     { id: 'usb', title: 'USB Audio', color: '#ec4899', side: 'left', offset: 50 },

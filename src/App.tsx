@@ -113,7 +113,7 @@ export default function App() {
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="min-h-screen bg-background text-foreground flex flex-col font-sans h-screen overflow-hidden" onClick={initAudioContext}>
         {/* Header */}
-        <div className="hidden md:flex h-16 flex-none border-b border-border bg-card items-center px-4 justify-between order-1">
+        <div className="hidden lg:flex h-16 flex-none border-b border-border bg-card items-center px-4 justify-between order-1">
           {/* Left part (logo) */}
           <div className="flex-1 flex items-center space-x-3">
             <Logo className="h-8 w-auto text-foreground" />
@@ -128,13 +128,12 @@ export default function App() {
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground hidden sm:block mt-0.5">Hybrid DAWless documentation and utility tool</span>
           </div>
 
-          {/* Right part */}
           <div className="flex-1 flex items-center justify-end space-x-3">
             <a
               href="https://github.com/alienmind/trackster"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary whitespace-nowrap"
             >
               <Icons.GitBranch size={14} />
               GitHub
@@ -143,7 +142,7 @@ export default function App() {
               href="https://components.novationmusic.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary whitespace-nowrap"
             >
               <Icons.ExternalLink size={14} />
               Novation Components
