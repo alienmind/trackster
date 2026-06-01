@@ -14,7 +14,19 @@ Trackster is an advanced, fully client-side web application designed for organiz
 
 The application leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server.
 
-![Trackster – DAWless documentation diagrams](doc/screenshot01.png)
+## Gallery
+
+![Overview Dashboard](doc/gallery/overview.png)
+*The interactive DAWless overview canvas, mapping out hardware synths, mixers, audio cables, and MIDI routing.*
+
+![Add Custom Device](doc/gallery/new%20synth.png)
+*The custom device creation workflow, allowing users to define new hardware models by simply pasting an image and supplying a JSON definition.*
+
+![Circuit Tracks Integration](doc/gallery/circuittracks.png)
+*Circuit Tracks integration featuring advanced tools like sample management, wave preview, and pack organization.*
+
+![Behringer Grind Integration (WIP)](doc/gallery/grind.png)
+*Work-in-progress integration for the Behringer Grind, showing device-specific controls and routing.*
 
 ## Features
 
