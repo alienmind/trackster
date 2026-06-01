@@ -107,7 +107,7 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
                 ))}
              </div>
              <div className="border-t border-neutral-800 pt-4 flex justify-between items-center mt-2">
-                <span className="text-xs text-neutral-500">Don't see your device?</span>
+                <a href="https://github.com/alienmind/trackster/issues" target="_blank" rel="noreferrer" className="text-xs text-neutral-500 hover:text-cyan-400 hover:underline transition-colors">Don't see your device?</a>
                 <Button variant="outline" className="border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800" onClick={() => setView('custom')}>
                   <Icons.Plus size={16} className="mr-2" /> Create Custom Device
                 </Button>
