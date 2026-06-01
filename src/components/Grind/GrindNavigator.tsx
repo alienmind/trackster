@@ -1,13 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
+import rehypeRaw from 'rehype-raw';
 import { useGrindStore } from '../../stores/useGrindStore';
-import grindDoc from '../../../doc/GRIND.md?raw';
+import grindDocUrl from '@doc/GRIND.md?url';
 
 export default function GrindNavigator() {
   const activeDocSection = useGrindStore(s => s.activeDocSection);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [grindDoc, setGrindDoc] = useState<string>('');
+
+  useEffect(() => {
+    fetch(grindDocUrl)
+      .then(r => r.text())
+      .then(setGrindDoc)
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (activeDocSection && scrollRef.current) {
@@ -36,7 +45,7 @@ export default function GrindNavigator() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 prose prose-invert prose-sm max-w-none custom-scrollbar pb-32">
         <ReactMarkdown 
           remarkPlugins={[remarkGfm]} 
-          rehypePlugins={[rehypeSlug]}
+          rehypePlugins={[rehypeRaw, rehypeSlug]}
           components={{
             h1: ({node, ...props}) => <h1 className="text-2xl font-black text-cyan-400 mt-6 mb-4" {...props} />,
             h2: ({node, ...props}) => <h2 className="text-xl font-bold text-cyan-500 mt-8 mb-4 border-b border-neutral-800 pb-2" {...props} />,

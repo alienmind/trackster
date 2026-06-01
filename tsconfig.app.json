@@ -23,7 +23,8 @@
     
     "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@doc/*": ["./doc/*"]
     }
   },
   "include": ["src"]
