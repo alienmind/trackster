@@ -27,7 +27,7 @@ An interactive SVG-based drag-and-drop canvas to visually map out your hardware 
 *The interactive DAWless overview canvas, mapping out hardware synths, mixers, audio cables, and MIDI routing.*
 
 ### Custom Device Creation Workflow
-Want to add a new synth or mixer? You can easily define new hardware models by simply pasting an image and supplying a JSON definition.
+Want to add new gear? You can easily define new hardware models by simply pasting an image and supplying a JSON definition.
 
 ![Add Custom Device](doc/gallery/new%20synth.png)
 *The custom device creation workflow.*
@@ -39,17 +39,17 @@ Deep integration for the Novation Circuit Tracks, featuring advanced tools like 
 *Circuit Tracks integration featuring advanced tools like sample management, wave preview, and pack organization.*
 
 **Track Features:**
-- **Pack & Sample Organizer**: High-level views to manage all of your Circuit Tracks sample packs seamlessly, featuring a 64-pad grid mimicking the original hardware layout.
-- **Drag & Drop**: Easily rearrange your samples on a virtual grid, or drag them between packs!
-- **Magic Sort**: Automatically tag and arrange your drum samples into a sensible layout.
-- **Waveform Preview**: Visualize and playback audio samples directly in the app.
-- **Duplicate Detection**: Scan for potential duplicates to save space on your SD card.
+- **Tracks: Pack & Sample Organizer**: High-level views to manage all of your Circuit Tracks sample packs seamlessly, featuring a 64-pad grid mimicking the original hardware layout, allowing to review and commit file renaming and moves across your entire SD card at once.
+- **Tracks: Drag & Drop between packs**: Easily rearrange your Circuit Tracks samples on a virtual grid, or drag them between packs!
+- **Tracks: Magic Sort**: Automatically tag and arrange your drum samples into a sensible layout.
+- **Tracks: Waveform Preview**: Visualize and playback audio samples directly in the app.
+- **Tracks: Duplicate Detection**: Scan for potential duplicates to save space on your SD card.
 
-### Hardware Integrations: Behringer Grind (WIP)
-Work-in-progress integration for the Behringer Grind, showing device-specific controls and routing.
+### Hardware Integrations: Behringer Grind, Roland S1, others (WIP)
+Work-in-progress integration for the Behringer Grind, Roland S1, Behringer Flow 8, showing device-specific controls and routing.
 
 ![Behringer Grind Integration (WIP)](doc/gallery/grind.png)
-*Work-in-progress integration for the Behringer Grind.*
+*Work-in-progress integration for the Behringer Grind & others.
 
 ### Technical Features
 - **Local-first**: Reads and writes directly to your local file system (requires a Chromium-based browser).
