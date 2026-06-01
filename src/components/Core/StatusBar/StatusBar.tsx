@@ -1,15 +1,11 @@
 import { useFileSystemStore } from '../../../stores/useFileSystemStore';
 import { useAudioStore } from '../../../stores/useAudioStore';
-import { useUIStore } from '../../../stores/useUIStore';
 
 export default function StatusBar() {
   const slots = useFileSystemStore((s) => s.slots);
   const pendingChanges = useFileSystemStore((s) => s.pendingChanges);
   const duplicatePairs = useAudioStore((s) => s.duplicatePairs);
   const analysisProgress = useAudioStore((s) => s.analysisProgress);
-  const activeMainView = useUIStore((s) => s.activeMainView);
-
-  if (activeMainView !== 'circuit') return null;
 
   const filledSlots = slots.filter((s) => s.sample !== null).length;
 

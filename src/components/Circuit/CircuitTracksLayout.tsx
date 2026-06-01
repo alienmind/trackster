@@ -11,6 +11,9 @@ import DisclaimerModal from '../Core/DisclaimerModal/DisclaimerModal';
 import { useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../Core/ui/tooltip';
 import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
+import PendingChangesPane from '../Core/PendingChangesPane/PendingChangesPane';
+import StatusBar from '../Core/StatusBar/StatusBar';
+
 export default function CircuitTracksLayout() {
   const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useFileSystemStore();
   const scanDuplicates = useAudioStore((s) => s.scanDuplicates);
@@ -81,6 +84,21 @@ export default function CircuitTracksLayout() {
             </div>
           </div>
           
+          <div className="mt-8">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Links</h3>
+            <div className="flex flex-col gap-2">
+              <a
+                href="https://components.novationmusic.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-secondary/50 px-3 py-2 rounded-md hover:bg-secondary whitespace-nowrap"
+              >
+                <Icons.ExternalLink size={14} />
+                Novation Components
+              </a>
+            </div>
+          </div>
+          
           <StagingArea />
         </ResponsiveDrawer>
 
@@ -97,6 +115,11 @@ export default function CircuitTracksLayout() {
           </div>
         </div>
 
+        <PendingChangesPane />
+      </div>
+
+      <div className="hidden md:block">
+        <StatusBar />
       </div>
 
       <DisclaimerModal isOpen={isDisclaimerOpen} onClose={() => setIsDisclaimerOpen(false)} />

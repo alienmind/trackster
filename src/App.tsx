@@ -14,7 +14,6 @@ import {
   DragOverlay,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
-import StatusBar from './components/Core/StatusBar/StatusBar';
 import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
 import BrowserWarning from './components/Core/BrowserWarning/BrowserWarning';
@@ -26,7 +25,6 @@ import { ThemeToggle } from './components/Core/ThemeToggle';
 import pkg from '../package.json';
 
 import CircuitTracksLayout from './components/Circuit/CircuitTracksLayout';
-import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
 import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
 import BehringerGrind from './components/Grind/BehringerGrind';
@@ -139,17 +137,6 @@ export default function App() {
               <Icons.GitBranch size={14} />
               GitHub
             </a>
-            {activeMainView === 'circuit' && (
-              <a
-                href="https://components.novationmusic.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary whitespace-nowrap"
-              >
-                <Icons.ExternalLink size={14} />
-                Novation Components
-              </a>
-            )}
             <ThemeToggle />
           </div>
         </div>
@@ -170,12 +157,6 @@ export default function App() {
           ) : (
             <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
           )}
-          {activeMainView === 'circuit' && <PendingChangesPane />}
-        </div>
-
-        {/* Footer */}
-        <div className="order-4 md:order-4 hidden md:block">
-          <StatusBar />
         </div>
 
         <CommitDialog />
