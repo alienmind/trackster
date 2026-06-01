@@ -29,6 +29,7 @@ import CircuitTracksLayout from './components/Circuit/CircuitTracksLayout';
 import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
 import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
+import BehringerGrind from './components/Grind/BehringerGrind';
 
 export default function App() {
   const isSupported = 'showDirectoryPicker' in window;
@@ -168,8 +169,10 @@ export default function App() {
                 <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
               ) : activeMainView === 'circuit' ? (
                 <CircuitTracksLayout />
+              ) : activeMainView === 'grind' ? (
+                <BehringerGrind />
               ) : (
-                <WIPPage deviceName={activeMainView === 'grind' ? 'Behringer Grind' : activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'minifreak' ? 'Arturia Minifreak' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
+                <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'minifreak' ? 'Arturia Minifreak' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
               )}
               {activeMainView !== 'overview' && <PendingChangesPane />}
             </>
