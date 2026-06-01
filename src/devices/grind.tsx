@@ -2,7 +2,7 @@ import { HardwareBlueprint } from '../stores/useOverviewStore';
 import { Circle } from 'lucide-react';
 
 export const grind: HardwareBlueprint = {
-  brand: "Behringer", model: "Grind", tagline: "HYBRID SEMI-MODULAR", width: 340,
+  brand: "Behringer", model: "Grind", tagline: "SYNTH", width: 340,
   theme: { border: "border-t-[#8b4513]", header: "bg-[#2a1a10]", title: "text-orange-400", badge: "bg-[#3a2010] text-orange-200" },
   ports: [
     { id: 'audioOut', title: 'Audio Out', color: '#06b6d4', side: 'right', offset: 50 },

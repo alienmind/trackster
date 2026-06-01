@@ -1,7 +1,7 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
 export const minifreak: HardwareBlueprint = {
-  brand: "Arturia", model: "MiniFreak Stellar", tagline: "POLYPHONIC SYNTH", width: 300,
+  brand: "Arturia", model: "MiniFreak Stellar", tagline: "SYNTH", width: 300,
   theme: { border: "border-t-zinc-500", header: "bg-zinc-950", title: "text-zinc-300", badge: "bg-zinc-800 text-zinc-400" },
   ports: [
     { id: 'audioOut', title: 'Audio Out', color: '#06b6d4', side: 'right', offset: 50 },

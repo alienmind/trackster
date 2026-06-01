@@ -2,7 +2,7 @@ import { HardwareBlueprint } from '../stores/useOverviewStore';
 import { Laptop } from 'lucide-react';
 
 export const ableton: HardwareBlueprint = {
-  brand: "Ableton", model: "Live 12", tagline: "DAW / MASTERING", width: 200,
+  brand: "Ableton", model: "Live 12", tagline: "DAW", width: 200,
   theme: { border: "border-t-neutral-100", header: "bg-neutral-800", title: "text-white", badge: "bg-neutral-700 text-neutral-300" },
   ports: [
     { id: 'usbIn', title: 'USB In', color: '#a855f7', side: 'left', offset: 140 },
