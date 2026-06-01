@@ -35,7 +35,6 @@ export default function App() {
   const isSupported = 'showDirectoryPicker' in window;
   const activePage = useUIStore((s) => s.activePage);
   const activeMainView = useUIStore((s) => s.activeMainView);
-  const rootHandle = useFileSystemStore((s) => s.rootHandle);
   
   const moveSlot = useFileSystemStore((s) => s.moveSlot);
   const movePackSlot = useFileSystemStore((s) => s.movePackSlot);
@@ -157,26 +156,16 @@ export default function App() {
         </div>
 
         <div className="flex flex-1 overflow-hidden min-h-0 order-2 md:order-3 relative z-0">
-          {!rootHandle && activeMainView !== 'overview' ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground bg-background">
-              <Icons.FolderOpen size={48} className="opacity-20" />
-              <h2 className="text-xl font-semibold">No SD Card Selected</h2>
-              <p>Mount your Circuit Tracks SD Card root folder to begin.</p>
-            </div>
+          {activeMainView === 'overview' ? (
+            <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
+          ) : activeMainView === 'circuit' ? (
+            <CircuitTracksLayout />
+          ) : activeMainView === 'grind' ? (
+            <BehringerGrind />
           ) : (
-            <>
-              {activeMainView === 'overview' ? (
-                <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
-              ) : activeMainView === 'circuit' ? (
-                <CircuitTracksLayout />
-              ) : activeMainView === 'grind' ? (
-                <BehringerGrind />
-              ) : (
-                <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'minifreak' ? 'Arturia Minifreak' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
-              )}
-              {activeMainView !== 'overview' && <PendingChangesPane />}
-            </>
+            <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'minifreak' ? 'Arturia Minifreak' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
           )}
+          {activeMainView !== 'overview' && <PendingChangesPane />}
         </div>
 
         {/* Footer */}
