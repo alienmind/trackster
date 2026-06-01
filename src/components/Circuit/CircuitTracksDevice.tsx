@@ -10,6 +10,7 @@ import { Knob } from '../Core/HardwareUI/Knob';
 import { FunctionButton } from '../Core/HardwareUI/FunctionButton';
 import { FunctionPad } from '../Core/HardwareUI/FunctionPad';
 import { DownArrow, UpArrow, RecordIcon, PlayIcon } from '../Core/HardwareUI/Icons';
+import ScaleFit from '../Core/ui/ScaleFit';
 
 export default function CircuitTracksDevice() {
   const [deviceMode, setDeviceMode] = useState<'packs' | 'samples'>('packs');
@@ -78,9 +79,8 @@ export default function CircuitTracksDevice() {
   const padsToRender = deviceMode === 'packs' ? activePackSlots : activePageSlots;
 
   return (
-    <div className="w-full flex-1 flex flex-col items-center justify-center p-4 min-h-[800px]">
-      {/* Device Chassis */}
-      <div className="w-full max-w-[1000px] bg-[#18181a] rounded-2xl p-8 shadow-2xl border-t border-gray-700/20 ring-1 ring-black">
+    <ScaleFit baseWidth={1050} baseHeight={800} maxScale={4}>
+      <div className="w-[1000px] bg-[#18181a] rounded-2xl p-8 shadow-2xl border-t border-gray-700/20 ring-1 ring-black">
 
         {/* KNOBS SECTION */}
         <div className="grid grid-cols-11 w-full relative mb-10 mt-2 gap-y-6">
@@ -160,6 +160,6 @@ export default function CircuitTracksDevice() {
           </div>
         </div>
       </div>
-    </div>
+    </ScaleFit>
   );
 }

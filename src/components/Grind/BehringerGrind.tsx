@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import ScaleFit from '../Core/ui/ScaleFit';
 
 // --- ICONS & SVGS ---
 
@@ -276,10 +277,10 @@ export default function BehringerGrind() {
   };
 
   return (
-    <div className="min-h-screen bg-[#111] flex flex-1 items-center justify-center p-4 font-sans select-none overflow-auto">
-      
+    <div className="min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
+      <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
       {/* Synth Chassis with Wood Panels */}
-      <div className="flex shadow-2xl relative shrink-0 scale-75 xl:scale-90 2xl:scale-100 origin-center transition-transform">
+      <div className="flex shadow-2xl relative shrink-0 origin-center transition-transform">
         
         {/* Left Wood Panel */}
         <div className="w-4 rounded-l-md border-r border-[#3a1f10] shadow-[inset_-2px_0_4px_rgba(0,0,0,0.5)]" 
@@ -561,6 +562,7 @@ export default function BehringerGrind() {
              style={{ background: 'linear-gradient(to left, #6d3a1c, #8b4a24)' }}></div>
       
       </div>
+      </ScaleFit>
     </div>
   );
 }

@@ -80,6 +80,8 @@ export default function CircuitTracksLayout() {
               </Button>
             </div>
           </div>
+          
+          <StagingArea />
         </ResponsiveDrawer>
 
         {/* Center Panel - Device */}
@@ -96,9 +98,6 @@ export default function CircuitTracksLayout() {
         </div>
 
       </div>
-
-      {/* Bottom Panel */}
-      <StagingArea />
 
       <DisclaimerModal isOpen={isDisclaimerOpen} onClose={() => setIsDisclaimerOpen(false)} />
     </div>
