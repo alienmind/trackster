@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,63 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
   const [previewSvg, setPreviewSvg] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [parsedConfig, setParsedConfig] = useState<any>(null);
   const addNode = useOverviewStore((s) => s.addNode);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Parse config for model name
+  useEffect(() => {
+    try {
+      setParsedConfig(JSON.parse(jsonContent));
+    } catch {
+      setParsedConfig(null);
+    }
+  }, [jsonContent]);
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (view !== 'custom' || !isOpen) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      let hasImage = false;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          hasImage = true;
+          const blob = items[i].getAsFile();
+          if (blob) {
+            e.preventDefault();
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result as string;
+              try {
+                const currentParsed = JSON.parse(jsonContent);
+                currentParsed.imageUrl = base64String;
+                if (currentParsed.svgRender && typeof currentParsed.svgRender === 'string' && currentParsed.svgRender.includes('<!-- LLM generated SVG goes here -->')) {
+                  currentParsed.svgRender = '';
+                }
+                setJsonContent(JSON.stringify(currentParsed, null, 2));
+              } catch (err) {
+                console.error("Could not parse JSON to inject image", err);
+              }
+            };
+            reader.readAsDataURL(blob);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [view, isOpen, jsonContent]);
+
+  const handleSearchImages = () => {
+    if (!parsedConfig?.brand && !parsedConfig?.model) return;
+    const query = `${parsedConfig?.brand || ''} ${parsedConfig?.model || ''} top view`.trim();
+    const googleUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}&tbs=ic:trans,isz:l`;
+    window.open(googleUrl, '_blank', 'noopener,noreferrer');
+  };
 
   useEffect(() => {
     if (view !== 'custom') return;
@@ -88,14 +144,20 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
 
   const handleSubmit = () => {
     try {
-      // Validate JSON
       JSON.parse(jsonContent);
       setError(null);
       
-      const fileName = `src/devices/new_device.json`;
-      const githubUrl = `https://github.com/alienmind/trackster/new/main?filename=${encodeURIComponent(fileName)}&value=${encodeURIComponent(jsonContent)}&quick_pull=1`;
+      const fileName = `${parsedConfig?.model?.toLowerCase().replace(/\s+/g, '_') || 'new_device'}.json`;
+      const blob = new Blob([jsonContent], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
-      window.open(githubUrl, '_blank', 'noopener,noreferrer');
       onClose();
     } catch (e: any) {
       setError(e.message || "Invalid JSON format");
@@ -115,9 +177,12 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
               <>
                 Trackster doesn't support generic runtime device loading yet. However, you can propose a new device configuration by creating a JSON file. 
                 For reference on the expected structure, check out the <a href="https://github.com/alienmind/trackster/tree/main/src/devices" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">devices package on GitHub</a>.
-                Once you define your device here, you can click "Submit via GitHub PR" to open a new Pull Request with this code!
+                Once you define your device here, you can click "Download Device JSON" to save the file locally. After downloading, you can easily submit it by dragging the file into the <a href="https://github.com/alienmind/trackster/upload/main/src/devices" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline font-bold">GitHub Upload Page</a> to automatically open a Pull Request!
+                <span className="block mt-2 text-indigo-300 text-xs">
+                  <span className="font-bold text-indigo-400">Image Tip:</span> Use the "Search Images" button to find a transparent top-view. <strong>Open the full image in its original site</strong>, right-click, select <strong>Copy Image</strong>, and press <strong>Ctrl+V (or Cmd+V)</strong> anywhere in this window to instantly embed it!
+                </span>
                 <span className="block mt-2 text-cyan-300">
-                  <span className="font-bold">Tip:</span> Use an LLM to help you out here! Check out our <a href="https://github.com/alienmind/trackster/blob/main/doc/NEW_DEVICES.md" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline font-semibold">guide on adding new devices</a> for a prompt template that generates the JSON and the SVG render directly from a picture of your gear.
+                  <span className="font-bold">JSON Tip:</span> Use an LLM to help you out here! Check out our <a href="https://github.com/alienmind/trackster/blob/main/doc/NEW_DEVICES.md" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline font-semibold">guide on adding new devices</a> for a prompt template that generates the JSON and the SVG render directly from a picture of your gear.
                 </span>
               </>
             }
@@ -154,6 +219,9 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
                  {showPreview ? <Icons.EyeOff size={14} className="mr-2" /> : <Icons.Eye size={14} className="mr-2" />}
                  {showPreview ? "Hide Preview" : "Show Preview"}
                </Button>
+               <Button variant="outline" size="sm" className="border-indigo-700 text-indigo-300 hover:text-white hover:bg-indigo-900/50 h-8 ml-2" onClick={handleSearchImages} disabled={!parsedConfig?.brand && !parsedConfig?.model}>
+                 <Icons.Search size={14} className="mr-2" /> Search Images
+               </Button>
             </div>
             
             <div className="flex flex-col md:flex-row gap-4 h-[400px]">
@@ -176,19 +244,53 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
               {showPreview && (
                 <div className="flex-1 flex flex-col bg-zinc-900 border border-zinc-700 rounded items-center justify-center p-4 relative h-full overflow-hidden">
                   <span className="absolute top-2 left-2 text-xs font-bold text-zinc-500 uppercase">Live Preview</span>
-                  {previewSvg ? (
-                    <div 
-                      className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
-                      dangerouslySetInnerHTML={{ __html: previewSvg }} 
-                    />
-                  ) : previewImage ? (
-                    <div className="w-full h-full flex items-center justify-center p-4">
-                      <img src={previewImage} alt="Device Preview" className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                  {parsedConfig ? (
+                    <div className={`hardware-node group relative bg-neutral-900 rounded-xl border-t-4 shadow-2xl flex flex-col w-[300px] transform scale-[0.85] origin-center ${parsedConfig.theme?.border || 'border-t-neutral-500'}`}>
+                      {/* Header */}
+                      <div className={`p-2 flex justify-between items-center rounded-t-lg ${parsedConfig.theme?.header || 'bg-neutral-900'}`}>
+                        <div>
+                          <h3 className={`font-black tracking-tight leading-none ${parsedConfig.theme?.title || 'text-white'}`}>{parsedConfig.model || 'Unknown Model'}</h3>
+                          <span className="text-[10px] text-neutral-400">{parsedConfig.brand || 'Unknown Brand'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold tracking-widest whitespace-nowrap ${parsedConfig.theme?.badge || 'bg-neutral-800 text-neutral-400'}`}>{parsedConfig.tagline || 'NEW DEVICE'}</span>
+                          <button className="text-neutral-400 hover:text-white transition-colors focus:outline-none ml-1">
+                            <Icons.ChevronDown size={14}/>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Graphic SVG Component */}
+                      <div className="p-3 bg-neutral-800 flex justify-center items-center min-h-[120px]">
+                        {previewSvg ? (
+                          <div 
+                            className="w-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                            dangerouslySetInnerHTML={{ __html: previewSvg }} 
+                          />
+                        ) : previewImage ? (
+                          <div className="w-full flex items-center justify-center p-2">
+                            <img src={previewImage} alt="Device Preview" className="max-w-full max-h-[160px] object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                        ) : (
+                          <div className="text-zinc-600 text-sm text-center flex flex-col items-center gap-2 py-4">
+                            <Icons.ImageOff size={24} className="opacity-50" />
+                            <p>No valid visual</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Collapsible I/O Data */}
+                      <div className="bg-neutral-950 flex flex-col rounded-b-xl">
+                         <button className="w-full flex items-center justify-between p-2 px-3 text-[10px] text-neutral-400 hover:text-neutral-200 hover:bg-white/5 transition-colors border-t border-neutral-800 focus:outline-none">
+                            <span className="font-bold uppercase tracking-wider">Routing & I/O Data</span>
+                            <Icons.ChevronDown size={14}/>
+                         </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-zinc-600 text-sm text-center flex flex-col items-center gap-2">
-                      <Icons.ImageOff size={32} className="opacity-50" />
-                      <p>No valid svgRender or imageUrl found</p>
+                      <Icons.AlertTriangle size={32} className="opacity-50" />
+                      <p>Invalid JSON</p>
                     </div>
                   )}
                 </div>
@@ -201,7 +303,7 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
                 <Icons.ArrowLeft size={16} className="mr-2" /> Back to Library
               </Button>
               <Button variant="default" className="bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-2" onClick={handleSubmit} disabled={!!error}>
-                <Icons.Code size={16} /> Submit via GitHub PR
+                <Icons.Download size={16} /> Download Device JSON
               </Button>
             </div>
           </div>

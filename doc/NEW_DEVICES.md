@@ -8,6 +8,14 @@ We strongly encourage you to **use an LLM (Large Language Model)** like Claude, 
 
 Modern AI models are excellent at translating images into code. By simply uploading a top-down picture of your synthesizer, groovebox, or mixer to an LLM, it can instantly generate both the port mappings and a beautiful SVG render of the device.
 
+## Sourcing Images (Frictionless Paste)
+
+Trackster has a native clipboard interception feature for easily embedding images without dealing with URLs or CORS errors:
+1. In the New Device Modal, click the **"Search Images"** button. This automatically opens a Google Image search perfectly tailored for your device (top view, transparent).
+2. Find the perfect image in the search results, and **click it to open it fully on its original site or in the full-size Google preview pane**.
+3. **Right-click** the full-size image and select **"Copy Image"**.
+4. Switch back to your Trackster tab and simply press **Ctrl + V** (or Cmd + V). The app will intercept the paste, read the image from your clipboard, instantly convert it to Base64, and embed it straight into your JSON configuration!
+
 ## The Prompt
 
 Copy and paste the following prompt into your favorite LLM, and **attach a picture of the top/front face of your hardware device**.
@@ -53,6 +61,8 @@ Copy and paste the following prompt into your favorite LLM, and **attach a pictu
 ## Submitting Your Device
 
 1. Once the LLM generates the JSON, paste it into the "Add Custom Device" window in Trackster.
-2. Ensure the JSON is valid (the window will tell you if it's not).
-3. Click **"Submit via GitHub PR"**.
-4. This will automatically open a Pull Request on the Trackster repository with your JSON. The maintainers will review it, translate the SVG string into the app's React architecture, and release it in the next update!
+2. (Optional) Follow the "Sourcing Images" steps above to paste a real photo instead of using an SVG.
+3. Ensure the JSON is valid (the window will tell you if it's not) and the Live Preview looks correct.
+4. Click **"Download Device JSON"**.
+5. Save the downloaded `.json` file to your computer.
+6. Drag and drop the downloaded file directly into the **[Trackster GitHub Upload Page](https://github.com/alienmind/trackster/upload/main/src/devices)**. GitHub will automatically handle creating a new branch and opening a Pull Request for you!
