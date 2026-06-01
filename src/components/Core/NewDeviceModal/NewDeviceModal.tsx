@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -46,7 +46,6 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
   const [showPreview, setShowPreview] = useState(true);
   const [parsedConfig, setParsedConfig] = useState<any>(null);
   const addNode = useOverviewStore((s) => s.addNode);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parse config for model name
   useEffect(() => {
@@ -64,11 +63,10 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
       const items = e.clipboardData?.items;
       if (!items) return;
 
-      let hasImage = false;
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          hasImage = true;
-          const blob = items[i].getAsFile();
+        const item = items[i];
+        if (item && item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
           if (blob) {
             e.preventDefault();
             const reader = new FileReader();
