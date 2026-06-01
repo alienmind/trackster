@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 
-export const Knob = ({ label }: { label: string }) => {
-  const size = 50;
+export interface KnobProps {
+  label?: string;
+  subLabel?: string;
+  size?: number;
+  onInteract?: () => void;
+}
+
+export const Knob = ({ label = '', subLabel, size = 50, onInteract }: KnobProps) => {
   const gradId = label.replace(/\s+/g, '');
 
   const [rotation, setRotation] = useState(0); // -135 to 135 degrees
@@ -14,6 +20,7 @@ export const Knob = ({ label }: { label: string }) => {
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
     e.preventDefault();
+    if (onInteract) onInteract();
   };
 
   const handlePointerMove = (e: PointerEvent) => {
@@ -90,6 +97,11 @@ export const Knob = ({ label }: { label: string }) => {
       <span className="text-[10px] text-gray-300 mt-4 font-medium tracking-wide whitespace-nowrap text-center select-none pointer-events-none">
         {label}
       </span>
+      {subLabel && (
+        <span className="text-[8px] text-gray-500 mt-1 font-bold whitespace-pre text-center select-none pointer-events-none">
+          {subLabel}
+        </span>
+      )}
     </div>
   );
 };
