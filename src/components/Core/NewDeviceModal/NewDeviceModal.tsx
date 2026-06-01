@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -32,14 +32,44 @@ const DEFAULT_JSON = `{
     { "id": "audioOut", "title": "Audio Out", "color": "#06b6d4", "side": "right", "offset": 50 },
     { "id": "midiIn", "title": "MIDI In", "color": "#10b981", "side": "left", "offset": 100 },
     { "id": "midiOut", "title": "MIDI Out", "color": "#3b82f6", "side": "right", "offset": 100 }
-  ]
+  ],
+  "svgRender": "<svg viewBox=\\"0 0 300 200\\" xmlns=\\"http://www.w3.org/2000/svg\\"><!-- LLM generated SVG goes here --></svg>",
+  "imageUrl": ""
 }`;
 
 export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps) {
   const [view, setView] = useState<'library' | 'custom'>('library');
   const [jsonContent, setJsonContent] = useState(DEFAULT_JSON);
   const [error, setError] = useState<string | null>(null);
+  const [previewSvg, setPreviewSvg] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(true);
   const addNode = useOverviewStore((s) => s.addNode);
+
+  useEffect(() => {
+    if (view !== 'custom') return;
+    const timer = setTimeout(() => {
+      try {
+        const parsed = JSON.parse(jsonContent);
+        const isDefaultSvg = parsed.svgRender && typeof parsed.svgRender === 'string' && parsed.svgRender.includes('<!-- LLM generated SVG goes here -->');
+        
+        if (parsed.svgRender && typeof parsed.svgRender === 'string' && parsed.svgRender.trim() !== '' && !isDefaultSvg) {
+          setPreviewSvg(parsed.svgRender);
+          setPreviewImage(null);
+        } else if (parsed.imageUrl && typeof parsed.imageUrl === 'string' && parsed.imageUrl.trim() !== '') {
+          setPreviewImage(parsed.imageUrl);
+          setPreviewSvg(null);
+        } else {
+          setPreviewSvg(null);
+          setPreviewImage(null);
+        }
+        setError(null);
+      } catch (e: any) {
+        setError(e.message || "Invalid JSON format");
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [jsonContent, view]);
 
   const handleAddExisting = (deviceType: string) => {
     const id = `n_${deviceType}_${Math.random().toString(36).substring(2, 6)}`;
@@ -74,7 +104,7 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-2xl bg-zinc-950 border border-zinc-800 text-white">
+      <DialogContent className={`bg-zinc-950 border border-zinc-800 text-white transition-all duration-300 ${view === 'custom' && showPreview ? 'sm:max-w-5xl' : 'sm:max-w-2xl'}`}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white flex items-center justify-between">
             <span>{view === 'library' ? 'Add Device from Library' : 'Add Custom Device via GitHub'}</span>
@@ -86,6 +116,9 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
                 Trackster doesn't support generic runtime device loading yet. However, you can propose a new device configuration by creating a JSON file. 
                 For reference on the expected structure, check out the <a href="https://github.com/alienmind/trackster/tree/main/src/devices" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">devices package on GitHub</a>.
                 Once you define your device here, you can click "Submit via GitHub PR" to open a new Pull Request with this code!
+                <span className="block mt-2 text-cyan-300">
+                  <span className="font-bold">Tip:</span> Use an LLM to help you out here! Check out our <a href="https://github.com/alienmind/trackster/blob/main/doc/NEW_DEVICES.md" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline font-semibold">guide on adding new devices</a> for a prompt template that generates the JSON and the SVG render directly from a picture of your gear.
+                </span>
               </>
             }
           </DialogDescription>
@@ -114,26 +147,60 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
              </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 relative mt-4">
-            <textarea
-              className="w-full h-80 bg-zinc-900 border border-zinc-700 text-zinc-300 p-4 rounded font-mono text-sm resize-none focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-              value={jsonContent}
-              onChange={(e) => {
-                setJsonContent(e.target.value);
-                setError(null);
-              }}
-              spellCheck={false}
-            />
-            {error && (
-              <div className="absolute bottom-4 left-4 text-red-400 text-xs font-bold bg-zinc-950 px-2 py-1 rounded border border-red-900/50">
-                {error}
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="flex justify-between items-center">
+               <div className="text-sm text-zinc-400">Edit JSON configuration below:</div>
+               <Button variant="outline" size="sm" className="border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 h-8" onClick={() => setShowPreview(!showPreview)}>
+                 {showPreview ? <Icons.EyeOff size={14} className="mr-2" /> : <Icons.Eye size={14} className="mr-2" />}
+                 {showPreview ? "Hide Preview" : "Show Preview"}
+               </Button>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-4 h-[400px]">
+              {/* Textarea */}
+              <div className="flex-1 relative h-full">
+                <textarea
+                  className="w-full h-full bg-zinc-900 border border-zinc-700 text-zinc-300 p-4 rounded font-mono text-sm resize-none focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                  value={jsonContent}
+                  onChange={(e) => setJsonContent(e.target.value)}
+                  spellCheck={false}
+                />
+                {error && (
+                  <div className="absolute bottom-4 left-4 text-red-400 text-xs font-bold bg-zinc-950 px-2 py-1 rounded border border-red-900/50 max-w-[90%] overflow-hidden text-ellipsis whitespace-nowrap">
+                    {error}
+                  </div>
+                )}
               </div>
-            )}
-            <div className="flex justify-between items-center mt-4">
+              
+              {/* Preview */}
+              {showPreview && (
+                <div className="flex-1 flex flex-col bg-zinc-900 border border-zinc-700 rounded items-center justify-center p-4 relative h-full overflow-hidden">
+                  <span className="absolute top-2 left-2 text-xs font-bold text-zinc-500 uppercase">Live Preview</span>
+                  {previewSvg ? (
+                    <div 
+                      className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"
+                      dangerouslySetInnerHTML={{ __html: previewSvg }} 
+                    />
+                  ) : previewImage ? (
+                    <div className="w-full h-full flex items-center justify-center p-4">
+                      <img src={previewImage} alt="Device Preview" className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                    </div>
+                  ) : (
+                    <div className="text-zinc-600 text-sm text-center flex flex-col items-center gap-2">
+                      <Icons.ImageOff size={32} className="opacity-50" />
+                      <p>No valid svgRender or imageUrl found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Actions */}
+            <div className="flex justify-between items-center mt-2">
               <Button variant="ghost" className="text-neutral-400 hover:text-white hover:bg-neutral-900" onClick={() => setView('library')}>
                 <Icons.ArrowLeft size={16} className="mr-2" /> Back to Library
               </Button>
-              <Button variant="default" className="bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-2" onClick={handleSubmit}>
+              <Button variant="default" className="bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-2" onClick={handleSubmit} disabled={!!error}>
                 <Icons.Code size={16} /> Submit via GitHub PR
               </Button>
             </div>
