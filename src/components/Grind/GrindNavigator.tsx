@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import { useGrindStore } from '../../stores/useGrindStore';
-import grindDoc from '../../../../doc/GRIND.md?raw';
+import grindDoc from '../../../doc/GRIND.md?raw';
 
 export default function GrindNavigator() {
   const activeDocSection = useGrindStore(s => s.activeDocSection);
