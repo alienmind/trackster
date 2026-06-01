@@ -20,6 +20,7 @@ import { useUIStore } from '../../stores/useUIStore';
 import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../stores/useOverviewStore';
 import { Button } from '../Core/ui/button';
 import RemoveButton from '../Core/ui/RemoveButton';
+import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
 import * as Icons from 'lucide-react';
 
 // Technical Cable Dictionary
@@ -680,7 +681,7 @@ export default function OverviewTab() {
       <div className="flex flex-1 min-h-0">
         
         {/* Left Panel */}
-        <div className="w-64 bg-card border-r border-border p-4 flex flex-col gap-4 overflow-y-auto z-10 shrink-0 text-card-foreground">
+        <ResponsiveDrawer className="bg-card border-r border-border z-10 shrink-0 text-card-foreground">
           <div className="flex flex-col gap-2">
             <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Routing Mode</h2>
             <Button
@@ -715,7 +716,7 @@ export default function OverviewTab() {
               <Icons.Save size={14} className="mr-2" /> Save
             </Button>
           </div>
-        </div>
+        </ResponsiveDrawer>
 
         {/* Main Canvas Area */}
         <div className="flex-1 w-full bg-neutral-100 dark:bg-neutral-900 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">

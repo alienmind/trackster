@@ -16,6 +16,8 @@ interface UIState {
   isDuplicateModalOpen: boolean;
   duplicateClusters: SampleFile[][];
 
+  isMobileDrawerOpen: boolean;
+
   setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton') => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null) => void;
@@ -30,6 +32,8 @@ interface UIState {
 
   openDuplicateModal: (clusters: SampleFile[][]) => void;
   closeDuplicateModal: () => void;
+
+  setMobileDrawerOpen: (isOpen: boolean) => void;
 }
 
 const storeCreator: StateCreator<UIState> = (set) => ({
@@ -44,6 +48,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   isDuplicateModalOpen: false,
   duplicateClusters: [],
+  isMobileDrawerOpen: false,
 
   setActiveMainView: (view) => set({ activeMainView: view }),
   setActivePage: (page) => {
@@ -77,7 +82,8 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   setSelectedFile: (file) => set({ selectedFile: file }),
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
-  closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] })
+  closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] }),
+  setMobileDrawerOpen: (isOpen) => set({ isMobileDrawerOpen: isOpen })
 });
 
 export const useUIStore = create<UIState>()(

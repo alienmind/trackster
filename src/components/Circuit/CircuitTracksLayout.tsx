@@ -10,6 +10,7 @@ import * as Icons from 'lucide-react';
 import DisclaimerModal from '../Core/DisclaimerModal/DisclaimerModal';
 import { useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../Core/ui/tooltip';
+import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
 export default function CircuitTracksLayout() {
   const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useFileSystemStore();
   const scanDuplicates = useAudioStore((s) => s.scanDuplicates);
@@ -28,7 +29,7 @@ export default function CircuitTracksLayout() {
       <div className="flex flex-1 min-h-0">
         
         {/* Left Panel */}
-        <div className="w-64 bg-card border-r border-border p-4 flex flex-col gap-4 overflow-y-auto">
+        <ResponsiveDrawer className="bg-card border-r border-border">
           <Tooltip>
             <TooltipTrigger className="focus:outline-none w-full">
               <Button
@@ -48,11 +49,21 @@ export default function CircuitTracksLayout() {
 
           <div className="flex flex-col gap-2">
             <Button variant="default" className="justify-start" onClick={() => { autoTag(); autoArrange(); }}>
-              <Icons.Wand2 className="mr-2" size={16} /> Magic Sort
+              <Icons.Wand2 className="mr-2" size={16} />
+              Auto-Tag & Arrange
             </Button>
-            <Button variant="default" className="justify-start" onClick={() => scanDuplicates()}>
-              <Icons.Search className="mr-2" size={16} /> Scan Dupes
-            </Button>
+
+            <Tooltip>
+              <TooltipTrigger className="focus:outline-none w-full">
+                <Button variant="secondary" className="justify-start w-full" onClick={scanDuplicates}>
+                  <Icons.Copy className="mr-2" size={16} />
+                  Find Duplicates
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Scan all assigned samples for identical audio files.
+              </TooltipContent>
+            </Tooltip>
             <Button variant={applyTagsToFilenames ? "default" : "secondary"} className={`justify-start ${applyTagsToFilenames ? 'bg-primary font-bold shadow-sm' : ''}`} onClick={() => setApplyTagsToFilenames(!applyTagsToFilenames)}>
               <Icons.Tag className="mr-2" size={16} /> Tags in Filenames
             </Button>
@@ -69,7 +80,7 @@ export default function CircuitTracksLayout() {
               </Button>
             </div>
           </div>
-        </div>
+        </ResponsiveDrawer>
 
         {/* Center Panel - Device */}
         <div className="flex-1 overflow-y-auto flex items-center justify-center bg-neutral-950">

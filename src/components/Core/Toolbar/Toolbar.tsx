@@ -31,7 +31,7 @@ export default function Toolbar() {
   
 
   return (
-    <div className="flex flex-col flex-none w-full border-b border-border bg-card">
+    <div className="flex flex-col flex-none w-full border-t md:border-t-0 md:border-b border-border bg-card shadow-[0_-4px_10px_rgba(0,0,0,0.2)] md:shadow-none relative z-50">
       <div className="h-16 px-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
 
