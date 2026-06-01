@@ -139,15 +139,17 @@ export default function App() {
               <Icons.GitBranch size={14} />
               GitHub
             </a>
-            <a
-              href="https://components.novationmusic.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary whitespace-nowrap"
-            >
-              <Icons.ExternalLink size={14} />
-              Novation Components
-            </a>
+            {activeMainView === 'circuit' && (
+              <a
+                href="https://components.novationmusic.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary whitespace-nowrap"
+              >
+                <Icons.ExternalLink size={14} />
+                Novation Components
+              </a>
+            )}
             <ThemeToggle />
           </div>
         </div>
@@ -168,7 +170,7 @@ export default function App() {
           ) : (
             <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
           )}
-          {activeMainView !== 'overview' && <PendingChangesPane />}
+          {activeMainView === 'circuit' && <PendingChangesPane />}
         </div>
 
         {/* Footer */}
