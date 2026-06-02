@@ -1,0 +1,113 @@
+{
+  "id": "default",
+  "name": "Default Studio Setup",
+  "nodes": {
+    "n_circuit": { "id": "n_circuit", "type": "circuit", "x": 2039.5, "y": -26.8, "zIndex": 37, "isExpanded": true, "circuitLogicalOuts": { "synth1": 3, "synth2": 4, "midi1": 1, "midi2": 2 } },
+    "n_grind": { "id": "n_grind", "type": "grind", "x": 1175.4, "y": 337.0, "zIndex": 40, "isExpanded": true, "logicalInChannel": 1 },
+    "n_s1": { "id": "n_s1", "type": "s1", "x": 1647.4, "y": 565.6, "zIndex": 36, "isExpanded": true, "logicalInChannel": 2 },
+    "n_minifreak": { "id": "n_minifreak", "type": "minifreak", "x": 747.4, "y": -12.4, "zIndex": 38, "isExpanded": true, "logicalInChannel": 3 },
+    "n_flow8": { "id": "n_flow8", "type": "flow8", "x": 2648.4, "y": -112.2, "zIndex": 42, "isExpanded": true },
+    "n_ableton": { "id": "n_ableton", "type": "ableton", "x": 3144.4, "y": 226.2, "zIndex": 43, "isExpanded": true }
+  },
+  "connections": {
+    "c_grind_audio": {
+      "id": "c_grind_audio",
+      "source": "n_grind",
+      "target": "n_circuit",
+      "type": "audio_jack_to_minijack",
+      "label": "Mini Jack 3.5 to TS 1/4",
+      "startOffset": { "x": 300, "y": 100 },
+      "endOffset": { "x": 0, "y": 50 },
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn1"
+    },
+    "c_s1_audio": {
+      "id": "c_s1_audio",
+      "source": "n_s1",
+      "target": "n_flow8",
+      "type": "audio_minijack_to_dual_trs",
+      "label": "Mini Jack to TS 7/8 (Y Cable)",
+      "startOffset": { "x": 230, "y": 50 },
+      "endOffset": { "x": 0, "y": 100 },
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn7"
+    },
+    "c_circuit_phones": {
+      "id": "c_circuit_phones",
+      "source": "n_circuit",
+      "target": "n_flow8",
+      "type": "audio_minijack_to_dual_trs",
+      "label": "Phones (Mini Jack) to TS 5/6 (Y Cable)",
+      "startOffset": { "x": 350, "y": 50 },
+      "endOffset": { "x": 0, "y": 150 },
+      "sourcePort": "phonesOut",
+      "targetPort": "audioIn5"
+    },
+    "c_mf_audio_l": {
+      "id": "c_mf_audio_l",
+      "source": "n_minifreak",
+      "target": "n_flow8",
+      "type": "audio_ts",
+      "label": "TS Left to In 3",
+      "startOffset": { "x": 300, "y": 100 },
+      "endOffset": { "x": 0, "y": 100 },
+      "sourcePort": "audioOutL",
+      "targetPort": "audioIn3"
+    },
+    "c_mf_audio_r": {
+      "id": "c_mf_audio_r",
+      "source": "n_minifreak",
+      "target": "n_flow8",
+      "type": "audio_ts",
+      "label": "TS Right to In 4",
+      "startOffset": { "x": 300, "y": 120 },
+      "endOffset": { "x": 0, "y": 120 },
+      "sourcePort": "audioOutR",
+      "targetPort": "audioIn4"
+    },
+    "c_midi_circuit_s1": {
+      "id": "c_midi_circuit_s1",
+      "source": "n_circuit",
+      "target": "n_s1",
+      "type": "midi_din_to_trs",
+      "label": "5-Pin DIN to TRS MIDI",
+      "startOffset": { "x": 350, "y": 150 },
+      "endOffset": { "x": 0, "y": 200 },
+      "sourcePort": "midiOut",
+      "targetPort": "midiIn"
+    },
+    "c_midi_circuit_mf": {
+      "id": "c_midi_circuit_mf",
+      "source": "n_circuit",
+      "target": "n_minifreak",
+      "type": "midi_din",
+      "label": "5-Pin MIDI DIN",
+      "startOffset": { "x": 350, "y": 180 },
+      "endOffset": { "x": 0, "y": 150 },
+      "sourcePort": "midiThru",
+      "targetPort": "midiIn"
+    },
+    "c_midi_mf_grind": {
+      "id": "c_midi_mf_grind",
+      "source": "n_minifreak",
+      "target": "n_grind",
+      "type": "midi_din",
+      "label": "5-Pin MIDI DIN",
+      "startOffset": { "x": 300, "y": 150 },
+      "endOffset": { "x": 0, "y": 150 },
+      "sourcePort": "midiThru",
+      "targetPort": "midiIn"
+    },
+    "c_mf_usb": {
+      "id": "c_mf_usb",
+      "source": "n_minifreak",
+      "target": "n_ableton",
+      "type": "midi_usb",
+      "label": "USB-A to PC",
+      "startOffset": { "x": 300, "y": 200 },
+      "endOffset": { "x": 0, "y": 50 },
+      "sourcePort": "usbA",
+      "targetPort": "usbIn"
+    }
+  }
+}
