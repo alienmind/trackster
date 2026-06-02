@@ -1,12 +1,11 @@
 import { memo } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
 import * as Icons from 'lucide-react';
-import type { PadSlot } from '../../../types';
-import { useAudioStore } from '../../../stores/useAudioStore';
-import { useUIStore } from '../../../stores/useUIStore';
-import { TagBadge } from '../../Core/TagBadge/TagBadge';
+import type { PadSlot } from '../../../../types';
+import { useUIStore } from '../../../../stores/useUIStore';
+import { TagBadge } from '../../../Core/TagBadge/TagBadge';
 
 interface SortablePadProps {
   slot: PadSlot;
@@ -33,9 +32,9 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
   const setSelectedFile = useUIStore((s) => s.setSelectedFile);
   const activePad = useUIStore((s) => s.selectedPadIndex);
   const isSelected = activePad === slot.index;
-  const currentlyPlayingSlot = useAudioStore((s) => s.currentlyPlayingSlot);
+  const currentlyPlayingSlot = useCircuitTracksStore((s) => s.currentlyPlayingSlot);
   const isPlaying = currentlyPlayingSlot === slot.index;
-  const togglePlayback = useAudioStore((s) => s.togglePlayback);
+  const togglePlayback = useCircuitTracksStore((s) => s.togglePlayback);
 
   const handleClick = () => {
     if (isDragging) return;
@@ -54,7 +53,7 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
     zIndex: isDragging ? 50 : 1,
   };
 
-  const tagDef = useFileSystemStore((s) => s.tags.find((t: any) => t.id === slot.sample?.tag));
+  const tagDef = useCircuitTracksStore((s) => s.tags.find((t: any) => t.id === slot.sample?.tag));
 
   const isTopHalf = (slot.index % 32) < 16;
   const colorClass = slot.sample ? (isTopHalf ? 'bg-sky-200 text-black' : 'bg-fuchsia-300 text-black') : 'bg-neutral-800 border-dashed border-neutral-700/50 text-white/50 opacity-50';
@@ -83,7 +82,7 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              useFileSystemStore.getState().clearSlot(slot.index);
+              useCircuitTracksStore.getState().clearSlot(slot.index);
             }}
             className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 bg-black/20 rounded-full hover:bg-red-500/80 text-white z-10 cursor-pointer"
           >

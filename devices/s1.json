@@ -1,0 +1,12 @@
+{
+  "brand": "Roland",
+  "model": "S1 Aira Compact",
+  "tagline": "SYNTH",
+  "width": 240,
+  "theme": { "border": "border-t-emerald-500", "header": "bg-emerald-950", "title": "text-emerald-400", "badge": "bg-emerald-900 text-emerald-200" },
+  "ports": [
+    { "id": "audioOut", "type": "MINIJACK" },
+    { "id": "midiIn", "type": "MIDI_5PIN" },
+    { "id": "midiOut", "type": "MIDI_5PIN" }
+  ]
+}

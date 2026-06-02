@@ -1,16 +1,10 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
+import data from '../../devices/circuit.json';
+
 export const circuit: HardwareBlueprint = {
-  brand: "Novation", model: "Circuit Tracks", tagline: "GROOVEBOX", width: 280,
-  theme: { border: "border-t-purple-500", header: "bg-purple-950", title: "text-purple-400", badge: "bg-purple-900 text-purple-200" },
-  ports: [
-    { id: 'audioIn1', title: 'Audio In 1', color: '#f97316', side: 'left', offset: 40 },
-    { id: 'audioIn2', title: 'Audio In 2', color: '#f97316', side: 'left', offset: 60 },
-    { id: 'audioOut', title: 'Audio Out', color: '#06b6d4', side: 'right', offset: 50 },
-    { id: 'midiIn', title: 'MIDI In', color: '#10b981', side: 'left', offset: 100 },
-    { id: 'midiOut', title: 'MIDI Out', color: '#3b82f6', side: 'right', offset: 100 }
-  ],
-  visual: () => (
+  ...(data as unknown as HardwareBlueprint),
+visual: () => (
     <div className="w-full bg-[#1c1c21] rounded-md border border-neutral-800 p-2 shadow-inner flex flex-col gap-2 pointer-events-none">
        {/* Knobs */}
        <div className="flex justify-between items-start mb-1 px-1">

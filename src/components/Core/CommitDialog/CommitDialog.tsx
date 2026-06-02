@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import type { RenamePlan } from '../../../types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../Core/ui/dialog';
@@ -9,8 +9,8 @@ import { ScrollArea } from '../../Core/ui/scroll-area';
 export default function CommitDialog() {
   const isCommitDialogOpen = useUIStore((s) => s.isCommitDialogOpen);
   const closeCommitDialog = useUIStore((s) => s.closeCommitDialog);
-  const commitChanges = useFileSystemStore((s) => s.commitChanges);
-  const executeRenamePlan = useFileSystemStore((s) => s.executeRenamePlan);
+  const commitChanges = useCircuitTracksStore((s) => s.commitChanges);
+  const executeRenamePlan = useCircuitTracksStore((s) => s.executeRenamePlan);
   
   const [plan, setPlan] = useState<RenamePlan | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);

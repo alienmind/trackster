@@ -4,15 +4,14 @@ import { useUIStore } from './useUIStore';
 
 export type NodeType = 'circuit' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | string;
 
+export type AudioPortType = 'XLR' | 'TRS' | 'TR' | 'MINIJACK' | 'MIDI_5PIN' | 'USB_A' | 'USB_B' | 'USB_C' | 'POWER';
+
 export interface PortDef {
   id: string;
-  title: string;
-  color: string;
-  side: 'left' | 'right' | 'top' | 'bottom';
-  offset: number; // The position relative to the side
+  type: AudioPortType;
 }
 
-export interface HardwareBlueprint {
+export interface HardwareDeviceData {
   brand: string;
   model: string;
   tagline: string;
@@ -24,6 +23,9 @@ export interface HardwareBlueprint {
     badge: string;
   };
   ports: PortDef[];
+}
+
+export interface HardwareBlueprint extends HardwareDeviceData {
   visual: () => React.ReactNode;
 }
 

@@ -36,6 +36,9 @@ interface UIState {
   closeDuplicateModal: () => void;
 
   setMobileDrawerOpen: (isOpen: boolean) => void;
+
+  deferredPrompt: any | null;
+  setDeferredPrompt: (prompt: any | null) => void;
 }
 
 const storeCreator: StateCreator<UIState> = (set) => ({
@@ -52,6 +55,8 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isDuplicateModalOpen: false,
   duplicateClusters: [],
   isMobileDrawerOpen: false,
+
+  deferredPrompt: null,
 
   setActiveMainView: (view) => set({ activeMainView: view, activePdfUrl: null }),
   setActivePage: (page) => {
@@ -87,7 +92,9 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
   closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] }),
-  setMobileDrawerOpen: (isOpen) => set({ isMobileDrawerOpen: isOpen })
+  setMobileDrawerOpen: (isOpen) => set({ isMobileDrawerOpen: isOpen }),
+
+  setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt })
 });
 
 export const useUIStore = create<UIState>()(

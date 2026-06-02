@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { Button } from '../../Core/ui/button';
 import { ScrollArea } from '../../Core/ui/scroll-area';
@@ -9,7 +9,7 @@ import { buildFilename } from '../../../utils/fileNaming';
 import { cn } from '../../../lib/utils';
 
 export default function PendingChangesPane() {
-  const { slotsByPack, packSlots, undo, historyByPack, activePack, applyTagsToFilenames, workspaceMode } = useFileSystemStore();
+  const { slotsByPack, packSlots, undo, historyByPack, activePack, applyTagsToFilenames, workspaceMode } = useCircuitTracksStore();
   const openCommitDialog = useUIStore((s) => s.openCommitDialog);
   const isCollapsed = useUIStore((s) => s.isRightPaneCollapsed);
   const toggleCollapse = useUIStore((s) => s.toggleRightPane);

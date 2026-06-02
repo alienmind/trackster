@@ -1,15 +1,11 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 import { Circle } from 'lucide-react';
 
+import data from '../../devices/grind.json';
+
 export const grind: HardwareBlueprint = {
-  brand: "Behringer", model: "Grind", tagline: "SYNTH", width: 340,
-  theme: { border: "border-t-[#8b4513]", header: "bg-[#2a1a10]", title: "text-orange-400", badge: "bg-[#3a2010] text-orange-200" },
-  ports: [
-    { id: 'audioOut', title: 'Audio Out', color: '#06b6d4', side: 'right', offset: 50 },
-    { id: 'midiIn', title: 'MIDI In', color: '#10b981', side: 'left', offset: 100 },
-    { id: 'midiOut', title: 'MIDI Out', color: '#3b82f6', side: 'right', offset: 100 }
-  ],
-  visual: () => (
+  ...(data as unknown as HardwareBlueprint),
+visual: () => (
     <div className="w-full bg-[#222] border-x-8 border-[#8b4513] p-2 flex flex-col gap-2 relative pointer-events-none rounded-sm shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
       {/* Top Row: MIDI & Patchbay (2x16) */}
       <div className="flex justify-between items-start w-full relative">

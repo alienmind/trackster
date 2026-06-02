@@ -1,6 +1,6 @@
-import ScaleFit from '../Core/ui/ScaleFit';
-import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
-import { Knob } from '../Core/HardwareUI/Knob';
+import ScaleFit from '../../Core/ui/ScaleFit';
+import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
+import { Knob } from '../../Core/HardwareUI/Knob';
 import { 
   SpaceGraphics, 
   WhiteBtn, 
@@ -9,9 +9,9 @@ import {
   TouchStrips, 
   Keyboard 
 } from './MiniFreakControls';
-import ManualsList from '../Core/ManualsList/ManualsList';
-import PdfViewer from '../Core/PdfViewer/PdfViewer';
-import { useUIStore } from '../../stores/useUIStore';
+import ManualsList from '../../Core/ManualsList/ManualsList';
+import PdfViewer from '../../Core/PdfViewer/PdfViewer';
+import { useUIStore } from '../../../stores/useUIStore';
 
 export default function ArturiaMiniFreak() {
   const activePdfUrl = useUIStore((s) => s.activePdfUrl);
@@ -223,15 +223,7 @@ export default function ArturiaMiniFreak() {
             </p>
           </div>
           <div className="space-y-2 px-2">
-            <button className="w-full py-2 px-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-medium transition-colors">
-              Load Preset
-            </button>
-            <button className="w-full py-2 px-4 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded border border-neutral-700 transition-colors">
-              Save Panel
-            </button>
-            <button className="w-full py-2 px-4 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded border border-neutral-700 transition-colors">
-              Manage Macros
-            </button>
+            {/* Control panel actions can be placed here in the future */}
           </div>
           <ManualsList devicePrefix="arturia-minifreak" />
         </div>

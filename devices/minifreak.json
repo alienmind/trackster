@@ -1,0 +1,12 @@
+{
+  "brand": "Arturia",
+  "model": "MiniFreak Stellar",
+  "tagline": "SYNTH",
+  "width": 300,
+  "theme": { "border": "border-t-zinc-500", "header": "bg-zinc-950", "title": "text-zinc-300", "badge": "bg-zinc-800 text-zinc-400" },
+  "ports": [
+    { "id": "audioOut", "type": "TRS" },
+    { "id": "midiIn", "type": "MIDI_5PIN" },
+    { "id": "midiOut", "type": "MIDI_5PIN" }
+  ]
+}

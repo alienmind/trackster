@@ -1,15 +1,10 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
+import data from '../../devices/flow8.json';
+
 export const flow8: HardwareBlueprint = {
-  brand: "Behringer", model: "Behringer Flow 8", tagline: "MIXER", width: 320,
-  theme: { border: "border-t-yellow-500", header: "bg-yellow-950", title: "text-yellow-400", badge: "bg-yellow-900 text-yellow-200" },
-  ports: [
-    { id: 'usb', title: 'USB Audio', color: '#ec4899', side: 'left', offset: 50 },
-    { id: 'synth1', title: 'Ch 1/2', color: '#f97316', side: 'left', offset: 100 },
-    { id: 'synth2', title: 'Ch 3/4', color: '#f97316', side: 'left', offset: 150 },
-    { id: 'mainOut', title: 'Main Out', color: '#06b6d4', side: 'right', offset: 100 }
-  ],
-  visual: () => (
+  ...(data as unknown as HardwareBlueprint),
+visual: () => (
     <div className="w-full bg-[#111] p-3 rounded-lg border border-neutral-700 shadow-[0_10px_30px_rgba(0,0,0,0.8)] pointer-events-none flex flex-col gap-3">
        {/* Mixer Sections */}
        <div className="flex gap-2 justify-between">

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { useUIStore } from '../../../stores/useUIStore';
-import { useAudioStore } from '../../../stores/useAudioStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { PAGES } from '../../../utils/constants';
 
 export default function Waveform() {
@@ -10,7 +10,7 @@ export default function Waveform() {
   
   const selectedFile = useUIStore((s) => s.selectedFile);
   const activePage = useUIStore((s) => s.activePage);
-  const currentlyPlayingSlot = useAudioStore((s) => s.currentlyPlayingSlot);
+  const currentlyPlayingSlot = useCircuitTracksStore((s) => s.currentlyPlayingSlot);
 
   // Initialize wavesurfer
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function Waveform() {
           wavesurferRef.current?.setVolume(0); // Mute so we don't hear it twice
           
           // If this file is currently playing, start the wavesurfer playhead
-          const { currentlyPlayingSlot } = useAudioStore.getState();
+          const { currentlyPlayingSlot } = useCircuitTracksStore.getState();
           if (
             (selectedFile.originalSlotIndex !== -1 && currentlyPlayingSlot === selectedFile.originalSlotIndex - 1) ||
             currentlyPlayingSlot === -1 // unassigned file is playing

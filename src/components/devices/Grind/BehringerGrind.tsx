@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import ScaleFit from '../Core/ui/ScaleFit';
-import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
+import ScaleFit from '../../Core/ui/ScaleFit';
+import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
 import GrindNavigator from './GrindNavigator';
-import ManualsList from '../Core/ManualsList/ManualsList';
-import PdfViewer from '../Core/PdfViewer/PdfViewer';
-import { useUIStore } from '../../stores/useUIStore';
+import ManualsList from '../../Core/ManualsList/ManualsList';
+import PdfViewer from '../../Core/PdfViewer/PdfViewer';
+import { useUIStore } from '../../../stores/useUIStore';
 
-import { useGrindStore } from '../../stores/useGrindStore';
+import { useGrindStore } from '../../../stores/useGrindStore';
 
 // --- ICONS & SVGS ---
 

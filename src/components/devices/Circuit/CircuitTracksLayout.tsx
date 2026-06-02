@@ -1,24 +1,23 @@
 import CircuitTracksDevice from './CircuitTracksDevice';
-import FileInspector from '../Core/FileInspector/FileInspector';
-import Oscilloscope from '../Core/Oscilloscope/Oscilloscope';
+import FileInspector from '../../Core/FileInspector/FileInspector';
+import Oscilloscope from '../../Core/Oscilloscope/Oscilloscope';
 import StagingArea from './StagingArea/StagingArea';
-import { useFileSystemStore } from '../../stores/useFileSystemStore';
-import { useAudioStore } from '../../stores/useAudioStore';
-import { useUIStore } from '../../stores/useUIStore';
-import { Button } from '../Core/ui/button';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
+import { useUIStore } from '../../../stores/useUIStore';
+import { Button } from '../../Core/ui/button';
 import * as Icons from 'lucide-react';
-import DisclaimerModal from '../Core/DisclaimerModal/DisclaimerModal';
+import DisclaimerModal from '../../Core/DisclaimerModal/DisclaimerModal';
 import { useEffect, useState } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../Core/ui/tooltip';
-import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
-import PendingChangesPane from '../Core/PendingChangesPane/PendingChangesPane';
-import StatusBar from '../Core/StatusBar/StatusBar';
-import ManualsList from '../Core/ManualsList/ManualsList';
-import PdfViewer from '../Core/PdfViewer/PdfViewer';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
+import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
+import PendingChangesPane from '../../Core/PendingChangesPane/PendingChangesPane';
+import StatusBar from '../../Core/StatusBar/StatusBar';
+import ManualsList from '../../Core/ManualsList/ManualsList';
+import PdfViewer from '../../Core/PdfViewer/PdfViewer';
 
 export default function CircuitTracksLayout() {
-  const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useFileSystemStore();
-  const scanDuplicates = useAudioStore((s) => s.scanDuplicates);
+  const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useCircuitTracksStore();
+  const scanDuplicates = useCircuitTracksStore((s) => s.scanDuplicates);
   const { activePage, setActivePage } = useUIStore();
   const activePdfUrl = useUIStore((s) => s.activePdfUrl);
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
@@ -39,7 +38,7 @@ export default function CircuitTracksLayout() {
           <Tooltip>
             <TooltipTrigger className="focus:outline-none w-full">
               <Button
-                variant="default"
+                variant="success"
                 onClick={() => setIsDisclaimerOpen(true)}
                 className="font-semibold shadow-md w-full justify-start"
               >
@@ -70,7 +69,7 @@ export default function CircuitTracksLayout() {
                 Scan all assigned samples for identical audio files.
               </TooltipContent>
             </Tooltip>
-            <Button variant={applyTagsToFilenames ? "default" : "secondary"} className={`justify-start ${applyTagsToFilenames ? 'bg-primary font-bold shadow-sm' : ''}`} onClick={() => setApplyTagsToFilenames(!applyTagsToFilenames)}>
+            <Button variant="state" data-state={applyTagsToFilenames ? 'active' : 'inactive'} className="justify-start" onClick={() => setApplyTagsToFilenames(!applyTagsToFilenames)}>
               <Icons.Tag className="mr-2" size={16} /> Tags in Filenames
             </Button>
           </div>
@@ -78,10 +77,10 @@ export default function CircuitTracksLayout() {
           <div className="mt-8">
             <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Pages</h3>
             <div className="flex flex-col gap-2">
-              <Button variant={activePage === 0 ? 'default' : 'secondary'} className="justify-start" onClick={() => setActivePage(0)}>
+              <Button variant="state" data-state={activePage === 0 ? 'active' : 'inactive'} className="justify-start" onClick={() => setActivePage(0)}>
                  Pack A (1-32)
               </Button>
-              <Button variant={activePage === 1 ? 'default' : 'secondary'} className="justify-start" onClick={() => setActivePage(1)}>
+              <Button variant="state" data-state={activePage === 1 ? 'active' : 'inactive'} className="justify-start" onClick={() => setActivePage(1)}>
                  Pack B (33-64)
               </Button>
             </div>
@@ -94,7 +93,7 @@ export default function CircuitTracksLayout() {
                 href="https://components.novationmusic.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-secondary/50 px-3 py-2 rounded-md hover:bg-secondary whitespace-nowrap"
+                className="group/button inline-flex h-8 shrink-0 items-center justify-start gap-1.5 rounded-lg px-2.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none text-neutral-400 hover:text-white hover:bg-neutral-800 w-full"
               >
                 <Icons.ExternalLink size={14} />
                 Novation Components

@@ -1,14 +1,10 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
+import data from '../../devices/s1.json';
+
 export const s1: HardwareBlueprint = {
-  brand: "Roland", model: "S1 Aira Compact", tagline: "SYNTH", width: 240,
-  theme: { border: "border-t-emerald-500", header: "bg-emerald-950", title: "text-emerald-400", badge: "bg-emerald-900 text-emerald-200" },
-  ports: [
-    { id: 'audioOut', title: 'Audio Out', color: '#06b6d4', side: 'right', offset: 50 },
-    { id: 'midiIn', title: 'MIDI In', color: '#10b981', side: 'left', offset: 100 },
-    { id: 'midiOut', title: 'MIDI Out', color: '#3b82f6', side: 'right', offset: 100 }
-  ],
-  visual: () => (
+  ...(data as unknown as HardwareBlueprint),
+visual: () => (
     <div className="w-full bg-[#151515] rounded border border-neutral-700 flex flex-col p-2 gap-2 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] pointer-events-none">
        {/* Top Jacks */}
        <div className="flex justify-between items-center w-full">
