@@ -13,6 +13,19 @@ export default defineConfig({
     },
   },
   plugins: [
+    {
+      name: 'bypass-spa-fallback',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          // If the browser requests a PDF or MD (e.g. inside an iframe), strip HTML from Accept header
+          // so the vite:spa-fallback middleware doesn't rewrite it to index.html
+          if (req.url?.match(/\.(pdf|md)(\?.*)?$/)) {
+            req.headers.accept = '*/*';
+          }
+          next();
+        });
+      }
+    },
     react(),
     tailwindcss(),
     VitePWA({
