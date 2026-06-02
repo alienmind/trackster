@@ -1,0 +1,5 @@
+You are assisting with the Trackster project. 
+
+Before generating any code, making architectural decisions, or writing any documentation, you MUST read the `doc/DEVELOPER_GUIDELINES.md` file located at the root of the project.
+
+All coding conventions, component structures, state management rules, and strict guardrails (such as the explicit prohibition of em-dashes `—`) are centrally located in that document and must be strictly followed at all times. Do not hallucinate guidelines.
