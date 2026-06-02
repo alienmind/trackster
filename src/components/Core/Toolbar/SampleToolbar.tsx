@@ -20,7 +20,7 @@ export default function SampleToolbar() {
         </div>
 
         <Tooltip>
-          <TooltipTrigger className="focus:outline-none">
+          <TooltipTrigger render={<div className="inline-flex focus:outline-none" />}>
             <Button
               variant="default"
               size="sm"
@@ -39,7 +39,7 @@ export default function SampleToolbar() {
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger className="focus:outline-none">
+          <TooltipTrigger render={<div className="inline-flex focus:outline-none" />}>
             <Button
               variant="secondary"
               size="sm"
@@ -55,7 +55,7 @@ export default function SampleToolbar() {
         </Tooltip>
 
         <Tooltip>
-          <TooltipTrigger className="focus:outline-none">
+          <TooltipTrigger render={<div className="inline-flex focus:outline-none" />}>
             <Button
               variant="state"
               data-state={applyTagsToFilenames ? 'active' : 'inactive'}

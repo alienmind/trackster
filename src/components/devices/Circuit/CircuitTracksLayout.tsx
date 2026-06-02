@@ -31,7 +31,7 @@ export default function CircuitTracksLayout() {
         {/* Left Panel */}
         <ResponsiveDrawer className="bg-card border-r border-border">
           <Tooltip>
-            <TooltipTrigger className="focus:outline-none w-full">
+            <TooltipTrigger render={<div className="focus:outline-none w-full" />}>
               <Button
                 variant="success"
                 onClick={() => setIsDisclaimerOpen(true)}
@@ -54,7 +54,7 @@ export default function CircuitTracksLayout() {
             </Button>
 
             <Tooltip>
-              <TooltipTrigger className="focus:outline-none w-full">
+              <TooltipTrigger render={<div className="focus:outline-none w-full" />}>
                 <Button variant="secondary" className="justify-start w-full" onClick={scanDuplicates}>
                   <Icons.Copy className="mr-2" size={16} />
                   Find Duplicates
