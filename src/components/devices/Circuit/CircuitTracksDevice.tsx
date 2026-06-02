@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { PAGES } from '../../../utils/constants';
@@ -12,7 +12,8 @@ import { DownArrow, UpArrow, RecordIcon, PlayIcon } from '../../Core/HardwareUI/
 import ScaleFit from '../../Core/ui/ScaleFit';
 
 export default function CircuitTracksDevice() {
-  const [deviceMode, setDeviceMode] = useState<'packs' | 'samples'>('packs');
+  const deviceMode = useCircuitTracksStore((s) => s.deviceMode);
+  const setDeviceMode = useCircuitTracksStore((s) => s.setDeviceMode);
 
   const slots = useCircuitTracksStore((s) => s.slots);
   const packSlots = useCircuitTracksStore((s) => s.packSlots);

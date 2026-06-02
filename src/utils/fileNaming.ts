@@ -6,8 +6,10 @@ import { TAG_DEFINITIONS } from './constants';
  *
  * "03_TR808_Kick.wav" → { prefix: 3, name: "TR808_Kick", extension: "wav", hasOriginalTagPrefix: false }
  */
-export function parseFilename(filename: string): { prefix: number; name: string; extension: string; hasOriginalTagPrefix: boolean } | null {
-  const match = filename.match(/^(\d{2})_(.+?)(?:\.([^.]+))?$/i);
+export function parseFilename(filename: string, isDirectory: boolean = false): { prefix: number; name: string; extension: string; hasOriginalTagPrefix: boolean } | null {
+  const match = isDirectory 
+    ? filename.match(/^(\d{2})_(.+)$/i)
+    : filename.match(/^(\d{2})_(.+?)(?:\.([^.]+))?$/i);
   if (!match) return null;
   const prefix = parseInt(match[1] as string, 10);
   if (isNaN(prefix) || prefix < 0 || prefix > 63) return null;

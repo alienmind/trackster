@@ -70,13 +70,21 @@ export default function CircuitTracksLayout() {
           </div>
 
           <div className="mt-8">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Navigation</h3>
+            <div className="flex flex-col gap-2 mb-4">
+              <Button variant="secondary" className="justify-start" onClick={() => useCircuitTracksStore.getState().setDeviceMode('packs')}>
+                <Icons.Grid className="mr-2" size={16} />
+                All Packs
+              </Button>
+            </div>
+            
             <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Pages</h3>
             <div className="flex flex-col gap-2">
-              <Button variant="state" data-state={activePage === 0 ? 'active' : 'inactive'} className="justify-start" onClick={() => setActivePage(0)}>
-                 Pack A (1-32)
+              <Button variant="state" data-state={activePage === 0 ? 'active' : 'inactive'} className="justify-start" onClick={() => { setActivePage(0); useCircuitTracksStore.getState().setDeviceMode('samples'); }}>
+                 Page A (1-32)
               </Button>
-              <Button variant="state" data-state={activePage === 1 ? 'active' : 'inactive'} className="justify-start" onClick={() => setActivePage(1)}>
-                 Pack B (33-64)
+              <Button variant="state" data-state={activePage === 1 ? 'active' : 'inactive'} className="justify-start" onClick={() => { setActivePage(1); useCircuitTracksStore.getState().setDeviceMode('samples'); }}>
+                 Page B (33-64)
               </Button>
             </div>
           </div>
