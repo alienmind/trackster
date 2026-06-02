@@ -76,3 +76,26 @@ Seamlessly integrate Strudel live-coding to merge your hardware setup with algor
 * **Hardware MIDI Mapping**: Map algorithmic Strudel patterns directly to the logical MIDI channels of connected hardware (e.g., routing algorithmic drum sequences to the Circuit Tracks or generative melodies to the MiniFreak).
 * **MIDI-to-Strudel Support**: Utilize scripts to convert recorded MIDI files into editable Strudel syntax for further algorithmic manipulation.
 * **Layout Syncing**: Save Strudel sketches alongside your DAWless hardware routing configurations to instantly recall entire studio states.
+
+---
+
+## FLOW8 Mixer MIDI Control
+
+The goal of this feature is to utilize WebMIDI within our browser-based web application to control the FLOW 8 completely, bypassing the need for the official native Android app. By sending standard MIDI signals over its USB connection, we can replicate the exact functionality of the mobile app—but seamlessly integrated into our web interface!
+
+### Web App Native Android Launching (Fallback)
+As a supplementary feature, if users are browsing the Trackster web app from an Android device, we can provide a Deep Link (Chrome Intent) to spin up the native Android application (FLOW Mix) directly from the browser:
+* **Intent URI**: `intent://#Intent;package=com.musicgroup.xairbt;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.musicgroup.xairbt;end;`
+This allows the web app to act as a hub, seamlessly transitioning the user to the native app if they prefer the BLE experience.
+
+### Targeting the FX Engines via WebMIDI
+* **MIDI Channels:** FX 1 is controlled via MIDI Channel 14, and FX 2 is controlled via MIDI Channel 15.
+* **Changing Presets:** Send a standard Program Change command (values 1–16) on the respective channel to load an effect preset.
+* **Tweaking Parameters:** 
+  * Parameter 1: Send Control Change (CC) 1, which scales from 0% to 100%.
+  * Parameter 2: Send CC 2, which acts as a toggle between two possible states (Value A and Value B).
+
+### Global FX Commands
+Global commands affecting the whole mixer use **MIDI Channel 16**:
+* **Global FX Mute:** Send CC 1 with a value between 1 and 127 to instantly mute both FX sends.
+* **Tap Tempo:** Send a Note On command for Note 0 (C-1). The mixer calculates tempo by measuring the time interval between repetitive note hits. Any note velocity (1-127) will trigger it.
