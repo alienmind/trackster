@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
 import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
 import StatusBar from '../../Core/StatusBar/StatusBar';
-import ManualsList from '../../Core/ManualsList/ManualsList';
+import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 
 export default function CircuitTracksLayout() {
   const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useCircuitTracksStore();
@@ -104,7 +104,7 @@ export default function CircuitTracksLayout() {
             </div>
           </div>
           
-          <ManualsList devicePrefix="circuit-tracks" />
+          <DownloadsList devicePrefix="circuit-tracks" />
 
           <StagingArea />
         </ResponsiveDrawer>

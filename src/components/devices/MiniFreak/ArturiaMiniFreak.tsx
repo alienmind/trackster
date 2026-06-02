@@ -9,7 +9,7 @@ import {
   TouchStrips, 
   Keyboard 
 } from './MiniFreakControls';
-import ManualsList from '../../Core/ManualsList/ManualsList';
+import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 
 export default function ArturiaMiniFreak() {
   const deviceContent = (
@@ -221,7 +221,7 @@ export default function ArturiaMiniFreak() {
           <div className="space-y-2 px-2">
             {/* Control panel actions can be placed here in the future */}
           </div>
-          <ManualsList devicePrefix="arturia-minifreak" />
+          <DownloadsList devicePrefix="arturia-minifreak" />
         </div>
       </ResponsiveDrawer>
 
