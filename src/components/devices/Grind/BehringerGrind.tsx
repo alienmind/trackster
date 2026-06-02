@@ -4,7 +4,9 @@ import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
 import ManualsList from '../../Core/ManualsList/ManualsList';
 
 import { useGrindStore } from '../../../stores/useGrindStore';
+import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
+import grindGuideUrl from '../../../../devices/grind/doc/behringer-grind-guide.md?url';
 
 // --- ICONS & SVGS ---
 
@@ -288,9 +290,18 @@ export default function BehringerGrind() {
   const [bank, setBank] = useState(0); 
   const [model, setModel] = useState(0);
   const { setActiveDocSection, hoveredDocSection, setHoveredDocSection } = useGrindStore();
+  const setActiveDoc = useUIStore((s) => s.setActiveDoc);
+  const activeDoc = useUIStore((s) => s.activeDoc);
+
+  const handleSectionClick = (sectionId: string) => {
+    setActiveDocSection(sectionId);
+    if (!activeDoc || activeDoc.url !== grindGuideUrl) {
+      setActiveDoc({ url: grindGuideUrl, type: 'md' });
+    }
+  };
 
   const handleBankClick = () => {
-    setActiveDocSection('213-bank-button');
+    handleSectionClick('213-bank-button');
     setBank((prev) => {
       const nextBank = (prev + 1) % 3;
       // When switching to Bank C (Yellow), restrict models to 1-4 (indexes 0-3)
@@ -302,7 +313,7 @@ export default function BehringerGrind() {
   };
 
   const handleModelIncrement = () => {
-    setActiveDocSection('214-model-button');
+    handleSectionClick('214-model-button');
     setModel((prev) => {
       const max = bank === 2 ? 4 : 10;
       return (prev + 1) % max;
@@ -310,7 +321,7 @@ export default function BehringerGrind() {
   };
 
   const handleModelDecrement = () => {
-    setActiveDocSection('214-model-button');
+    handleSectionClick('214-model-button');
     setModel((prev) => {
       const max = bank === 2 ? 4 : 10;
       return (prev - 1 + max) % max;
@@ -392,9 +403,9 @@ export default function BehringerGrind() {
               {/* OSCILLATOR */}
               <Section title="OSCILLATOR" className="col-span-5 bg-[#242424]">
                 <div className="flex justify-around items-start">
-                  <Knob label="TIMBRE" sectionId="211-timbre" onInteract={() => setActiveDocSection('211-timbre')} />
-                  <Knob label="HARMONICS" sectionId="215-harmonics" onInteract={() => setActiveDocSection('215-harmonics')} />
-                  <div className="flex flex-col items-center pt-6 px-2 group relative cursor-pointer" onPointerDown={() => setActiveDocSection('216-fm-knob')} onPointerEnter={() => setHoveredDocSection('216-fm-knob')} onPointerLeave={() => setHoveredDocSection(null)}>
+                  <Knob label="TIMBRE" sectionId="211-timbre" onInteract={() => handleSectionClick('211-timbre')} />
+                  <Knob label="HARMONICS" sectionId="215-harmonics" onInteract={() => handleSectionClick('215-harmonics')} />
+                  <div className="flex flex-col items-center pt-6 px-2 group relative cursor-pointer" onPointerDown={() => handleSectionClick('216-fm-knob')} onPointerEnter={() => setHoveredDocSection('216-fm-knob')} onPointerLeave={() => setHoveredDocSection(null)}>
                     <span className="text-[8px] text-white font-bold mb-1">FM</span>
                     <div className="relative">
                       <Knob size={24} sectionId="216-fm-knob" />
@@ -402,8 +413,8 @@ export default function BehringerGrind() {
                     <span className="text-[8px] text-white font-bold mt-1">-      +</span>
                     <div className={cn("absolute inset-0 rounded-lg pointer-events-none transition-all duration-300 group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]", hoveredDocSection === '216-fm-knob' ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
                   </div>
-                  <Knob label="FREQUENCY" sectionId="217-frequency-knob" onInteract={() => setActiveDocSection('217-frequency-knob')} />
-                  <Knob label="MORPH" sectionId="218-morph-knob" onInteract={() => setActiveDocSection('218-morph-knob')} />
+                  <Knob label="FREQUENCY" sectionId="217-frequency-knob" onInteract={() => handleSectionClick('217-frequency-knob')} />
+                  <Knob label="MORPH" sectionId="218-morph-knob" onInteract={() => handleSectionClick('218-morph-knob')} />
                 </div>
                 
                 <div className="flex justify-around items-end mt-4 px-4">
@@ -445,7 +456,7 @@ export default function BehringerGrind() {
                                   "w-6 h-6 rounded-[3px] border-[1.5px] border-gray-300 flex items-center justify-center bg-transparent text-gray-200 cursor-pointer transition-all duration-300",
                                   hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
                                 )}
-                                onClick={() => setActiveDocSection(sectionId)}
+                                onClick={() => handleSectionClick(sectionId)}
                                 onPointerEnter={() => setHoveredDocSection(sectionId)}
                                 onPointerLeave={() => setHoveredDocSection(null)}
                               >
@@ -481,7 +492,7 @@ export default function BehringerGrind() {
                               <div 
                                 key={`led-${i}`} 
                                 className="w-6 flex justify-center cursor-pointer relative"
-                                onClick={() => sectionId && setActiveDocSection(sectionId)}
+                                onClick={() => sectionId && handleSectionClick(sectionId)}
                                 onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
                                 onPointerLeave={() => sectionId && setHoveredDocSection(null)}
                               >
@@ -503,7 +514,7 @@ export default function BehringerGrind() {
                                   "w-6 h-6 rounded-[3px] bg-gray-200 flex items-center justify-center text-black cursor-pointer transition-all duration-300",
                                   hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
                                 )}
-                                onClick={() => setActiveDocSection(sectionId)}
+                                onClick={() => handleSectionClick(sectionId)}
                                 onPointerEnter={() => setHoveredDocSection(sectionId)}
                                 onPointerLeave={() => setHoveredDocSection(null)}
                               >
@@ -536,23 +547,23 @@ export default function BehringerGrind() {
               {/* FILTER */}
               <Section title="FILTER (VCF)" className="col-span-3 bg-[#242424]">
                 <div className="flex justify-around items-start">
-                  <Knob label="CUTOFF" sectionId="221-cutoff" onInteract={() => setActiveDocSection('221-cutoff')} />
-                  <Knob label="RESONANCE" sectionId="223-resonance" onInteract={() => setActiveDocSection('223-resonance')} />
-                  <Knob label="VCF MOD" sectionId="225-vcf-mod" onInteract={() => setActiveDocSection('225-vcf-mod')} />
+                  <Knob label="CUTOFF" sectionId="221-cutoff" onInteract={() => handleSectionClick('221-cutoff')} />
+                  <Knob label="RESONANCE" sectionId="223-resonance" onInteract={() => handleSectionClick('223-resonance')} />
+                  <Knob label="VCF MOD" sectionId="225-vcf-mod" onInteract={() => handleSectionClick('225-vcf-mod')} />
                 </div>
                 <div className="flex justify-around items-start mt-6">
-                  <ToggleSwitch label="MODE" topLabel="LO" bottomLabel="HI" sectionId="222-mode" onInteract={() => setActiveDocSection('222-mode')} />
-                  <ToggleSwitch label="MOD SOURCE" topLabel="ENV" bottomLabel="LFO" sectionId="224-mod-source" onInteract={() => setActiveDocSection('224-mod-source')} />
-                  <ToggleSwitch label="MOD POLARITY" topLabel="POS" bottomLabel="NEG" sectionId="226-mod-polarity" onInteract={() => setActiveDocSection('226-mod-polarity')} />
+                  <ToggleSwitch label="MODE" topLabel="LO" bottomLabel="HI" sectionId="222-mode" onInteract={() => handleSectionClick('222-mode')} />
+                  <ToggleSwitch label="MOD SOURCE" topLabel="ENV" bottomLabel="LFO" sectionId="224-mod-source" onInteract={() => handleSectionClick('224-mod-source')} />
+                  <ToggleSwitch label="MOD POLARITY" topLabel="POS" bottomLabel="NEG" sectionId="226-mod-polarity" onInteract={() => handleSectionClick('226-mod-polarity')} />
                 </div>
               </Section>
 
               {/* OUTPUT */}
               <Section title="OUTPUT (VCA)" className="col-span-2 bg-[#242424]">
                 <div className="flex flex-col items-center h-full justify-between pb-2">
-                  <Knob label="VOLUME" sectionId="271-volume" onInteract={() => setActiveDocSection('271-volume')} />
+                  <Knob label="VOLUME" sectionId="271-volume" onInteract={() => handleSectionClick('271-volume')} />
                   <div className="mt-4 relative group cursor-pointer" onPointerEnter={() => setHoveredDocSection('272-vca-mode')} onPointerLeave={() => setHoveredDocSection(null)}>
-                    <ToggleSwitch label="VCA MODE" topLabel="ENV" bottomLabel="ON" threeWay sectionId="272-vca-mode" onInteract={() => setActiveDocSection('272-vca-mode')} />
+                    <ToggleSwitch label="VCA MODE" topLabel="ENV" bottomLabel="ON" threeWay sectionId="272-vca-mode" onInteract={() => handleSectionClick('272-vca-mode')} />
                     <span className="block text-[8px] text-gray-400 text-center -mt-3">LPG</span>
                     <div className={cn("absolute inset-0 -m-2 rounded-sm pointer-events-none transition-all duration-300 group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]", hoveredDocSection === '272-vca-mode' ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
                   </div>
@@ -564,32 +575,32 @@ export default function BehringerGrind() {
             <div className="grid grid-cols-10 gap-[1px] bg-[#e65c00]">
               <Section title="ENVELOPE" className="col-span-4 bg-[#242424]">
                 <div className="flex justify-around">
-                  <Knob label="ATTACK" sectionId="23-envelope" onInteract={() => setActiveDocSection('23-envelope')} />
-                  <Knob label="DECAY" sectionId="23-envelope" onInteract={() => setActiveDocSection('23-envelope')} />
-                  <Knob label="SUSTAIN" sectionId="23-envelope" onInteract={() => setActiveDocSection('23-envelope')} />
+                  <Knob label="ATTACK" sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
+                  <Knob label="DECAY" sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
+                  <Knob label="SUSTAIN" sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
                 </div>
               </Section>
 
               <Section title="VIBRATO" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-center">
-                  <Knob label="OSC MOD" sectionId="24-vibrato" onInteract={() => setActiveDocSection('24-vibrato')} />
+                  <Knob label="OSC MOD" sectionId="24-vibrato" onInteract={() => handleSectionClick('24-vibrato')} />
                 </div>
               </Section>
 
               <Section title="MODULATION" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-around items-end pb-2">
                   <div className="relative">
-                    <Knob label="LFO RATE" sectionId="25-modulation" onInteract={() => setActiveDocSection('25-modulation')} />
+                    <Knob label="LFO RATE" sectionId="25-modulation" onInteract={() => handleSectionClick('25-modulation')} />
                     <div className="absolute top-4 -right-4 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#f00]"></div>
                   </div>
-                  <ToggleSwitch label="SHAPE" topLabel="SQR" bottomLabel="TRI" sectionId="25-modulation" onInteract={() => setActiveDocSection('25-modulation')} />
+                  <ToggleSwitch label="SHAPE" topLabel="SQR" bottomLabel="TRI" sectionId="25-modulation" onInteract={() => handleSectionClick('25-modulation')} />
                 </div>
               </Section>
 
               <Section title="UTILITY" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-around">
-                  <Knob label="GLIDE" sectionId="261-glide" onInteract={() => setActiveDocSection('261-glide')} />
-                  <Knob label="VC MIX" subLabel="LO / MIX 1        HI / MIX 2" sectionId="262-vc-mix" onInteract={() => setActiveDocSection('262-vc-mix')} />
+                  <Knob label="GLIDE" sectionId="261-glide" onInteract={() => handleSectionClick('261-glide')} />
+                  <Knob label="VC MIX" subLabel="LO / MIX 1        HI / MIX 2" sectionId="262-vc-mix" onInteract={() => handleSectionClick('262-vc-mix')} />
                 </div>
               </Section>
             </div>
@@ -601,7 +612,7 @@ export default function BehringerGrind() {
 
             {/* Tempo */}
             <div className="pl-4 pb-2">
-              <Knob label="TEMPO / GATE LENGTH" subLabel="SWING" sectionId="31-tempogate-length" onInteract={() => setActiveDocSection('31-tempogate-length')} />
+              <Knob label="TEMPO / GATE LENGTH" subLabel="SWING" sectionId="31-tempogate-length" onInteract={() => handleSectionClick('31-tempogate-length')} />
             </div>
 
             {/* Command Buttons */}

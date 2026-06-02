@@ -21,7 +21,13 @@ export default function ManualsList({ devicePrefix }: { devicePrefix: string }) 
       url: url as string,
       type: type as 'pdf' | 'md'
     };
-  }).filter(m => m.filename.toLowerCase().startsWith(devicePrefix.toLowerCase()));
+  }).filter(m => m.filename.toLowerCase().startsWith(devicePrefix.toLowerCase()))
+    .sort((a, b) => {
+      // Prioritize markdown files (guides) over PDFs (manuals)
+      if (a.type === 'md' && b.type === 'pdf') return -1;
+      if (a.type === 'pdf' && b.type === 'md') return 1;
+      return a.filename.localeCompare(b.filename);
+    });
 
   if (matchedManuals.length === 0) return null;
 
