@@ -1,12 +1,10 @@
 import React, { useState, useRef } from 'react';
 import ScaleFit from '../../Core/ui/ScaleFit';
 import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
-import GrindNavigator from './GrindNavigator';
 import ManualsList from '../../Core/ManualsList/ManualsList';
-import PdfViewer from '../../Core/PdfViewer/PdfViewer';
-import { useUIStore } from '../../../stores/useUIStore';
 
 import { useGrindStore } from '../../../stores/useGrindStore';
+import { cn } from '../../../lib/utils';
 
 // --- ICONS & SVGS ---
 
@@ -37,8 +35,9 @@ const MidiPort = () => (
 // --- COMPONENTS ---
 
 // Analog style knob with metallic cap
-const Knob = ({ label, subLabel, size = 50, markerColor = "#fff" }: any) => {
+const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, onInteract }: any) => {
   const [rotation, setRotation] = useState(0); // -135 to 135 degrees
+  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
   const isDragging = useRef(false);
   const startY = useRef(0);
 
@@ -59,17 +58,21 @@ const Knob = ({ label, subLabel, size = 50, markerColor = "#fff" }: any) => {
 
   const handlePointerUp = () => {
     isDragging.current = false;
-    window.removeEventListener('pointermove', handlePointerMove);
     window.removeEventListener('pointerup', handlePointerUp);
+    if (onInteract) onInteract();
   };
 
   return (
-    <div className="flex flex-col items-center group">
+    <div 
+      className="flex flex-col items-center group relative"
+      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
+      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+    >
       {label && <span className="text-[9px] text-white font-bold tracking-wider mb-1.5 z-10 text-center uppercase">{label}</span>}
       <div 
         className="relative flex justify-center items-center cursor-ns-resize"
         onPointerDown={handlePointerDown}
-        onDoubleClick={() => setRotation(0)}
+        onDoubleClick={() => { setRotation(0); if (onInteract) onInteract(); }}
         style={{ touchAction: 'none' }}
       >
         <svg 
@@ -105,6 +108,11 @@ const Knob = ({ label, subLabel, size = 50, markerColor = "#fff" }: any) => {
           {/* Base shadow ring */}
           <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="4" />
         </svg>
+        <div className={cn(
+          "absolute inset-0 rounded-full pointer-events-none transition-all duration-300", 
+          sectionId ? "group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]" : "",
+          hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
+        )} />
       </div>
       {subLabel && <span className="text-[8px] text-gray-400 font-bold tracking-wide mt-1 text-center uppercase">{subLabel}</span>}
     </div>
@@ -112,22 +120,31 @@ const Knob = ({ label, subLabel, size = 50, markerColor = "#fff" }: any) => {
 };
 
 // 3.5mm Patch Jack
-const PatchJack = ({ label }: any) => {
+const PatchJack = ({ label, sectionId, onInteract }: any) => {
+  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
+  
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-[7px] text-white font-bold tracking-widest mb-1 whitespace-nowrap">{label}</span>
+    <div 
+      className="flex flex-col items-center relative"
+      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
+      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+      onClick={() => onInteract && onInteract()}
+    >
+      <span className="text-[7px] text-white font-bold tracking-widest mb-1 whitespace-nowrap cursor-pointer">{label}</span>
       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-300 via-gray-500 to-gray-700 p-[2px] shadow-[0_2px_4px_rgba(0,0,0,0.5)] border border-gray-900">
-        <div className="w-full h-full rounded-full bg-black border border-gray-600 shadow-inner flex items-center justify-center">
+        <div className="w-full h-full rounded-full bg-black border border-gray-600 shadow-inner flex items-center justify-center cursor-pointer">
           <div className="w-2.5 h-2.5 rounded-full bg-[#0a0a0a] shadow-[inset_0_2px_4px_rgba(0,0,0,1)]"></div>
         </div>
+        <div className={cn("absolute inset-0 top-4 rounded-full pointer-events-none transition-all duration-300", hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
       </div>
     </div>
   );
 };
 
 // Metal Toggle Switch
-const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, onInteract }: any) => {
+const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, sectionId, onInteract }: any) => {
   const [pos, setPos] = useState(0); // -1 (bottom), 0 (middle), 1 (top)
+  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
 
   const toggle = () => {
     if (threeWay) {
@@ -142,7 +159,12 @@ const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, onIntera
   const rotateX = pos === 1 ? '30deg' : pos === -1 ? '-30deg' : '0deg';
 
   return (
-    <div className="flex flex-col items-center justify-center cursor-pointer select-none" onClick={toggle}>
+    <div 
+      className="flex flex-col items-center justify-center cursor-pointer select-none relative" 
+      onClick={toggle}
+      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
+      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+    >
       {label && <span className="text-[8px] text-white font-bold tracking-wider mb-1 text-center">{label}</span>}
       
       <div className="flex items-center gap-1.5">
@@ -154,6 +176,7 @@ const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, onIntera
             className="w-2 h-5 bg-gradient-to-b from-gray-200 via-gray-400 to-gray-500 rounded-sm shadow-[0_2px_3px_rgba(0,0,0,0.8)] transition-all duration-150 border border-gray-600"
             style={{ transform: `translateY(${translateY}) perspective(50px) rotateX(${rotateX})` }}
           />
+          <div className={cn("absolute -inset-1 rounded-sm pointer-events-none transition-all duration-300", hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
         </div>
 
         <span className="text-[7px] text-gray-300 font-bold">{bottomLabel}</span>
@@ -163,13 +186,18 @@ const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, onIntera
 };
 
 // Small Sequencer Function Button
-const FuncButton = ({ label, subLabel, isDark = true }: any) => {
+const FuncButton = ({ label, subLabel, isDark = true, sectionId, onInteract }: any) => {
   const [active, setActive] = useState(false);
+  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
   
   return (
-    <div className="flex flex-col items-center">
+    <div 
+      className="flex flex-col items-center relative"
+      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
+      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+    >
       <button 
-        onMouseDown={() => setActive(true)}
+        onMouseDown={() => { setActive(true); if (onInteract) onInteract(); }}
         onMouseUp={() => setActive(false)}
         onMouseLeave={() => setActive(false)}
         className={`w-10 h-6 rounded-sm shadow-[0_2px_4px_rgba(0,0,0,0.6)] transition-all duration-75 
@@ -177,6 +205,7 @@ const FuncButton = ({ label, subLabel, isDark = true }: any) => {
           ${active ? 'translate-y-[2px] border-b-0 shadow-none' : ''}
         `}
       />
+      <div className={cn("absolute top-0 w-10 h-6 pointer-events-none rounded-sm transition-all duration-300", hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
       <div className="mt-1 flex flex-col items-center">
         {label && <span className="text-[7px] text-white font-bold leading-tight">{label}</span>}
         {subLabel && <span className="text-[7px] text-white font-bold leading-tight">{subLabel}</span>}
@@ -258,8 +287,7 @@ export default function BehringerGrind() {
   // State for Bank (0: Red, 1: Green, 2: Yellow) and Model Grid position (0-9)
   const [bank, setBank] = useState(0); 
   const [model, setModel] = useState(0);
-  const { setActiveDocSection } = useGrindStore();
-  const activePdfUrl = useUIStore((s) => s.activePdfUrl);
+  const { setActiveDocSection, hoveredDocSection, setHoveredDocSection } = useGrindStore();
 
   const handleBankClick = () => {
     setActiveDocSection('213-bank-button');
@@ -308,10 +336,7 @@ export default function BehringerGrind() {
 
         {/* Center Panel */}
         <div className="flex-1 min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
-          {activePdfUrl ? (
-            <PdfViewer />
-          ) : (
-            <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
+          <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
             {/* Synth Chassis with Wood Panels */}
             <div className="flex shadow-2xl relative shrink-0 origin-center transition-transform">
           
@@ -367,15 +392,18 @@ export default function BehringerGrind() {
               {/* OSCILLATOR */}
               <Section title="OSCILLATOR" className="col-span-5 bg-[#242424]">
                 <div className="flex justify-around items-start">
-                  <Knob label="TIMBRE" onInteract={() => setActiveDocSection('211-timbre')} />
-                  <Knob label="HARMONICS" onInteract={() => setActiveDocSection('215-harmonics')} />
-                  <div className="flex flex-col items-center pt-6 px-2" onPointerDown={() => setActiveDocSection('216-fm-knob')}>
+                  <Knob label="TIMBRE" sectionId="211-timbre" onInteract={() => setActiveDocSection('211-timbre')} />
+                  <Knob label="HARMONICS" sectionId="215-harmonics" onInteract={() => setActiveDocSection('215-harmonics')} />
+                  <div className="flex flex-col items-center pt-6 px-2 group relative cursor-pointer" onPointerDown={() => setActiveDocSection('216-fm-knob')} onPointerEnter={() => setHoveredDocSection('216-fm-knob')} onPointerLeave={() => setHoveredDocSection(null)}>
                     <span className="text-[8px] text-white font-bold mb-1">FM</span>
-                    <Knob size={24} />
+                    <div className="relative">
+                      <Knob size={24} sectionId="216-fm-knob" />
+                    </div>
                     <span className="text-[8px] text-white font-bold mt-1">-      +</span>
+                    <div className={cn("absolute inset-0 rounded-lg pointer-events-none transition-all duration-300 group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]", hoveredDocSection === '216-fm-knob' ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
                   </div>
-                  <Knob label="FREQUENCY" onInteract={() => setActiveDocSection('217-frequency-knob')} />
-                  <Knob label="MORPH" onInteract={() => setActiveDocSection('218-morph-knob')} />
+                  <Knob label="FREQUENCY" sectionId="217-frequency-knob" onInteract={() => setActiveDocSection('217-frequency-knob')} />
+                  <Knob label="MORPH" sectionId="218-morph-knob" onInteract={() => setActiveDocSection('218-morph-knob')} />
                 </div>
                 
                 <div className="flex justify-around items-end mt-4 px-4">
@@ -408,11 +436,23 @@ export default function BehringerGrind() {
                         
                         {/* ROW A ICONS (White outlines on Dark) */}
                         <div className="flex gap-1.5">
-                          {IconsA.map((Icon, i) => (
-                            <div key={`a-${i}`} className="w-6 h-6 rounded-[3px] border-[1.5px] border-gray-300 flex items-center justify-center bg-transparent text-gray-200">
-                               <Icon className="w-4 h-4" />
-                            </div>
-                          ))}
+                          {IconsA.map((Icon, i) => {
+                            const sectionId = `51${i + 1}-${i === 0 ? 'virtual-analog' : i === 1 ? 'waveshaping' : i === 2 ? 'fm-2-operators' : i === 3 ? 'grains' : i === 4 ? 'additive' : i === 5 ? 'chords' : i === 6 ? 'speech' : i === 7 ? 'karplus-strong' : i === 8 ? 'supersaw' : 'wavetable-oscillator'}`;
+                            return (
+                              <div 
+                                key={`a-${i}`} 
+                                className={cn(
+                                  "w-6 h-6 rounded-[3px] border-[1.5px] border-gray-300 flex items-center justify-center bg-transparent text-gray-200 cursor-pointer transition-all duration-300",
+                                  hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
+                                )}
+                                onClick={() => setActiveDocSection(sectionId)}
+                                onPointerEnter={() => setHoveredDocSection(sectionId)}
+                                onPointerLeave={() => setHoveredDocSection(null)}
+                              >
+                                 <Icon className="w-4 h-4 pointer-events-none" />
+                              </div>
+                            );
+                          })}
                         </div>
 
                         {/* CENTER LEDS */}
@@ -421,6 +461,15 @@ export default function BehringerGrind() {
                             const isActive = i === model;
                             const isInvalid = bank === 2 && i > 3; // Bank C (Yellow) only uses first 4
                             let colorClass = 'bg-[#333] shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]'; // Off state
+                            let sectionId = '';
+                            
+                            if (bank === 0) {
+                              sectionId = `51${i + 1}-${i === 0 ? 'virtual-analog' : i === 1 ? 'waveshaping' : i === 2 ? 'fm-2-operators' : i === 3 ? 'grains' : i === 4 ? 'additive' : i === 5 ? 'chords' : i === 6 ? 'speech' : i === 7 ? 'karplus-strong' : i === 8 ? 'supersaw' : 'wavetable-oscillator'}`;
+                            } else if (bank === 1) {
+                              sectionId = `52${i + 1}-${i === 0 ? 'rain' : i === 1 ? 'noise' : i === 2 ? 'dust' : i === 3 ? 'modal-strings' : i === 4 ? 'fm-drum' : i === 5 ? 'bass-drum' : i === 6 ? 'snare-drum' : i === 7 ? 'hi-hat' : i === 8 ? 'cowbell' : 'toms'}`;
+                            } else if (bank === 2 && i <= 3) {
+                              sectionId = `53${i + 1}-${i === 0 ? 'bx7' : i === 1 ? 'bassline' : i === 2 ? 'wave-generator' : 'vox'}`;
+                            }
                             
                             if (isActive) {
                                if (bank === 0) colorClass = 'bg-red-500 shadow-[0_0_8px_#f00]';
@@ -429,8 +478,15 @@ export default function BehringerGrind() {
                             }
 
                             return (
-                              <div key={`led-${i}`} className="w-6 flex justify-center">
+                              <div 
+                                key={`led-${i}`} 
+                                className="w-6 flex justify-center cursor-pointer relative"
+                                onClick={() => sectionId && setActiveDocSection(sectionId)}
+                                onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
+                                onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+                              >
                                 <div className={`w-2.5 h-2.5 rounded-full transition-all duration-150 ${colorClass} ${isActive ? 'animate-pulse' : ''} ${isInvalid ? 'opacity-30' : ''}`} />
+                                <div className={cn("absolute -inset-1 rounded-full pointer-events-none transition-all duration-300", hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
                               </div>
                             );
                           })}
@@ -438,11 +494,23 @@ export default function BehringerGrind() {
 
                         {/* ROW B ICONS (Dark on Solid White) */}
                         <div className="flex gap-1.5">
-                          {IconsB.map((Icon, i) => (
-                            <div key={`b-${i}`} className="w-6 h-6 rounded-[3px] bg-gray-200 flex items-center justify-center text-black">
-                               <Icon className="w-4 h-4" />
-                            </div>
-                          ))}
+                          {IconsB.map((Icon, i) => {
+                            const sectionId = `52${i + 1}-${i === 0 ? 'rain' : i === 1 ? 'noise' : i === 2 ? 'dust' : i === 3 ? 'modal-strings' : i === 4 ? 'fm-drum' : i === 5 ? 'bass-drum' : i === 6 ? 'snare-drum' : i === 7 ? 'hi-hat' : i === 8 ? 'cowbell' : 'toms'}`;
+                            return (
+                              <div 
+                                key={`b-${i}`} 
+                                className={cn(
+                                  "w-6 h-6 rounded-[3px] bg-gray-200 flex items-center justify-center text-black cursor-pointer transition-all duration-300",
+                                  hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
+                                )}
+                                onClick={() => setActiveDocSection(sectionId)}
+                                onPointerEnter={() => setHoveredDocSection(sectionId)}
+                                onPointerLeave={() => setHoveredDocSection(null)}
+                              >
+                                 <Icon className="w-4 h-4 pointer-events-none" />
+                              </div>
+                            );
+                          })}
                         </div>
                         
                       </div>
@@ -468,24 +536,25 @@ export default function BehringerGrind() {
               {/* FILTER */}
               <Section title="FILTER (VCF)" className="col-span-3 bg-[#242424]">
                 <div className="flex justify-around items-start">
-                  <Knob label="CUTOFF" onInteract={() => setActiveDocSection('221-cutoff')} />
-                  <Knob label="RESONANCE" onInteract={() => setActiveDocSection('223-resonance')} />
-                  <Knob label="VCF MOD" onInteract={() => setActiveDocSection('225-vcf-mod')} />
+                  <Knob label="CUTOFF" sectionId="221-cutoff" onInteract={() => setActiveDocSection('221-cutoff')} />
+                  <Knob label="RESONANCE" sectionId="223-resonance" onInteract={() => setActiveDocSection('223-resonance')} />
+                  <Knob label="VCF MOD" sectionId="225-vcf-mod" onInteract={() => setActiveDocSection('225-vcf-mod')} />
                 </div>
                 <div className="flex justify-around items-start mt-6">
-                  <ToggleSwitch label="MODE" topLabel="LO" bottomLabel="HI" onInteract={() => setActiveDocSection('222-mode')} />
-                  <ToggleSwitch label="MOD SOURCE" topLabel="ENV" bottomLabel="LFO" onInteract={() => setActiveDocSection('224-mod-source')} />
-                  <ToggleSwitch label="MOD POLARITY" topLabel="POS" bottomLabel="NEG" onInteract={() => setActiveDocSection('226-mod-polarity')} />
+                  <ToggleSwitch label="MODE" topLabel="LO" bottomLabel="HI" sectionId="222-mode" onInteract={() => setActiveDocSection('222-mode')} />
+                  <ToggleSwitch label="MOD SOURCE" topLabel="ENV" bottomLabel="LFO" sectionId="224-mod-source" onInteract={() => setActiveDocSection('224-mod-source')} />
+                  <ToggleSwitch label="MOD POLARITY" topLabel="POS" bottomLabel="NEG" sectionId="226-mod-polarity" onInteract={() => setActiveDocSection('226-mod-polarity')} />
                 </div>
               </Section>
 
               {/* OUTPUT */}
               <Section title="OUTPUT (VCA)" className="col-span-2 bg-[#242424]">
                 <div className="flex flex-col items-center h-full justify-between pb-2">
-                  <Knob label="VOLUME" onInteract={() => setActiveDocSection('271-volume')} />
-                  <div className="mt-4">
-                    <ToggleSwitch label="VCA MODE" topLabel="ENV" bottomLabel="ON" threeWay onInteract={() => setActiveDocSection('272-vca-mode')} />
+                  <Knob label="VOLUME" sectionId="271-volume" onInteract={() => setActiveDocSection('271-volume')} />
+                  <div className="mt-4 relative group cursor-pointer" onPointerEnter={() => setHoveredDocSection('272-vca-mode')} onPointerLeave={() => setHoveredDocSection(null)}>
+                    <ToggleSwitch label="VCA MODE" topLabel="ENV" bottomLabel="ON" threeWay sectionId="272-vca-mode" onInteract={() => setActiveDocSection('272-vca-mode')} />
                     <span className="block text-[8px] text-gray-400 text-center -mt-3">LPG</span>
+                    <div className={cn("absolute inset-0 -m-2 rounded-sm pointer-events-none transition-all duration-300 group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]", hoveredDocSection === '272-vca-mode' ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
                   </div>
                 </div>
               </Section>
@@ -495,32 +564,32 @@ export default function BehringerGrind() {
             <div className="grid grid-cols-10 gap-[1px] bg-[#e65c00]">
               <Section title="ENVELOPE" className="col-span-4 bg-[#242424]">
                 <div className="flex justify-around">
-                  <Knob label="ATTACK" onInteract={() => setActiveDocSection('23-envelope')} />
-                  <Knob label="DECAY" onInteract={() => setActiveDocSection('23-envelope')} />
-                  <Knob label="SUSTAIN" onInteract={() => setActiveDocSection('23-envelope')} />
+                  <Knob label="ATTACK" sectionId="23-envelope" onInteract={() => setActiveDocSection('23-envelope')} />
+                  <Knob label="DECAY" sectionId="23-envelope" onInteract={() => setActiveDocSection('23-envelope')} />
+                  <Knob label="SUSTAIN" sectionId="23-envelope" onInteract={() => setActiveDocSection('23-envelope')} />
                 </div>
               </Section>
 
               <Section title="VIBRATO" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-center">
-                  <Knob label="OSC MOD" onInteract={() => setActiveDocSection('24-vibrato')} />
+                  <Knob label="OSC MOD" sectionId="24-vibrato" onInteract={() => setActiveDocSection('24-vibrato')} />
                 </div>
               </Section>
 
               <Section title="MODULATION" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-around items-end pb-2">
                   <div className="relative">
-                    <Knob label="LFO RATE" onInteract={() => setActiveDocSection('25-modulation')} />
+                    <Knob label="LFO RATE" sectionId="25-modulation" onInteract={() => setActiveDocSection('25-modulation')} />
                     <div className="absolute top-4 -right-4 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#f00]"></div>
                   </div>
-                  <ToggleSwitch label="SHAPE" topLabel="SQR" bottomLabel="TRI" onInteract={() => setActiveDocSection('25-modulation')} />
+                  <ToggleSwitch label="SHAPE" topLabel="SQR" bottomLabel="TRI" sectionId="25-modulation" onInteract={() => setActiveDocSection('25-modulation')} />
                 </div>
               </Section>
 
               <Section title="UTILITY" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-around">
-                  <Knob label="GLIDE" onInteract={() => setActiveDocSection('261-glide')} />
-                  <Knob label="VC MIX" subLabel="LO / MIX 1        HI / MIX 2" onInteract={() => setActiveDocSection('262-vc-mix')} />
+                  <Knob label="GLIDE" sectionId="261-glide" onInteract={() => setActiveDocSection('261-glide')} />
+                  <Knob label="VC MIX" subLabel="LO / MIX 1        HI / MIX 2" sectionId="262-vc-mix" onInteract={() => setActiveDocSection('262-vc-mix')} />
                 </div>
               </Section>
             </div>
@@ -532,7 +601,7 @@ export default function BehringerGrind() {
 
             {/* Tempo */}
             <div className="pl-4 pb-2">
-              <Knob label="TEMPO / GATE LENGTH" subLabel="SWING" onInteract={() => setActiveDocSection('31-tempogate-length')} />
+              <Knob label="TEMPO / GATE LENGTH" subLabel="SWING" sectionId="31-tempogate-length" onInteract={() => setActiveDocSection('31-tempogate-length')} />
             </div>
 
             {/* Command Buttons */}
@@ -591,12 +660,8 @@ export default function BehringerGrind() {
              style={{ background: 'linear-gradient(to left, #6d3a1c, #8b4a24)' }}></div>
       
           </div>
-          </ScaleFit>
-          )}
+            </ScaleFit>
         </div>
-
-        {/* Right Panel - Navigator */}
-        <GrindNavigator />
 
       </div>
     </div>
