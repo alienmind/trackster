@@ -16,6 +16,8 @@ Trackster is an advanced, fully client-side web application designed for organiz
 
 This is a personal pet project created to keep track of all the needed information and serve as a "legend" for my specific hybrid dawless setup. It will obviously not work directly for you out of the box, as it's hardcoded for my hardware configuration! However, I may add options to customize the layout with new device types in the future.
 
+Additionally, this repository serves as a preservation effort. As some manufacturers (ahem, Behringer) remove critical downloads, firmware, and guides from their websites, it makes it incredibly challenging to find them on the internet. Trackster aims to centralize and archive these device-specific resources to keep our gear usable for years to come.
+
 **Offline by Design (No Backend)**: The application leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server. The complete lack of a backend or cloud sync is an intentional design decision. Trackster is meant to run entirely locally on your laptop or PC during gigs and live performances - even in the most isolated techno bunker - without relying on the internet. It serves as a robust helper tool for DJs and live performers who want quick access to all their device features from a central cockpit.
 
 ## Features & Gallery

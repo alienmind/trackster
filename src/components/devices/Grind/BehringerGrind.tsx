@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import ScaleFit from '../../Core/ui/ScaleFit';
 import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
-import ManualsList from '../../Core/ManualsList/ManualsList';
+import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 
 import { useGrindStore } from '../../../stores/useGrindStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
-import grindGuideUrl from '../../../../devices/grind/doc/behringer-grind-guide.md?url';
+import grindGuideUrl from '../../../../devices/grind/downloads/behringer-grind-guide.md?url';
 
 // --- ICONS & SVGS ---
 
@@ -341,7 +341,7 @@ export default function BehringerGrind() {
                 Sequencer and patch management for Behringer Grind will appear here.
               </div>
             </div>
-            <ManualsList devicePrefix="behringer-grind" />
+            <DownloadsList devicePrefix="behringer-grind" />
           </div>
         </ResponsiveDrawer>
 

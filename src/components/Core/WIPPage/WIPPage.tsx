@@ -1,6 +1,6 @@
 import * as Icons from 'lucide-react';
 import ResponsiveDrawer from '../ui/ResponsiveDrawer';
-import ManualsList from '../ManualsList/ManualsList';
+import DownloadsList from '../DownloadsList/DownloadsList';
 
 export default function WIPPage({ deviceName }: { deviceName: string }) {
   const getPrefix = (name: string) => {
@@ -23,7 +23,7 @@ export default function WIPPage({ deviceName }: { deviceName: string }) {
               </div>
             </div>
           </div>
-          <ManualsList devicePrefix={getPrefix(deviceName)} />
+          <DownloadsList devicePrefix={getPrefix(deviceName)} />
         </ResponsiveDrawer>
 
         {/* Center Panel */}
