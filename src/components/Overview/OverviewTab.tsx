@@ -14,6 +14,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { OverviewConnection, OverviewNode } from '../../stores/useOverviewStore';
+
+const formatPortName = (id: string) => id.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase());
 import { HARDWARE_LIBRARY } from '../../devices';
 import { Circle, Square, ChevronDown, ChevronRight } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
@@ -121,7 +123,6 @@ export default function OverviewTab() {
   const { setActiveMainView, setActiveDoc } = useUIStore();
   const { nodes, connections, routingMode, customLayouts, setNodes, setConnections, setRoutingMode, resetLayout, autoArrange, saveCustomLayout, removeCustomLayout, removeNode } = useOverviewStore();
   const [draggingNode, setDraggingNode] = useState<any>(null);
-  const [draggedCable, setDraggedCable] = useState<any>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const computedLogicalConnections = useMemo(() => {
@@ -161,13 +162,15 @@ export default function OverviewTab() {
     });
     return conns;
   }, [nodes, routingMode]);
+
   const [pan, setPan] = useState<{x: number, y: number}>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<any>(null);
   const [maxZIndex, setMaxZIndex] = useState(30);
-  const [editingLabel, setEditingLabel] = useState<any>(null);
   const [draggedLabel, setDraggedLabel] = useState<string | null>(null);
+  const [draggedCable, setDraggedCable] = useState<{ id: string, endpoint: 'source' | 'target', x: number, y: number } | null>(null);
+  const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
@@ -365,63 +368,6 @@ export default function OverviewTab() {
     }
   }, []);
 
-  const getConnectedNode = (nodeId: string, portType: string) => {
-     const conns = Object.values(connections);
-     if (portType === 'audioIn') {
-        const c = conns.find(c => c.target === nodeId && c.type.includes('audio'));
-        return c ? c.source : "";
-     }
-     if (portType === 'audioOut') {
-        const c = conns.find(c => c.source === nodeId && c.type.includes('audio'));
-        return c ? c.target : "";
-     }
-     if (portType === 'midiIn') {
-        const c = conns.find(c => c.target === nodeId && c.type.includes('midi'));
-        return c ? c.source : "";
-     }
-     if (portType === 'midiOut') {
-        const c = conns.find(c => c.source === nodeId && c.type.includes('midi'));
-        return c ? c.target : "";
-     }
-     return "";
-  };
-
-  const handlePortSelect = (nodeId: string, portType: string, selectedNodeId: string) => {
-    setConnections(prev => {
-      const newConns = { ...prev };
-      
-      let existingId = null;
-      for (const [id, c] of Object.entries(newConns)) {
-         if (portType === 'audioIn' && c.target === nodeId && c.type.includes('audio')) { existingId = id; break; }
-         if (portType === 'audioOut' && c.source === nodeId && c.type.includes('audio')) { existingId = id; break; }
-         if (portType === 'midiIn' && c.target === nodeId && c.type.includes('midi')) { existingId = id; break; }
-         if (portType === 'midiOut' && c.source === nodeId && c.type.includes('midi')) { existingId = id; break; }
-      }
-
-      if (!selectedNodeId) {
-         if (existingId) delete newConns[existingId];
-      } else {
-         if (existingId) {
-            if (portType.includes('In')) newConns[existingId]!.source = selectedNodeId;
-            if (portType.includes('Out')) newConns[existingId]!.target = selectedNodeId;
-         } else {
-            const newId = `c_auto_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-            const isAudio = portType.includes('audio');
-            const cableType = isAudio ? 'audio_ts' : 'midi_din';
-            newConns[newId] = {
-               id: newId,
-               source: portType.includes('In') ? selectedNodeId : nodeId,
-               target: portType.includes('In') ? nodeId : selectedNodeId,
-               type: cableType,
-               label: CABLE_TYPES[cableType].label,
-               startOffset: { x: 50, y: 50 },
-               endOffset: { x: 50, y: 50 }
-            };
-         }
-      }
-      return newConns;
-    });
-  };
   const handleNodeMouseDown = (nodeId: string, e: React.PointerEvent) => {
     if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'svg', 'path', 'circle'].includes((e.target as Element).tagName) || (e.target as Element).closest('button')) return;
     
@@ -465,7 +411,7 @@ export default function OverviewTab() {
     const rect = containerRef.current!.getBoundingClientRect();
     setDraggedCable({
         id: connId,
-        endpoint: endpoint,
+        endpoint: endpoint as 'source' | 'target',
         x: (e.clientX - rect.left - pan.x) / zoomRef.current,
         y: (e.clientY - rect.top - pan.y) / zoomRef.current
     });
@@ -726,26 +672,35 @@ export default function OverviewTab() {
           <hr className="border-border my-2" />
 
           <div className="flex flex-col gap-2">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Documentation</h2>
+            <Button variant="outline" onClick={() => setActiveDoc({ url: cableGuideUrl, type: 'md' })} className="w-full justify-start shadow-sm text-cyan-600 dark:text-cyan-400 border-cyan-800">
+              <Icons.BookOpen size={14} className="mr-2" /> Cable Types Guide
+            </Button>
+          </div>
+
+          <hr className="border-border my-2" />
+
+          <div className="flex flex-col gap-2">
             <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Layouts</h2>
-            <div className="flex flex-col gap-1 mb-2 max-h-48 overflow-y-auto pr-1">
+            <div className="flex flex-col gap-1 mb-2 pr-1">
               {hardcodedLayouts.map((l: any) => (
-                 <button key={l.id} className="text-left text-xs bg-muted/50 hover:bg-primary/20 hover:text-primary px-2 py-1.5 rounded transition-colors"
+                 <Button key={l.id} variant="secondary" className="w-full justify-start shadow-sm text-xs h-8"
                          onClick={() => resetLayout(l.nodes, l.connections)}>
                     {l.name}
-                 </button>
+                 </Button>
               ))}
               {customLayouts.map((l: any) => (
-                 <div key={l.id} className="flex group">
-                   <button className="flex-1 text-left text-xs bg-neutral-800 hover:bg-primary/20 hover:text-primary px-2 py-1.5 rounded-l transition-colors"
+                 <div key={l.id} className="flex group gap-1">
+                   <Button variant="secondary" className="flex-1 justify-start shadow-sm text-xs h-8"
                            onClick={() => resetLayout(l.nodes, l.connections)}
                            onDoubleClick={() => navigator.clipboard.writeText(JSON.stringify(l, null, 2)).then(() => useUIStore.getState().addNotification({ type: 'success', message: 'Custom layout JSON copied to clipboard!' }))}
                            title="Double click to copy JSON">
                       {l.name}
-                   </button>
-                   <button className="bg-neutral-800 hover:bg-destructive/80 text-muted-foreground hover:text-white px-2 rounded-r transition-colors opacity-0 group-hover:opacity-100"
+                   </Button>
+                   <Button variant="secondary" className="px-2 h-8 text-muted-foreground hover:bg-destructive hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
                            onClick={() => removeCustomLayout(l.id)}>
                       <Icons.Trash2 size={12} />
-                   </button>
+                   </Button>
                  </div>
               ))}
             </div>
@@ -755,19 +710,12 @@ export default function OverviewTab() {
               }} className="w-full justify-start shadow-sm text-xs h-8">
               <Icons.Plus size={14} className="mr-2" /> Save New Layout
             </Button>
-            <Button variant="secondary" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })} className="w-full justify-start shadow-sm text-xs h-8">
+            <Button variant="secondary" onClick={() => autoArrange()} className="w-full justify-start shadow-sm text-xs h-8">
               <Icons.LayoutGrid size={14} className="mr-2" /> Auto Arrange
             </Button>
+
           </div>
 
-          <hr className="border-border my-2" />
-
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Documentation</h2>
-            <Button variant="outline" onClick={() => setActiveDoc({ url: cableGuideUrl, type: 'md' })} className="w-full justify-start shadow-sm text-cyan-600 dark:text-cyan-400 border-cyan-800">
-              <Icons.BookOpen size={14} className="mr-2" /> Cable Types Guide
-            </Button>
-          </div>
         </ResponsiveDrawer>
 
         {/* Main Canvas Area */}
@@ -822,16 +770,41 @@ export default function OverviewTab() {
             const targetNode = nodes[conn.target];
             if (!sourceNode || !targetNode) return null;
 
-            const sourcePorts = getPortsForNode(HARDWARE_LIBRARY[sourceNode.type]);
-            const targetPorts = getPortsForNode(HARDWARE_LIBRARY[targetNode.type]);
+            const getOptimalPoint = (rect: any, targetPoint: {x: number, y: number}) => {
+                 const dx = targetPoint.x - (rect.x + rect.w/2);
+                 const dy = targetPoint.y - (rect.y + rect.h/2);
+                 const w = rect.w/2;
+                 const h = rect.h/2;
+                 if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return { x: rect.x + w, y: rect.y + h, side: 'right' };
+                 const crossX = dx > 0 ? w : -w;
+                 const crossY = dy > 0 ? h : -h;
+                 if (Math.abs(dx * h) > Math.abs(dy * w)) {
+                    return { x: rect.x + w + crossX, y: rect.y + h + dy * Math.abs(w/dx), side: dx > 0 ? 'right' : 'left' };
+                 } else {
+                    return { x: rect.x + w + dx * Math.abs(h/dy), y: rect.y + h + crossY, side: dy > 0 ? 'bottom' : 'top' };
+                 }
+            };
 
-            const sourcePortDef = conn.sourcePort ? sourcePorts.find((p: any) => p.id === conn.sourcePort) : null;
-            const targetPortDef = conn.targetPort ? targetPorts.find((p: any) => p.id === conn.targetPort) : null;
+            const srcW = HARDWARE_LIBRARY[sourceNode.type]?.width || 300;
+            const tgtW = HARDWARE_LIBRARY[targetNode.type]?.width || 300;
+            const srcEl = document.querySelector(`[data-id="${conn.source}"]`) as HTMLElement;
+            const tgtEl = document.querySelector(`[data-id="${conn.target}"]`) as HTMLElement;
+            const srcH = srcEl ? srcEl.offsetHeight : 150;
+            const tgtH = tgtEl ? tgtEl.offsetHeight : 150;
 
-            const startX = isDraggingStart ? draggedCable.x : sourceNode.x + (sourcePortDef ? sourcePortDef.x : conn.startOffset.x);
-            const startY = isDraggingStart ? draggedCable.y : sourceNode.y + (sourcePortDef ? sourcePortDef.y : conn.startOffset.y);
-            const endX = isDraggingEnd ? draggedCable.x : targetNode.x + (targetPortDef ? targetPortDef.x : conn.endOffset.x);
-            const endY = isDraggingEnd ? draggedCable.y : targetNode.y + (targetPortDef ? targetPortDef.y : conn.endOffset.y);
+            const srcRect = { x: sourceNode.x, y: sourceNode.y, w: srcW, h: srcH };
+            const tgtRect = { x: targetNode.x, y: targetNode.y, w: tgtW, h: tgtH };
+
+            const targetCenter = { x: targetNode.x + tgtW/2, y: targetNode.y + tgtH/2 };
+            const sourceCenter = { x: sourceNode.x + srcW/2, y: sourceNode.y + srcH/2 };
+
+            let startInfo = isDraggingStart ? { x: draggedCable.x, y: draggedCable.y, side: 'right' } : getOptimalPoint(srcRect, isDraggingEnd ? draggedCable : targetCenter);
+            let endInfo = isDraggingEnd ? { x: draggedCable.x, y: draggedCable.y, side: 'left' } : getOptimalPoint(tgtRect, isDraggingStart ? draggedCable : sourceCenter);
+
+            const startX = startInfo.x;
+            const startY = startInfo.y;
+            const endX = endInfo.x;
+            const endY = endInfo.y;
             
             if(startX === undefined || endX === undefined) return null;
 
@@ -841,9 +814,8 @@ export default function OverviewTab() {
                const cy = 2 * conn.midPoint.y - 0.5 * startY - 0.5 * endY;
                pathData = `M ${startX} ${startY} Q ${cx} ${cy}, ${endX} ${endY}`;
             } else {
-               // Dynamic control points based on port side
-               const startSide = sourcePortDef ? sourcePortDef.side : 'right';
-               const endSide = targetPortDef ? targetPortDef.side : 'left';
+               const startSide = startInfo.side;
+               const endSide = endInfo.side;
 
                const startControlX = startX + (startSide === 'left' ? -100 : startSide === 'right' ? 100 : 0);
                const startControlY = startY + (startSide === 'top' ? -100 : startSide === 'bottom' ? 100 : 0);
@@ -860,8 +832,8 @@ export default function OverviewTab() {
               <g key={`cable-${id}`} style={{ opacity: isActive ? 1 : 0.15, pointerEvents: isActive ? "auto" : "none", transition: "opacity 0.3s" }}>
                 <path d={pathData} stroke={style.color} strokeWidth={style.stroke} fill="none" markerEnd={isDraggingEnd ? "" : style.marker} filter={style.filter} strokeDasharray={style.dash} className={style.animate ? "animate-pulse" : ""} />
                 {/* Draggable Handles */}
-                <circle cx={startX} cy={startY} r="6" fill={style.color} className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onPointerDown={(e: any) => handleCableDragStart(e, id, 'source')} />
-                <circle cx={endX} cy={endY} r="6" fill={style.color} className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onPointerDown={(e: any) => handleCableDragStart(e, id, 'target')} />
+                <circle cx={startX} cy={startY} r="7" fill={style.color} stroke="white" strokeWidth="2" className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onPointerDown={(e: any) => handleCableDragStart(e, id, 'source')} />
+                <circle cx={endX} cy={endY} r="7" fill={style.color} stroke="white" strokeWidth="2" className="cursor-move hover:scale-150 transition-transform shadow-lg drop-shadow-md" style={{pointerEvents: 'auto'}} onPointerDown={(e: any) => handleCableDragStart(e, id, 'target')} />
               </g>
             );
           })}
@@ -877,10 +849,38 @@ export default function OverviewTab() {
           ].map(({ id, conn, isLogical }) => {
             const isDraggingStart = draggedCable?.id === id && draggedCable?.endpoint === 'source';
             const isDraggingEnd = draggedCable?.id === id && draggedCable?.endpoint === 'target';
-            const startX = isDraggingStart ? draggedCable.x : nodes[conn.source]!.x + conn.startOffset.x;
-            const startY = isDraggingStart ? draggedCable.y : nodes[conn.source]!.y + conn.startOffset.y;
-            const endX = isDraggingEnd ? draggedCable.x : nodes[conn.target]!.x + conn.endOffset.x;
-            const endY = isDraggingEnd ? draggedCable.y : nodes[conn.target]!.y + conn.endOffset.y;
+            const getOptimalPoint = (rect: any, targetPoint: {x: number, y: number}) => {
+                 const dx = targetPoint.x - (rect.x + rect.w/2);
+                 const dy = targetPoint.y - (rect.y + rect.h/2);
+                 const w = rect.w/2;
+                 const h = rect.h/2;
+                 if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return { x: rect.x + w, y: rect.y + h };
+                 const crossX = dx > 0 ? w : -w;
+                 const crossY = dy > 0 ? h : -h;
+                 if (Math.abs(dx * h) > Math.abs(dy * w)) {
+                    return { x: rect.x + w + crossX, y: rect.y + h + dy * Math.abs(w/dx) };
+                 } else {
+                    return { x: rect.x + w + dx * Math.abs(h/dy), y: rect.y + h + crossY };
+                 }
+            };
+
+            const srcW = HARDWARE_LIBRARY[nodes[conn.source]!.type]?.width || 300;
+            const tgtW = HARDWARE_LIBRARY[nodes[conn.target]!.type]?.width || 300;
+            const srcEl = document.querySelector(`[data-id="${conn.source}"]`) as HTMLElement;
+            const tgtEl = document.querySelector(`[data-id="${conn.target}"]`) as HTMLElement;
+            const srcH = srcEl ? srcEl.offsetHeight : 150;
+            const tgtH = tgtEl ? tgtEl.offsetHeight : 150;
+
+            const srcRect = { x: nodes[conn.source]!.x, y: nodes[conn.source]!.y, w: srcW, h: srcH };
+            const tgtRect = { x: nodes[conn.target]!.x, y: nodes[conn.target]!.y, w: tgtW, h: tgtH };
+
+            const targetCenter = { x: tgtRect.x + tgtW/2, y: tgtRect.y + tgtH/2 };
+            const sourceCenter = { x: srcRect.x + srcW/2, y: srcRect.y + srcH/2 };
+
+            const startX = isDraggingStart ? draggedCable.x : getOptimalPoint(srcRect, isDraggingEnd ? draggedCable : targetCenter).x;
+            const startY = isDraggingStart ? draggedCable.y : getOptimalPoint(srcRect, isDraggingEnd ? draggedCable : targetCenter).y;
+            const endX = isDraggingEnd ? draggedCable.x : getOptimalPoint(tgtRect, isDraggingStart ? draggedCable : sourceCenter).x;
+            const endY = isDraggingEnd ? draggedCable.y : getOptimalPoint(tgtRect, isDraggingStart ? draggedCable : sourceCenter).y;
             if(startX === undefined || endX === undefined) return null;
 
             const getBezier = (t: number, p0: number, p1: number, p2: number, p3: number) => {
@@ -922,7 +922,7 @@ export default function OverviewTab() {
                      onPointerDown={(e) => { e.stopPropagation(); setDraggedLabel(id); }}
                      onDoubleClick={() => setEditingLabel(id)}
                      className="px-2 py-1 rounded border backdrop-blur-sm text-[10px] font-bold cursor-move hover:scale-110 transition-transform whitespace-nowrap pointer-events-auto"
-                     style={{ color: style.color, borderColor: style.color, backgroundColor: 'rgba(20,20,20,0.8)' }}
+                     style={{ color: style.color, borderColor: style.color, backgroundColor: '#141414' }}
                    >
                      {conn.label}
                    </div>
@@ -936,7 +936,7 @@ export default function OverviewTab() {
           const nodeState = nodes[nodeId]!;
           const blueprint = HARDWARE_LIBRARY[nodeState.type];
           if (!blueprint) return null;
-          const isExpanded = nodeState.isExpanded !== false;
+          const isExpanded = nodeState.isExpanded === true;
           const isHardwareExpanded = nodeState.isHardwareExpanded !== false;
 
           return (
@@ -949,22 +949,6 @@ export default function OverviewTab() {
               onDoubleClick={(e: any) => handleNodeDoubleClick(nodeId, e)}
             >
               <RemoveButton onClick={() => removeNode(nodeId)} title="Remove Device" />
-
-              {/* Port Dots */}
-              {getPortsForNode(blueprint).map((port: any) => (
-                 <div 
-                   key={port.id}
-                   className="absolute w-3 h-3 rounded-full border-2 border-neutral-900 z-50 pointer-events-none shadow-md"
-                   style={{
-                     backgroundColor: port.color,
-                     left: port.side === 'left' ? -6 : (port.side === 'top' || port.side === 'bottom') ? port.x - 6 : 'auto',
-                     right: port.side === 'right' ? -6 : 'auto',
-                     top: port.side === 'top' ? -6 : (port.side === 'left' || port.side === 'right') ? port.y - 6 : 'auto',
-                     bottom: port.side === 'bottom' ? -6 : 'auto'
-                   }}
-                   title={port.title}
-                 />
-              ))}
 
               {/* Header */}
               <div className={`p-2 flex justify-between items-center rounded-t-lg ${blueprint.theme.header}`}>
@@ -1009,53 +993,93 @@ export default function OverviewTab() {
                          </div>
                          {routingMode === 'physical' ? (
                              <>
-                                 <div className="grid grid-cols-2 gap-2 mt-1">
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] text-cyan-600 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio IN</label>
-                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioIn')} onChange={(e: any) => handlePortSelect(nodeId, 'audioIn', e.target.value)}>
-                                           <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] text-orange-500 uppercase font-bold flex items-center gap-1"><Circle size={8}/> Audio OUT</label>
-                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'audioOut')} onChange={(e: any) => handlePortSelect(nodeId, 'audioOut', e.target.value)}>
-                                           <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] text-emerald-600 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI IN</label>
-                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiIn')} onChange={(e: any) => handlePortSelect(nodeId, 'midiIn', e.target.value)}>
-                                           <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] text-blue-500 uppercase font-bold flex items-center gap-1"><Square size={8}/> MIDI OUT/THRU</label>
-                                        <select className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" value={getConnectedNode(nodeId, 'midiOut')} onChange={(e: any) => handlePortSelect(nodeId, 'midiOut', e.target.value)}>
-                                           <option value="">- None -</option>
-                                           {Object.keys(nodes).filter(id => id !== nodeId).map(id => <option key={id} value={id}>{HARDWARE_LIBRARY[nodes[id]!.type]?.model}</option>)}
-                                        </select>
-                                     </div>
-                                 </div>
-                                 
-                                 {/* Origin Cable Managers */}
-                                 <div className="mt-2 pt-2 border-t border-neutral-800 flex flex-col gap-1">
-                                    <label className="text-[9px] text-neutral-500 uppercase font-bold">Outgoing Cables Manager</label>
-                                    {Object.entries(connections).filter(([_, conn]) => conn.source === nodeId).map(([cId, conn]) => (
-                                        <select 
-                                            key={cId}
-                                            value={conn.type}
-                                            onChange={(e: any) => setConnections(p => ({...p, [cId]: {...p[cId]! as OverviewConnection, type: e.target.value}}))}
-                                            className="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-neutral-300 outline-none w-full"
-                                            style={{ color: CABLE_TYPES[conn.type]?.color }}
-                                        >
-                                            {Object.entries(CABLE_TYPES).map(([typeId, typeData]) => (
-                                                <option key={typeId} value={typeId}>{conn.label} ➜ {typeData.label}</option>
-                                            ))}
-                                        </select>
-                                    ))}
+                                 <div className="mt-2 flex flex-col gap-2">
+                                     {blueprint.ports.map((port: any) => {
+                                        const isUSB = port.type.includes('USB');
+                                        const isAudio = !port.type.includes('MIDI') && !isUSB && port.type !== 'POWER';
+                                        
+                                        // Find ALL connections that involve this port on this node
+                                        const portConns = Object.entries(connections).filter(([_, c]) => (c.source === nodeId && c.sourcePort === port.id) || (c.target === nodeId && c.targetPort === port.id));
+                                        
+                                        const compatiblePorts: {nId: string, pId: string, label: string}[] = [];
+                                        Object.entries(nodes).forEach(([nId, n]) => {
+                                            if (nId === nodeId) return;
+                                            const bp = HARDWARE_LIBRARY[n.type];
+                                            if (!bp) return;
+                                            bp.ports.forEach(p => {
+                                                const pIsUSB = p.type.includes('USB');
+                                                const pIsAudio = !p.type.includes('MIDI') && !pIsUSB && p.type !== 'POWER';
+                                                if (p.type !== 'POWER' && (isUSB || pIsUSB || isAudio === pIsAudio)) {
+                                                    compatiblePorts.push({ nId, pId: p.id, label: `${bp.model} - ${formatPortName(p.id)}` });
+                                                }
+                                            });
+                                        });
+
+                                        return (
+                                           <div key={port.id} className="flex flex-col gap-1 bg-black/20 p-2 rounded border border-neutral-800/50">
+                                              <label className="text-[9px] uppercase font-bold flex items-center justify-between" style={{ color: isAudio ? '#06b6d4' : (isUSB ? '#3b82f6' : '#10b981') }}>
+                                                 <span className="flex items-center gap-1">
+                                                    {isAudio ? <Circle size={8}/> : <Square size={8}/>} {formatPortName(port.id)} <span className="text-neutral-500 font-normal">({port.type})</span>
+                                                 </span>
+                                              </label>
+                                              
+                                              {portConns.map(([connId, conn]) => {
+                                                  const selectedStr = conn.source === nodeId ? `${conn.target}::${conn.targetPort}` : `${conn.source}::${conn.sourcePort}`;
+                                                  return (
+                                                    <select key={connId}
+                                                        className="w-full bg-neutral-900 border border-neutral-800 rounded p-1 text-neutral-300 outline-none text-[10px]" 
+                                                        value={selectedStr} 
+                                                        onChange={(e: any) => {
+                                                            const val = e.target.value;
+                                                            setConnections(prev => {
+                                                                const newConns = { ...prev };
+                                                                if (!val) {
+                                                                    delete newConns[connId];
+                                                                } else {
+                                                                    const [tgtNode, tgtPort] = val.split('::');
+                                                                    const c = newConns[connId]!;
+                                                                    if (c.source === nodeId) {
+                                                                        c.target = tgtNode; c.targetPort = tgtPort;
+                                                                    } else {
+                                                                        c.source = tgtNode; c.sourcePort = tgtPort;
+                                                                    }
+                                                                }
+                                                                return newConns;
+                                                            });
+                                                        }}
+                                                    >
+                                                       <option value="">- Remove Connection -</option>
+                                                       {compatiblePorts.map(cp => <option key={`${cp.nId}::${cp.pId}`} value={`${cp.nId}::${cp.pId}`}>{cp.label}</option>)}
+                                                    </select>
+                                                  );
+                                              })}
+
+                                              {/* Add new connection dropdown */}
+                                              <select 
+                                                  className="w-full bg-neutral-900 border border-neutral-800 border-dashed rounded p-1 text-neutral-400 outline-none text-[10px] opacity-70 hover:opacity-100 transition-opacity" 
+                                                  value="" 
+                                                  onChange={(e: any) => {
+                                                      const val = e.target.value;
+                                                      if (!val) return;
+                                                      setConnections(prev => {
+                                                          const newConns = { ...prev };
+                                                          const [tgtNode, tgtPort] = val.split('::');
+                                                          const newId = `c_auto_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+                                                          const defType = isAudio ? 'audio_ts' : 'midi_din';
+                                                          newConns[newId] = {
+                                                              id: newId, source: nodeId, sourcePort: port.id, target: tgtNode, targetPort: tgtPort,
+                                                              type: defType, label: CABLE_TYPES[defType].label, startOffset: {x:50,y:50}, endOffset: {x:50,y:50}
+                                                          };
+                                                          return newConns;
+                                                      });
+                                                  }}
+                                              >
+                                                 <option value="">+ Add connection...</option>
+                                                 {compatiblePorts.map(cp => <option key={`${cp.nId}::${cp.pId}`} value={`${cp.nId}::${cp.pId}`}>{cp.label}</option>)}
+                                              </select>
+                                           </div>
+                                        );
+                                     })}
                                  </div>
                              </>
                          ) : (
@@ -1156,6 +1180,19 @@ export default function OverviewTab() {
             setPan({ x: cx - (cx - pan.x) * (z / zoom), y: cy - (cy - pan.y) * (z / zoom) });
             setZoom(z);
           }} className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded transition-colors text-neutral-400 hover:text-white font-bold" title="Zoom In">+</button>
+        </div>
+
+        {/* Cable Legend */}
+        <div className="absolute bottom-6 left-6 flex flex-col gap-2 bg-neutral-900/90 text-white rounded-lg shadow-xl border border-neutral-700/50 p-3 backdrop-blur z-50 pointer-events-auto text-xs w-48">
+          <div className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Cable Colors</div>
+          <div className="flex flex-col gap-1 text-[10px]">
+            <div className="flex items-center gap-2"><div className="w-4 h-1 bg-orange-500 rounded"></div><span>Audio TS (Mono/Unbal)</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-1 bg-cyan-500 rounded"></div><span>Audio TRS (Stereo/Bal)</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-1 bg-emerald-500 rounded"></div><span>MIDI (DIN/TRS)</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-1 bg-blue-500 rounded"></div><span>USB Data</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded"></div><span>Splitters/Converters</span></div>
+          </div>
+          <div className="text-muted-foreground mt-1 cursor-pointer hover:text-cyan-400 text-[10px] font-bold" onClick={() => setActiveDoc({ url: cableGuideUrl, type: 'md' })}>Read Full Cable Guide →</div>
         </div>
 
         </div>

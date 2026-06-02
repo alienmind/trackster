@@ -26,6 +26,17 @@ An interactive SVG-based drag-and-drop canvas to visually map out your hardware 
 ![Overview Dashboard](doc/gallery/overview.png)
 *The interactive DAWless overview canvas, mapping out hardware synths, mixers, audio cables, and MIDI routing.*
 
+### Advanced Cable Management
+Trackster tracks not just devices, but the literal physical cables and ports bridging your studio. It allows for complex configurations such as Y-Cables and USB hubs, and features distinct visual representations for different audio and MIDI cables. 
+
+- **Color Coded**: Cables are visually sorted by type (Orange for TS, Cyan for TRS, Emerald for MIDI, etc.).
+- **Dynamic Routing**: Click and drag a cable connection from a device to intelligently route it to another. 
+- **Logical vs Physical View**: Toggle between a physical port-to-port wire diagram and a logical MIDI-channel view.
+- **Save Layouts**: You can save the coordinates and wiring of an entire setup into local storage, or export it to a JSON file to easily hot-swap configurations.
+
+![Cable Management](doc/gallery/cablemanagement.png)
+*Drag and drop dynamic connection anchors between device ports, color-coded by cable type.*
+
 ### Custom Device Creation Workflow
 Want to add new gear? You can easily define new hardware models by simply pasting an image and supplying a JSON definition.
 I will receive a MR with this device and might consider adding it ;-)
