@@ -67,7 +67,7 @@ interface OverviewState {
   setConnections: (updater: (prev: Record<string, OverviewConnection>) => Record<string, OverviewConnection>) => void;
   addNode: (id: string, node: OverviewNode) => void;
   removeNode: (id: string) => void;
-  autoArrange: (hardwareWidths: Record<string, number>) => void;
+  autoArrange: () => void;
   resetLayout: (nodes: Record<string, OverviewNode>, connections: Record<string, OverviewConnection>) => void;
   saveLayout: () => void;
   copyLayout: () => void;
@@ -106,22 +106,80 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
     return { nodes: newNodes, connections: newConnections };
   }),
 
-  autoArrange: (hardwareWidths) => {
+  autoArrange: () => {
     set((state) => {
-      const newNodes = { ...state.nodes };
-      let currentX = 50;
-      const currentY = 100;
+      const newNodes = JSON.parse(JSON.stringify(state.nodes));
+      const nodesArr = Object.values(newNodes) as any[];
+      const conns = Object.values(state.connections);
       
-      const nodeOrder = ['n_ableton', 'n_flow8', 'n_circuit', 'n_minifreak', 'n_s1', 'n_grind'];
+      if (nodesArr.length === 0) return state;
       
-      nodeOrder.forEach((nodeId) => {
-        if (newNodes[nodeId]) {
-          newNodes[nodeId] = { ...newNodes[nodeId], x: currentX, y: currentY };
-          const hType = newNodes[nodeId].type;
-          const width = hardwareWidths[hType] || 350;
-          currentX += width + 50;
-        }
+      const iterations = 150;
+      const K = 400; // Optimal distance
+      
+      for (let i = 0; i < iterations; i++) {
+        // Calculate repulsive forces
+        nodesArr.forEach(n1 => {
+           n1.dx = 0; n1.dy = 0;
+           nodesArr.forEach(n2 => {
+              if (n1.id === n2.id) return;
+              let dx = n1.x - n2.x;
+              let dy = n1.y - n2.y;
+              let distance = Math.hypot(dx, dy);
+              if (distance === 0) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; distance = Math.hypot(dx, dy); }
+              const force = (K * K) / Math.max(1, distance);
+              n1.dx += (dx / distance) * force;
+              n1.dy += (dy / distance) * force;
+           });
+           
+           // Slight gravity to center to avoid drifting
+           n1.dx += (500 - n1.x) * 0.1;
+           n1.dy += (500 - n1.y) * 0.1;
+        });
+        
+        // Calculate attractive forces (springs)
+        conns.forEach(conn => {
+           const n1 = newNodes[conn.source];
+           const n2 = newNodes[conn.target];
+           if (!n1 || !n2) return;
+           const dx = n1.x - n2.x;
+           const dy = n1.y - n2.y;
+           const distance = Math.hypot(dx, dy);
+           if (distance === 0) return;
+           const force = (distance * distance) / K;
+           const fx = (dx / distance) * force;
+           const fy = (dy / distance) * force;
+           
+           n1.dx -= fx;
+           n1.dy -= fy;
+           n2.dx += fx;
+           n2.dy += fy;
+        });
+        
+        // Apply forces
+        const temperature = Math.max(5, 150 * (1 - i / iterations));
+        nodesArr.forEach(n => {
+           const d = Math.hypot(n.dx, n.dy);
+           if (d > 0) {
+             n.x += (n.dx / d) * Math.min(d, temperature);
+             n.y += (n.dy / d) * Math.min(d, temperature);
+           }
+        });
+      }
+      
+      // Ensure positive coordinates and remove temporary dx/dy
+      let minX = Infinity, minY = Infinity;
+      nodesArr.forEach(n => {
+         delete n.dx;
+         delete n.dy;
+         if (n.x < minX) minX = n.x;
+         if (n.y < minY) minY = n.y;
       });
+      nodesArr.forEach(n => {
+         n.x = n.x - minX + 100;
+         n.y = n.y - minY + 100;
+      });
+
       return { nodes: newNodes };
     });
   },
