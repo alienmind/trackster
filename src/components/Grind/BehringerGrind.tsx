@@ -2,6 +2,9 @@ import React, { useState, useRef } from 'react';
 import ScaleFit from '../Core/ui/ScaleFit';
 import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
 import GrindNavigator from './GrindNavigator';
+import ManualsList from '../Core/ManualsList/ManualsList';
+import PdfViewer from '../Core/PdfViewer/PdfViewer';
+import { useUIStore } from '../../stores/useUIStore';
 
 import { useGrindStore } from '../../stores/useGrindStore';
 
@@ -256,6 +259,7 @@ export default function BehringerGrind() {
   const [bank, setBank] = useState(0); 
   const [model, setModel] = useState(0);
   const { setActiveDocSection } = useGrindStore();
+  const activePdfUrl = useUIStore((s) => s.activePdfUrl);
 
   const handleBankClick = () => {
     setActiveDocSection('213-bank-button');
@@ -298,16 +302,20 @@ export default function BehringerGrind() {
                 Sequencer and patch management for Behringer Grind will appear here.
               </div>
             </div>
+            <ManualsList devicePrefix="behringer-grind" />
           </div>
         </ResponsiveDrawer>
 
         {/* Center Panel */}
         <div className="flex-1 min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
-          <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
-          {/* Synth Chassis with Wood Panels */}
-          <div className="flex shadow-2xl relative shrink-0 origin-center transition-transform">
-        
-        {/* Left Wood Panel */}
+          {activePdfUrl ? (
+            <PdfViewer />
+          ) : (
+            <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
+            {/* Synth Chassis with Wood Panels */}
+            <div className="flex shadow-2xl relative shrink-0 origin-center transition-transform">
+          
+          {/* Left Wood Panel */}
         <div className="w-4 rounded-l-md border-r border-[#3a1f10] shadow-[inset_-2px_0_4px_rgba(0,0,0,0.5)]" 
              style={{ background: 'linear-gradient(to right, #6d3a1c, #8b4a24)' }}></div>
         
@@ -584,6 +592,7 @@ export default function BehringerGrind() {
       
           </div>
           </ScaleFit>
+          )}
         </div>
 
         {/* Right Panel - Navigator */}
