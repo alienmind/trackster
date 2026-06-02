@@ -59,26 +59,29 @@ const LOGICAL_CABLE_TYPES: Record<string, any> = {
 
 const getPortsForNode = (blueprint: any) => {
   if (!blueprint || !blueprint.ports) return [];
-  // Resolve side and offset into x,y coordinates relative to node top-left
-  return blueprint.ports.map((p: any) => {
-    let x = 0;
-    let y = 0;
-    if (p.side === 'left') {
-      x = 0;
-      y = p.offset;
-    } else if (p.side === 'right') {
-      x = blueprint.width;
-      y = p.offset;
-    } else if (p.side === 'top') {
-      x = p.offset;
-      y = 0;
-    } else if (p.side === 'bottom') {
-      x = p.offset;
-      // rough estimate of height since it's variable. Let's assume nodes are visually ~150px-200px tall. We'll stick to left/right for now for reliability.
-      y = 150; 
-    }
-    return { ...p, x, y };
+  
+  const inputs = blueprint.ports.filter((p: any) => p.id.toLowerCase().includes('in'));
+  const outputs = blueprint.ports.filter((p: any) => p.id.toLowerCase().includes('out'));
+  const others = blueprint.ports.filter((p: any) => !p.id.toLowerCase().includes('in') && !p.id.toLowerCase().includes('out'));
+  
+  const height = 150; // Visual height estimation since device sizes can vary
+  const width = blueprint.width || 300;
+  
+  const mappedPorts: any[] = [];
+  
+  inputs.forEach((p: any, i: number) => {
+    mappedPorts.push({ ...p, x: 0, y: (height / (inputs.length + 1)) * (i + 1), side: 'left' });
   });
+  
+  outputs.forEach((p: any, i: number) => {
+    mappedPorts.push({ ...p, x: width, y: (height / (outputs.length + 1)) * (i + 1), side: 'right' });
+  });
+  
+  others.forEach((p: any, i: number) => {
+    mappedPorts.push({ ...p, x: (width / (others.length + 1)) * (i + 1), y: 0, side: 'top' });
+  });
+  
+  return mappedPorts;
 };
 
 export default function OverviewTab() {

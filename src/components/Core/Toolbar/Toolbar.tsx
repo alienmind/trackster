@@ -1,4 +1,4 @@
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { Button } from '../../Core/ui/button';
 import * as Icons from 'lucide-react';
@@ -12,7 +12,7 @@ import clsx from 'clsx';
 import { del } from 'idb-keyval';
 
 export default function Toolbar() {
-  const { rootHandle, workspaceMode, setWorkspaceMode } = useFileSystemStore();
+  const { rootHandle, workspaceMode, setWorkspaceMode } = useCircuitTracksStore();
   const { activeMainView, setActiveMainView } = useUIStore();
   
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, description: React.ReactNode, onConfirm: () => void, destructive?: boolean }>({ isOpen: false, title: '', description: '', onConfirm: () => {} });
@@ -105,6 +105,24 @@ export default function Toolbar() {
         </div>
 
         <div className="flex items-center space-x-2">
+          {useUIStore((s) => s.deferredPrompt) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                const promptEvent = useUIStore.getState().deferredPrompt;
+                if (!promptEvent) return;
+                promptEvent.prompt();
+                const result = await promptEvent.userChoice;
+                if (result.outcome === 'accepted') {
+                  useUIStore.getState().setDeferredPrompt(null);
+                }
+              }}
+              className="text-cyan-500 border-cyan-500 hover:bg-cyan-950/20 mr-2"
+            >
+              <Icons.Download className="mr-2 h-4 w-4" /> Install App
+            </Button>
+          )}
           <Tooltip>
             <TooltipTrigger render={<div className="inline-flex focus:outline-none" />}>
               <Button
