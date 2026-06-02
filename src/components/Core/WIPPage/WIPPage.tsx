@@ -1,7 +1,19 @@
 import * as Icons from 'lucide-react';
 import ResponsiveDrawer from '../ui/ResponsiveDrawer';
+import ManualsList from '../ManualsList/ManualsList';
+import PdfViewer from '../PdfViewer/PdfViewer';
+import { useUIStore } from '../../../stores/useUIStore';
 
 export default function WIPPage({ deviceName }: { deviceName: string }) {
+  const activePdfUrl = useUIStore((s) => s.activePdfUrl);
+
+  const getPrefix = (name: string) => {
+    if (name === 'Flow 8') return 'behringer-flow8';
+    if (name === 'Ableton Live') return 'ableton-live';
+    if (name === 'Roland S-1') return 'roland-s1';
+    return name.toLowerCase().replace(/\s+/g, '-');
+  };
+
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden">
       <div className="flex flex-1 min-h-0">
@@ -15,28 +27,35 @@ export default function WIPPage({ deviceName }: { deviceName: string }) {
               </div>
             </div>
           </div>
+          <ManualsList devicePrefix={getPrefix(deviceName)} />
         </ResponsiveDrawer>
 
         {/* Center Panel */}
-        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-neutral-900 text-neutral-200">
-          <div className="max-w-md w-full text-center space-y-6">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-neutral-800 border-4 border-neutral-700">
-          <Icons.Wrench size={48} className="text-neutral-400" />
-        </div>
-        
-        <div>
-          <h1 className="text-3xl font-black tracking-tight mb-2">Work In Progress!</h1>
-          <p className="text-neutral-400 text-lg">
-            The dedicated page for <strong className="text-white">{deviceName}</strong> is currently under construction.
-          </p>
-        </div>
+        <div className="flex-1 flex flex-col overflow-hidden bg-neutral-900 text-neutral-200">
+          {activePdfUrl ? (
+            <PdfViewer />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8">
+              <div className="max-w-md w-full text-center space-y-6">
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-neutral-800 border-4 border-neutral-700">
+                  <Icons.Wrench size={48} className="text-neutral-400" />
+                </div>
+                
+                <div>
+                  <h1 className="text-3xl font-black tracking-tight mb-2">Work In Progress!</h1>
+                  <p className="text-neutral-400 text-lg">
+                    The dedicated page for <strong className="text-white">{deviceName}</strong> is currently under construction.
+                  </p>
+                </div>
 
-        <div className="p-4 bg-neutral-800/50 rounded-xl border border-neutral-700/50 mt-8">
-          <p className="text-sm text-neutral-400">
-            Check back later for features and integrations specific to this device.
-          </p>
-        </div>
-      </div>
+                <div className="p-4 bg-neutral-800/50 rounded-xl border border-neutral-700/50 mt-8">
+                  <p className="text-sm text-neutral-400">
+                    Check back later for features and integrations specific to this device.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

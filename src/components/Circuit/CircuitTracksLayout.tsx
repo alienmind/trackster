@@ -13,11 +13,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../Core/ui/tooltip';
 import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
 import PendingChangesPane from '../Core/PendingChangesPane/PendingChangesPane';
 import StatusBar from '../Core/StatusBar/StatusBar';
+import ManualsList from '../Core/ManualsList/ManualsList';
+import PdfViewer from '../Core/PdfViewer/PdfViewer';
 
 export default function CircuitTracksLayout() {
   const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useFileSystemStore();
   const scanDuplicates = useAudioStore((s) => s.scanDuplicates);
   const { activePage, setActivePage } = useUIStore();
+  const activePdfUrl = useUIStore((s) => s.activePdfUrl);
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
   useEffect(() => {
@@ -99,12 +102,20 @@ export default function CircuitTracksLayout() {
             </div>
           </div>
           
+          <ManualsList devicePrefix="circuit-tracks" />
+
           <StagingArea />
         </ResponsiveDrawer>
 
         {/* Center Panel - Device */}
-        <div className="flex-1 overflow-y-auto flex items-center justify-center bg-neutral-950">
-          <CircuitTracksDevice />
+        <div className="flex-1 overflow-hidden flex flex-col bg-neutral-950">
+          {activePdfUrl ? (
+            <PdfViewer />
+          ) : (
+            <div className="flex-1 overflow-y-auto flex items-center justify-center">
+              <CircuitTracksDevice />
+            </div>
+          )}
         </div>
 
         {/* Right Panel */}

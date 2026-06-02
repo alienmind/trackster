@@ -12,6 +12,7 @@ interface UIState {
   isLeftPaneCollapsed: boolean;
   isRightPaneCollapsed: boolean;
   selectedFile: SampleFile | null;
+  activePdfUrl: string | null;
 
   isDuplicateModalOpen: boolean;
   duplicateClusters: SampleFile[][];
@@ -29,6 +30,7 @@ interface UIState {
   toggleRightPane: () => void;
   setRightPaneCollapsed: (collapsed: boolean) => void;
   setSelectedFile: (file: SampleFile | null) => void;
+  setActivePdfUrl: (url: string | null) => void;
 
   openDuplicateModal: (clusters: SampleFile[][]) => void;
   closeDuplicateModal: () => void;
@@ -45,12 +47,13 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isLeftPaneCollapsed: false,
   isRightPaneCollapsed: false,
   selectedFile: null,
+  activePdfUrl: null,
 
   isDuplicateModalOpen: false,
   duplicateClusters: [],
   isMobileDrawerOpen: false,
 
-  setActiveMainView: (view) => set({ activeMainView: view }),
+  setActiveMainView: (view) => set({ activeMainView: view, activePdfUrl: null }),
   setActivePage: (page) => {
     set({ activePage: page });
     // Side effect to update css variable can be handled here or in a component
@@ -80,6 +83,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   toggleRightPane: () => set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
   setRightPaneCollapsed: (collapsed) => set({ isRightPaneCollapsed: collapsed }),
   setSelectedFile: (file) => set({ selectedFile: file }),
+  setActivePdfUrl: (url) => set({ activePdfUrl: url }),
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
   closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] }),
