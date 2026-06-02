@@ -5,10 +5,12 @@
   "width": 280,
   "theme": { "border": "border-t-purple-500", "header": "bg-purple-950", "title": "text-purple-400", "badge": "bg-purple-900 text-purple-200" },
   "ports": [
-    { "id": "audioIn1", "type": "MINIJACK" },
-    { "id": "audioIn2", "type": "MINIJACK" },
+    { "id": "audioIn1", "type": "TS" },
+    { "id": "audioIn2", "type": "TS" },
     { "id": "audioOut", "type": "TRS" },
+    { "id": "phonesOut", "type": "MINIJACK_TRS" },
     { "id": "midiIn", "type": "MIDI_5PIN" },
-    { "id": "midiOut", "type": "MIDI_5PIN" }
+    { "id": "midiOut", "type": "MIDI_5PIN" },
+    { "id": "midiThru", "type": "MIDI_5PIN" }
   ]
 }

@@ -67,37 +67,22 @@ interface OverviewState {
   setConnections: (updater: (prev: Record<string, OverviewConnection>) => Record<string, OverviewConnection>) => void;
   addNode: (id: string, node: OverviewNode) => void;
   removeNode: (id: string) => void;
-  autoArrange: (hardwareWidths: Record<string, number>) => void;
-  resetLayout: (defaultNodes: Record<string, OverviewNode>, defaultConnections: Record<string, OverviewConnection>) => void;
+  autoArrange: () => void;
+  resetLayout: (nodes: Record<string, OverviewNode>, connections: Record<string, OverviewConnection>) => void;
   saveLayout: () => void;
   copyLayout: () => void;
+  
+  customLayouts: Array<{ id: string; name: string; nodes: Record<string, OverviewNode>; connections: Record<string, OverviewConnection> }>;
+  saveCustomLayout: (name: string) => void;
+  removeCustomLayout: (id: string) => void;
+  loadCustomLayouts: (layouts: any[]) => void;
 }
-
-export const DEFAULT_NODES: Record<string, OverviewNode> = {
-  n_circuit: { id: "n_circuit", type: "circuit", x: 2039.5137111517367, y: -26.822669104204806, zIndex: 37, isExpanded: true, circuitLogicalOuts: { synth1: 3, synth2: 4, midi1: 1, midi2: 2 } },
-  n_grind: { id: "n_grind", type: "grind", x: 1175.400365630713, y: 337.0658135283363, zIndex: 40, isExpanded: true, logicalInChannel: 1 },
-  n_s1: { id: "n_s1", type: "s1", x: 1647.4405850091407, y: 565.6946983546618, zIndex: 36, isExpanded: true, logicalInChannel: 2 },
-  n_minifreak: { id: "n_minifreak", type: "minifreak", x: 747.4058500914077, y: -12.405850091407686, zIndex: 38, isExpanded: true, logicalInChannel: 3 },
-  n_flow8: { id: "n_flow8", type: "flow8", x: 2648.4076782449724, y: -112.27239488117004, zIndex: 42, isExpanded: true },
-  n_ableton: { id: "n_ableton", type: "ableton", x: 3144.4040219378426, y: 226.21023765996344, zIndex: 43, isExpanded: true }
-};
-
-export const DEFAULT_CONNECTIONS: Record<string, OverviewConnection> = {
-  c_grind_audio: { id: "c_grind_audio", source: "n_grind", target: "n_circuit", type: "audio_jack_to_minijack", label: "Jack 6.35 to Mini Jack 3.5", startOffset: { x: 300, y: 100 }, endOffset: { x: 0, y: 50 }, sourcePort: "audioOut", targetPort: "audioIn1" },
-  c_s1_audio: { id: "c_s1_audio", source: "n_s1", target: "n_circuit", type: "audio_jack_to_minijack", label: "Jack 6.35 to Mini Jack 3.5", startOffset: { x: 230, y: 50 }, endOffset: { x: 0, y: 100 }, sourcePort: "audioOut", targetPort: "audioIn2" },
-  c_circuit_audio: { id: "c_circuit_audio", source: "n_circuit", target: "n_flow8", type: "audio_minijack_to_dual_trs", label: "Mini Jack to TRS Left/Right (Y cable)", startOffset: { x: 350, y: 50 }, endOffset: { x: 0, y: 150 }, sourcePort: "audioOut", targetPort: "audioIn", midPoint: { x: 2475.840036563071, y: -6.667276051188296 } },
-  c_mf_audio: { id: "c_mf_audio", source: "n_minifreak", target: "n_flow8", type: "audio_trs_to_xlr", label: "TRS to XLR", startOffset: { x: 300, y: 100 }, endOffset: { x: 0, y: 100 }, sourcePort: "audioOut", targetPort: "audioIn", midPoint: { x: 1752.4853747714806, y: -74.10786106032907 } },
-  c_flow_usb: { id: "c_flow_usb", source: "n_flow8", target: "n_ableton", type: "midi_usb", label: "USB Type-B to Type-A", startOffset: { x: 300, y: 100 }, endOffset: { x: 0, y: 50 }, sourcePort: "usbOut", targetPort: "usbIn", midPoint: { x: 3000.136197440585, y: 257.6563071297989 } },
-  c_midi_master: { id: "c_midi_master", source: "n_circuit", target: "n_minifreak", type: "midi_din", label: "5-Pin MIDI DIN", startOffset: { x: 350, y: 150 }, endOffset: { x: 0, y: 200 }, sourcePort: "midiOut", targetPort: "midiIn" },
-  c_midi_2: { id: "c_midi_2", source: "n_minifreak", target: "n_grind", type: "midi_din", label: "5-Pin MIDI DIN", startOffset: { x: 300, y: 150 }, endOffset: { x: 0, y: 150 }, sourcePort: "midiOut", targetPort: "midiIn" },
-  c_midi_3: { id: "c_midi_3", source: "n_grind", target: "n_s1", type: "midi_din_to_trs", label: "MIDI DIN to TRS Type A", startOffset: { x: 300, y: 150 }, endOffset: { x: 0, y: 150 }, sourcePort: "midiOut", targetPort: "midiIn", midPoint: { x: 1648.0612431444242, y: 474.1188299817185 } }
-};
-
 
 export const useOverviewStore = create<OverviewState>((set, get) => ({
   routingMode: 'physical',
   nodes: {},
   connections: {},
+  customLayouts: [],
   
   setRoutingMode: (mode) => set({ routingMode: mode }),
   setNodes: (updater) => set((state) => ({ nodes: updater(state.nodes) })),
@@ -121,22 +106,80 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
     return { nodes: newNodes, connections: newConnections };
   }),
 
-  autoArrange: (hardwareWidths) => {
+  autoArrange: () => {
     set((state) => {
-      const newNodes = { ...state.nodes };
-      let currentX = 50;
-      const currentY = 100;
+      const newNodes = JSON.parse(JSON.stringify(state.nodes));
+      const nodesArr = Object.values(newNodes) as any[];
+      const conns = Object.values(state.connections);
       
-      const nodeOrder = ['n_ableton', 'n_flow8', 'n_circuit', 'n_minifreak', 'n_s1', 'n_grind'];
+      if (nodesArr.length === 0) return state;
       
-      nodeOrder.forEach((nodeId) => {
-        if (newNodes[nodeId]) {
-          newNodes[nodeId] = { ...newNodes[nodeId], x: currentX, y: currentY };
-          const hType = newNodes[nodeId].type;
-          const width = hardwareWidths[hType] || 350;
-          currentX += width + 50;
-        }
+      const iterations = 150;
+      const K = 400; // Optimal distance
+      
+      for (let i = 0; i < iterations; i++) {
+        // Calculate repulsive forces
+        nodesArr.forEach(n1 => {
+           n1.dx = 0; n1.dy = 0;
+           nodesArr.forEach(n2 => {
+              if (n1.id === n2.id) return;
+              let dx = n1.x - n2.x;
+              let dy = n1.y - n2.y;
+              let distance = Math.hypot(dx, dy);
+              if (distance === 0) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; distance = Math.hypot(dx, dy); }
+              const force = (K * K) / Math.max(1, distance);
+              n1.dx += (dx / distance) * force;
+              n1.dy += (dy / distance) * force;
+           });
+           
+           // Slight gravity to center to avoid drifting
+           n1.dx += (500 - n1.x) * 0.1;
+           n1.dy += (500 - n1.y) * 0.1;
+        });
+        
+        // Calculate attractive forces (springs)
+        conns.forEach(conn => {
+           const n1 = newNodes[conn.source];
+           const n2 = newNodes[conn.target];
+           if (!n1 || !n2) return;
+           const dx = n1.x - n2.x;
+           const dy = n1.y - n2.y;
+           const distance = Math.hypot(dx, dy);
+           if (distance === 0) return;
+           const force = (distance * distance) / K;
+           const fx = (dx / distance) * force;
+           const fy = (dy / distance) * force;
+           
+           n1.dx -= fx;
+           n1.dy -= fy;
+           n2.dx += fx;
+           n2.dy += fy;
+        });
+        
+        // Apply forces
+        const temperature = Math.max(5, 150 * (1 - i / iterations));
+        nodesArr.forEach(n => {
+           const d = Math.hypot(n.dx, n.dy);
+           if (d > 0) {
+             n.x += (n.dx / d) * Math.min(d, temperature);
+             n.y += (n.dy / d) * Math.min(d, temperature);
+           }
+        });
+      }
+      
+      // Ensure positive coordinates and remove temporary dx/dy
+      let minX = Infinity, minY = Infinity;
+      nodesArr.forEach(n => {
+         delete n.dx;
+         delete n.dy;
+         if (n.x < minX) minX = n.x;
+         if (n.y < minY) minY = n.y;
       });
+      nodesArr.forEach(n => {
+         n.x = n.x - minX + 100;
+         n.y = n.y - minY + 100;
+      });
+
       return { nodes: newNodes };
     });
   },
@@ -149,7 +192,7 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
     const { nodes, connections } = get();
     localStorage.setItem('alienmind_nodes_v4', JSON.stringify(nodes));
     localStorage.setItem('alienmind_connections_v4', JSON.stringify(connections));
-    useUIStore.getState().addNotification({ type: 'success', message: 'Layout Saved successfully!' });
+    useUIStore.getState().addNotification({ type: 'success', message: 'Current workspace saved successfully!' });
   },
 
   copyLayout: () => {
@@ -157,5 +200,27 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
     navigator.clipboard.writeText(JSON.stringify({ nodes, connections }, null, 2)).then(() => {
       useUIStore.getState().addNotification({ type: 'success', message: 'Layout copied to clipboard!' });
     });
+  },
+  
+  loadCustomLayouts: (layouts) => {
+    set({ customLayouts: layouts });
+  },
+  
+  saveCustomLayout: (name: string) => {
+    const { nodes, connections, customLayouts } = get();
+    const id = `custom_${Date.now()}`;
+    const newLayout = { id, name, nodes, connections };
+    const updated = [...customLayouts, newLayout];
+    set({ customLayouts: updated });
+    localStorage.setItem('alienmind_custom_layouts_v4', JSON.stringify(updated));
+    useUIStore.getState().addNotification({ type: 'success', message: `Layout "${name}" saved!` });
+  },
+  
+  removeCustomLayout: (id: string) => {
+    const { customLayouts } = get();
+    const updated = customLayouts.filter(l => l.id !== id);
+    set({ customLayouts: updated });
+    localStorage.setItem('alienmind_custom_layouts_v4', JSON.stringify(updated));
+    useUIStore.getState().addNotification({ type: 'success', message: 'Layout deleted.' });
   }
 }));
