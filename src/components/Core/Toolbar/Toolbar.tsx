@@ -27,6 +27,7 @@ export default function Toolbar() {
     { id: 'minifreak', label: 'Arturia Minifreak' },
     { id: 'flow8', label: 'Flow 8' },
     { id: 'ableton', label: 'Ableton Live' },
+    { id: 'soundtoys', label: 'Sound Toys' },
   ];
   
 

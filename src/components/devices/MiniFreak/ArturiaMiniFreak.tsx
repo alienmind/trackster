@@ -10,12 +10,8 @@ import {
   Keyboard 
 } from './MiniFreakControls';
 import ManualsList from '../../Core/ManualsList/ManualsList';
-import PdfViewer from '../../Core/PdfViewer/PdfViewer';
-import { useUIStore } from '../../../stores/useUIStore';
 
 export default function ArturiaMiniFreak() {
-  const activePdfUrl = useUIStore((s) => s.activePdfUrl);
-
   const deviceContent = (
     <div className="w-[1450px] bg-[#1d1f24] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex flex-col relative overflow-hidden ring-2 ring-[#111]">
       
@@ -229,15 +225,11 @@ export default function ArturiaMiniFreak() {
         </div>
       </ResponsiveDrawer>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative overflow-hidden">
-        {activePdfUrl ? (
-          <PdfViewer />
-        ) : (
-          <ScaleFit baseWidth={1500} baseHeight={700}>
-            {deviceContent}
-          </ScaleFit>
-        )}
+      {/* Center Panel */}
+      <div className="flex-1 min-h-0 bg-[#111] flex flex-col items-center justify-center relative overflow-hidden">
+        <ScaleFit baseWidth={1100} baseHeight={600} maxScale={3}>
+          {deviceContent}
+        </ScaleFit>
       </div>
     </div>
   );

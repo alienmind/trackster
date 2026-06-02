@@ -17,9 +17,15 @@ import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
 import BrowserWarning from './components/Core/BrowserWarning/BrowserWarning';
 import Toolbar from './components/Core/Toolbar/Toolbar';
+import DocumentViewer from './components/Core/DocumentViewer/DocumentViewer';
+import RightPane from './components/Core/RightPane/RightPane';
+import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
+import FileInspector from './components/Core/FileInspector/FileInspector';
+import Oscilloscope from './components/Core/Oscilloscope/Oscilloscope';
 import { TagBadge } from './components/Core/TagBadge/TagBadge';
 import Logo from './components/Core/Logo';
 import * as Icons from 'lucide-react';
+import { cn } from './lib/utils';
 import { ThemeToggle } from './components/Core/ThemeToggle';
 import pkg from '../package.json';
 
@@ -28,11 +34,15 @@ import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
 import BehringerGrind from './components/devices/Grind/BehringerGrind';
 import ArturiaMiniFreak from './components/devices/MiniFreak/ArturiaMiniFreak';
+import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
 
 export default function App() {
   const isSupported = 'showDirectoryPicker' in window;
   const activePage = useUIStore((s) => s.activePage);
   const activeMainView = useUIStore((s) => s.activeMainView);
+  const isDeviceMinimized = useUIStore((s) => s.isDeviceMinimized);
+  const setDeviceMinimized = useUIStore((s) => s.setDeviceMinimized);
+  const setRightPaneWidth = useUIStore((s) => s.setRightPaneWidth);
   
   const moveSlot = useCircuitTracksStore((s) => s.moveSlot);
   const movePackSlot = useCircuitTracksStore((s) => s.movePackSlot);
@@ -158,16 +168,60 @@ export default function App() {
         </div>
 
         <div className="flex flex-1 overflow-hidden min-h-0 order-2 md:order-3 relative z-0">
-          {activeMainView === 'overview' ? (
-            <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
-          ) : activeMainView === 'circuit' ? (
-            <CircuitTracksLayout />
-          ) : activeMainView === 'grind' ? (
-            <BehringerGrind />
-          ) : activeMainView === 'minifreak' ? (
-            <ArturiaMiniFreak />
-          ) : (
-            <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
+          
+          {/* Main View Container */}
+          <div className={cn("flex-1 overflow-hidden transition-all duration-300", isDeviceMinimized ? 'w-0 flex-none opacity-0' : 'flex')}>
+            {activeMainView === 'overview' ? (
+              <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
+            ) : activeMainView === 'circuit' ? (
+              <CircuitTracksLayout />
+            ) : activeMainView === 'grind' ? (
+              <BehringerGrind />
+            ) : activeMainView === 'minifreak' ? (
+              <ArturiaMiniFreak />
+            ) : activeMainView === 'soundtoys' ? (
+              <SoundToysLayout />
+            ) : (
+              <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
+            )}
+          </div>
+
+          <RightPane>
+            {activeMainView === 'circuit' ? (
+              <div className="flex flex-col h-full overflow-hidden w-full">
+                <div className="flex-1 overflow-hidden">
+                  <PendingChangesPane />
+                </div>
+                <div className="p-4 flex flex-col gap-4 border-t border-border shrink-0 bg-card overflow-y-auto max-h-[50%]">
+                  <FileInspector />
+                  <div className="relative border border-border/50 rounded bg-black overflow-hidden shadow-inner h-48 flex-none">
+                    <Oscilloscope />
+                  </div>
+                </div>
+              </div>
+            ) : activeMainView === 'grind' ? (
+              <DocumentViewer />
+            ) : (
+              <DocumentViewer /> // Default fallback for other devices if a doc is active
+            )}
+          </RightPane>
+
+          {/* Restore Device Layout Button */}
+          {isDeviceMinimized && (
+            <div className="absolute top-1/2 left-0 -translate-y-1/2 z-50 animate-in fade-in slide-in-from-left-4 duration-300">
+              <button 
+                onClick={() => {
+                  setDeviceMinimized(false);
+                  setRightPaneWidth(400); // restore reasonable width
+                }}
+                className="group flex flex-col items-center justify-center bg-card border border-l-0 border-border rounded-r-lg shadow-2xl py-4 px-2 hover:bg-muted transition-colors hover:pl-4"
+              >
+                <Icons.ChevronRight size={24} className="text-primary group-hover:scale-110 transition-transform" />
+                <span className="[writing-mode:vertical-lr] text-xs font-semibold tracking-widest uppercase mt-4 text-muted-foreground group-hover:text-foreground">
+                  Device Layout
+                </span>
+              </button>
+            </div>
           )}
         </div>
 
