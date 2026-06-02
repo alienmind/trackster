@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUIStore } from '../../../stores/useUIStore';
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { formatBytes } from '../../../utils/formatters';
 import { TagBadge } from '../../Core/TagBadge/TagBadge';
 import * as Icons from 'lucide-react';
 
 export default function FileInspector() {
   const selectedFile = useUIStore((s) => s.selectedFile);
-  const tags = useFileSystemStore((s) => s.tags);
-  const assignTagToSlot = useFileSystemStore((s) => s.assignTagToSlot);
-  const renameFile = useFileSystemStore((s) => s.renameFile);
+  const tags = useCircuitTracksStore((s) => s.tags);
+  const assignTagToSlot = useCircuitTracksStore((s) => s.assignTagToSlot);
+  const renameFile = useCircuitTracksStore((s) => s.renameFile);
   const selectedPadIndex = useUIStore((s) => s.selectedPadIndex);
-  const slots = useFileSystemStore((s) => s.slots);
+  const slots = useCircuitTracksStore((s) => s.slots);
   
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState("");

@@ -1,5 +1,5 @@
-import { useUIStore } from '../../../stores/useUIStore';
-import { PAGES } from '../../../utils/constants';
+import { useUIStore } from '../../../../stores/useUIStore';
+import { PAGES } from '../../../../utils/constants';
 
 export default function PageTabs() {
   const activePage = useUIStore((s) => s.activePage);

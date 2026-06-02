@@ -1,12 +1,11 @@
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
-import { useAudioStore } from '../../../stores/useAudioStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { Button } from '../../Core/ui/button';
 import * as Icons from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
 
 export default function SampleToolbar() {
-  const { activePack, autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useFileSystemStore();
-  const scanDuplicates = useAudioStore((s) => s.scanDuplicates);
+  const { activePack, autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useCircuitTracksStore();
+  const scanDuplicates = useCircuitTracksStore((s) => s.scanDuplicates);
 
   const hasPack = !!activePack;
 
@@ -42,7 +41,7 @@ export default function SampleToolbar() {
         <Tooltip>
           <TooltipTrigger className="focus:outline-none">
             <Button
-              variant="default"
+              variant="secondary"
               size="sm"
               onClick={() => scanDuplicates()}
             >
@@ -58,10 +57,10 @@ export default function SampleToolbar() {
         <Tooltip>
           <TooltipTrigger className="focus:outline-none">
             <Button
-              variant={applyTagsToFilenames ? "default" : "secondary"}
+              variant="state"
+              data-state={applyTagsToFilenames ? 'active' : 'inactive'}
               size="sm"
               onClick={() => setApplyTagsToFilenames(!applyTagsToFilenames)}
-              className={applyTagsToFilenames ? "bg-primary font-bold shadow-sm" : ""}
             >
               <Icons.Tag className="mr-2" size={16} />
               Tags in Filenames

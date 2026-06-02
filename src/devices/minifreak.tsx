@@ -1,14 +1,10 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
+import data from '../../devices/minifreak.json';
+
 export const minifreak: HardwareBlueprint = {
-  brand: "Arturia", model: "MiniFreak Stellar", tagline: "SYNTH", width: 300,
-  theme: { border: "border-t-zinc-500", header: "bg-zinc-950", title: "text-zinc-300", badge: "bg-zinc-800 text-zinc-400" },
-  ports: [
-    { id: 'audioOut', title: 'Audio Out', color: '#06b6d4', side: 'right', offset: 50 },
-    { id: 'midiIn', title: 'MIDI In', color: '#10b981', side: 'left', offset: 100 },
-    { id: 'midiOut', title: 'MIDI Out', color: '#3b82f6', side: 'right', offset: 100 }
-  ],
-  visual: () => (
+  ...(data as unknown as HardwareBlueprint),
+visual: () => (
     <div className="w-full h-28 bg-neutral-900 rounded border border-neutral-700 flex flex-col justify-between p-2 shadow-inner pointer-events-none">
        {/* Top Section */}
        <div className="flex justify-between w-full px-1">

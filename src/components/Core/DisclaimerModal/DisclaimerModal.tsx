@@ -1,4 +1,4 @@
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { Button } from '../../Core/ui/button';
 import * as Icons from 'lucide-react';
 import {
@@ -17,7 +17,7 @@ export default function DisclaimerModal({
   isOpen: boolean; 
   onClose: () => void; 
 }) {
-  const { openRootDirectory } = useFileSystemStore();
+  const { openRootDirectory } = useCircuitTracksStore();
 
   const handleMount = async (mode: 'read' | 'readwrite') => {
     onClose();

@@ -54,6 +54,7 @@ Work-in-progress integration for the Behringer Grind, Roland S1, Behringer Flow 
 ### Technical Features
 - **Local-first**: Reads and writes directly to your local file system (requires a Chromium-based browser).
 - **Persistent Workspace**: Uses IndexedDB to safely cache your session state, layouts, and SD card handles across reloads.
+- **Offline by Design (No Backend)**: The complete lack of a backend or cloud sync is an intentional design decision. Trackster is meant to run entirely locally on your laptop or PC during gigs and live performances - even in the most isolated techno bunker - without relying on the internet. It serves as a robust helper tool for DJs and live performers who want quick access to all their device features from a central cockpit.
 
 More to come! (see [doc/FUTURE_IDEAS.md](https://github.com/alienmind/trackster/blob/main/doc/FUTURE_IDEAS.md)!)
 
@@ -78,4 +79,4 @@ To enable GitHub Pages for your fork:
 
 1. Make the repository **public** (GitHub Pages requires a paid plan for private repos).
 2. Enable Pages via **Settings → Pages** and set the source to **GitHub Actions**.
-3. Push to `main` (or trigger the workflow manually from the **Actions** tab) — the `VITE_BASE` env var is set automatically to match your repo name.
+3. Push to `main` (or trigger the workflow manually from the **Actions** tab) - the `VITE_BASE` env var is set automatically to match your repo name.

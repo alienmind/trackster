@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useUIStore } from '../../../stores/useUIStore';
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import type { SampleFile } from '../../../types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../../Core/ui/dialog';
 import { Button } from '../../Core/ui/button';
 import { ScrollArea } from '../../Core/ui/scroll-area';
-import { useAudioStore } from '../../../stores/useAudioStore';
 
 export default function DuplicateScanModal() {
   const isDuplicateModalOpen = useUIStore((s) => s.isDuplicateModalOpen);
   const duplicateClusters = useUIStore((s) => s.duplicateClusters);
   const closeDuplicateModal = useUIStore((s) => s.closeDuplicateModal);
-  const removeFile = useFileSystemStore((s) => s.removeFile);
-  const assignToSlot = useFileSystemStore((s) => s.assignToSlot);
-  const playSlot = useAudioStore((s) => s.playSlot);
+  const removeFile = useCircuitTracksStore((s) => s.removeFile);
+  const assignToSlot = useCircuitTracksStore((s) => s.assignToSlot);
+  const playSlot = useCircuitTracksStore((s) => s.playSlot);
 
   // Store the selected originalFilename for each cluster index
   const [selections, setSelections] = useState<Record<number, string>>({});

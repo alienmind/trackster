@@ -1,11 +1,10 @@
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
-import { useAudioStore } from '../../../stores/useAudioStore';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 
 export default function StatusBar() {
-  const slots = useFileSystemStore((s) => s.slots);
-  const pendingChanges = useFileSystemStore((s) => s.pendingChanges);
-  const duplicatePairs = useAudioStore((s) => s.duplicatePairs);
-  const analysisProgress = useAudioStore((s) => s.analysisProgress);
+  const slots = useCircuitTracksStore((s) => s.slots);
+  const pendingChanges = useCircuitTracksStore((s) => s.pendingChanges);
+  const duplicatePairs = useCircuitTracksStore((s) => s.duplicatePairs);
+  const analysisProgress = useCircuitTracksStore((s) => s.analysisProgress);
 
   const filledSlots = slots.filter((s) => s.sample !== null).length;
 

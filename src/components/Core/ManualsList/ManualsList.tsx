@@ -6,11 +6,11 @@ export default function ManualsList({ devicePrefix }: { devicePrefix: string }) 
   const setActivePdfUrl = useUIStore((s) => s.setActivePdfUrl);
   const activePdfUrl = useUIStore((s) => s.activePdfUrl);
 
-  // Dynamically import all PDFs in doc/manuals
-  const manualsGlob = import.meta.glob('/doc/manuals/*.pdf', { query: '?url', import: 'default', eager: true });
+  // Dynamically import all PDFs in devices/*/doc
+  const manualsGlob = import.meta.glob('/devices/*/doc/*.pdf', { query: '?url', import: 'default', eager: true });
 
   const matchedManuals = Object.entries(manualsGlob).map(([path, url]) => {
-    // path is like "/doc/manuals/behringer-flow8.pdf"
+    // path is like "/devices/flow8/doc/behringer-flow8.pdf"
     const filename = path.split('/').pop() || '';
     return {
       filename,
@@ -36,8 +36,9 @@ export default function ManualsList({ devicePrefix }: { devicePrefix: string }) 
           return (
             <Button 
               key={m.url}
-              variant={isActive ? "default" : "secondary"}
-              className={`justify-start w-full text-left whitespace-normal h-auto py-2 px-3 ${isActive ? 'bg-primary text-primary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/80'}`}
+              variant="state"
+              data-state={isActive ? 'active' : 'inactive'}
+              className="justify-start w-full text-left whitespace-normal h-auto py-2 px-3"
               onClick={() => setActivePdfUrl(m.url)}
             >
               <Icons.FileText className="mr-2 shrink-0" size={16} />

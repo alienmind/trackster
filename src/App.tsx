@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useUIStore } from './stores/useUIStore';
 import { PAGES } from './utils/constants';
-import { useFileSystemStore } from './stores/useFileSystemStore';
-import { useAudioStore } from './stores/useAudioStore';
+import { useCircuitTracksStore } from './stores/useCircuitTracksStore';
 import {
   DndContext,
   closestCenter,
@@ -24,26 +23,26 @@ import * as Icons from 'lucide-react';
 import { ThemeToggle } from './components/Core/ThemeToggle';
 import pkg from '../package.json';
 
-import CircuitTracksLayout from './components/Circuit/CircuitTracksLayout';
+import CircuitTracksLayout from './components/devices/Circuit/CircuitTracksLayout';
 import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
-import BehringerGrind from './components/Grind/BehringerGrind';
-import ArturiaMiniFreak from './components/MiniFreak/ArturiaMiniFreak';
+import BehringerGrind from './components/devices/Grind/BehringerGrind';
+import ArturiaMiniFreak from './components/devices/MiniFreak/ArturiaMiniFreak';
 
 export default function App() {
   const isSupported = 'showDirectoryPicker' in window;
   const activePage = useUIStore((s) => s.activePage);
   const activeMainView = useUIStore((s) => s.activeMainView);
   
-  const moveSlot = useFileSystemStore((s) => s.moveSlot);
-  const movePackSlot = useFileSystemStore((s) => s.movePackSlot);
-  const assignToSlot = useFileSystemStore((s) => s.assignToSlot);
+  const moveSlot = useCircuitTracksStore((s) => s.moveSlot);
+  const movePackSlot = useCircuitTracksStore((s) => s.movePackSlot);
+  const assignToSlot = useCircuitTracksStore((s) => s.assignToSlot);
 
-  const initAudioContext = useAudioStore((s) => s.initAudioContext);
+  const initAudioContext = useCircuitTracksStore((s) => s.initAudioContext);
   const [activeDragItem, setActiveDragItem] = useState<{ id: string, type: string, data: any } | null>(null);
   
   const activeTagItem = activeDragItem?.type === 'tag'
-    ? useFileSystemStore.getState().tags.find(t => t.id === activeDragItem.data.tagId)
+    ? useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.tagId)
     : null;
 
   useEffect(() => {
@@ -52,6 +51,19 @@ export default function App() {
       document.documentElement.style.setProperty('--accent', pageConfig.color);
     }
   }, [activePage]);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      useUIStore.getState().setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   if (!isSupported) {
     return <BrowserWarning />;
@@ -97,7 +109,7 @@ export default function App() {
 
     if (activeType === 'tag' && overType === 'pad') {
       const targetIndex = parseInt(over.id.toString().replace('pad-', ''), 10);
-      useFileSystemStore.getState().assignTagToSlot(active.data.current!.tagId, targetIndex);
+      useCircuitTracksStore.getState().assignTagToSlot(active.data.current!.tagId, targetIndex);
       return;
     }
 
@@ -177,8 +189,8 @@ export default function App() {
                 <div className="h-24 w-[110px] bg-muted border-2 border-primary rounded-md p-2 flex flex-col items-center justify-center shadow-2xl relative">
                   <div className="absolute left-2 top-2 text-xs text-muted-foreground font-mono">{activeDragItem.data.index}</div>
                   <div className="flex h-full flex-col items-center justify-center pt-3 gap-1">
-                    {useFileSystemStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag) ? (
-                      <TagBadge tag={useFileSystemStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag)!} />
+                    {useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag) ? (
+                      <TagBadge tag={useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag)!} />
                     ) : (
                       <div className="w-8 h-8" />
                     )}
@@ -190,8 +202,8 @@ export default function App() {
               )}
               {activeDragItem.type === 'unassigned' && activeDragItem.data.sample && (
                 <div className="flex items-center gap-2 p-2 rounded-md border-2 border-primary bg-muted shadow-2xl min-w-[150px]">
-                  {useFileSystemStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag) ? (
-                    <TagBadge tag={useFileSystemStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag)!} compact={true} />
+                  {useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag) ? (
+                    <TagBadge tag={useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag)!} compact={true} />
                   ) : (
                     <div className="w-6 h-6" />
                   )}

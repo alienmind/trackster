@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react';
-import { useFileSystemStore } from '../../stores/useFileSystemStore';
-import { useUIStore } from '../../stores/useUIStore';
-import { useAudioStore } from '../../stores/useAudioStore';
-import { PAGES } from '../../utils/constants';
-import type { PageIndex } from '../../types';
+import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
+import { useUIStore } from '../../../stores/useUIStore';
+import { PAGES } from '../../../utils/constants';
+import type { PageIndex } from '../../../types';
 import SortablePad from './Grid/SortablePad';
 import PackPad from './PackOrganizer/PackPad';
-import { Knob } from '../Core/HardwareUI/Knob';
-import { FunctionButton } from '../Core/HardwareUI/FunctionButton';
-import { FunctionPad } from '../Core/HardwareUI/FunctionPad';
-import { DownArrow, UpArrow, RecordIcon, PlayIcon } from '../Core/HardwareUI/Icons';
-import ScaleFit from '../Core/ui/ScaleFit';
+import { Knob } from '../../Core/HardwareUI/Knob';
+import { FunctionButton } from '../../Core/HardwareUI/FunctionButton';
+import { FunctionPad } from '../../Core/HardwareUI/FunctionPad';
+import { DownArrow, UpArrow, RecordIcon, PlayIcon } from '../../Core/HardwareUI/Icons';
+import ScaleFit from '../../Core/ui/ScaleFit';
 
 export default function CircuitTracksDevice() {
   const [deviceMode, setDeviceMode] = useState<'packs' | 'samples'>('packs');
 
-  const slots = useFileSystemStore((s) => s.slots);
-  const packSlots = useFileSystemStore((s) => s.packSlots);
+  const slots = useCircuitTracksStore((s) => s.slots);
+  const packSlots = useCircuitTracksStore((s) => s.packSlots);
   const activePage = useUIStore((s) => s.activePage);
   const setActivePage = useUIStore((s) => s.setActivePage);
   const selectedPadIndex = useUIStore((s) => s.selectedPadIndex);
@@ -55,9 +54,9 @@ export default function CircuitTracksDevice() {
           setActivePage(newPage);
         }
 
-        const slot = useFileSystemStore.getState().slots[newIndex];
+        const slot = useCircuitTracksStore.getState().slots[newIndex];
         if (slot && slot.sample) {
-          useAudioStore.getState().playSlot(newIndex, slot.sample.fileHandle);
+          useCircuitTracksStore.getState().playSlot(newIndex, slot.sample.fileHandle);
           setSelectedFile(slot.sample);
         } else {
           setSelectedFile(null);

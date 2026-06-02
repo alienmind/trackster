@@ -1,0 +1,13 @@
+{
+  "brand": "Behringer",
+  "model": "Behringer Flow 8",
+  "tagline": "MIXER",
+  "width": 320,
+  "theme": { "border": "border-t-yellow-500", "header": "bg-yellow-950", "title": "text-yellow-400", "badge": "bg-yellow-900 text-yellow-200" },
+  "ports": [
+    { "id": "usbIn", "type": "USB_B" },
+    { "id": "usbOut", "type": "USB_B" },
+    { "id": "audioIn", "type": "TRS" },
+    { "id": "audioOut", "type": "XLR" }
+  ]
+}

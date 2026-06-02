@@ -1,6 +1,8 @@
 # How to Add New Devices to Trackster
 
-Trackster is designed to grow with the community! While the app currently does not support dynamic runtime loading of generic devices, you can easily propose new hardware definitions by submitting a JSON file.
+Trackster is designed to grow with the community! You can easily propose new hardware definitions by submitting a basic JSON data file that describes the device's brand, model, and physical ports.
+
+Once the JSON is added to the root `/devices/` folder, a core developer will craft a custom React UI visualizer for it inside `src/devices/`.
 
 We strongly encourage you to **use an LLM (Large Language Model)** like Claude, ChatGPT, or Gemini to do the heavy lifting for you!
 
@@ -40,9 +42,10 @@ Copy and paste the following prompt into your favorite LLM, and **attach a pictu
 >   },
 >   "ports": [
 >     // Map out the physical ports visible on the device.
->     // Valid sides are: 'left', 'right', 'top', 'bottom'
->     // Offset is a percentage from 0-100 indicating where on that side the port is.
->     { "id": "audioOut", "title": "Audio Out", "color": "#06b6d4", "side": "right", "offset": 50 }
+>     // ID should conventionally contain "In" or "Out" (e.g. "audioIn", "midiOut") so they are auto-placed on the left/right.
+>     // Type must be one of the standard port types: XLR, TRS, TR, MINIJACK, MIDI_5PIN, USB_A, USB_B, USB_C, POWER.
+>     { "id": "audioOut", "type": "TRS" },
+>     { "id": "midiIn", "type": "MIDI_5PIN" }
 >   ],
 >   "svgRender": "<svg viewBox=\"0 0 300 200\" xmlns=\"http://www.w3.org/2000/svg\">...</svg>",
 >   "imageUrl": "" // Optional: URL to an image (PNG/JPG/WEBP/GIF) (used if svgRender is empty)
@@ -65,4 +68,5 @@ Copy and paste the following prompt into your favorite LLM, and **attach a pictu
 3. Ensure the JSON is valid (the window will tell you if it's not) and the Live Preview looks correct.
 4. Click **"Download Device JSON"**.
 5. Save the downloaded `.json` file to your computer.
-6. Drag and drop the downloaded file directly into the **[Trackster GitHub Upload Page](https://github.com/alienmind/trackster/upload/main/src/devices)**. GitHub will automatically handle creating a new branch and opening a Pull Request for you!
+6. Drag and drop the downloaded file directly into the **[Trackster GitHub Upload Page](https://github.com/alienmind/trackster/upload/main/devices)**. GitHub will automatically handle creating a new branch and opening a Pull Request for you!
+7. A core developer will then review the data, approve the Pull Request, and implement the custom React-based visual element for the device in `src/devices/`.

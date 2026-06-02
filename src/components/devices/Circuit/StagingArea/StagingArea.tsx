@@ -1,11 +1,10 @@
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
+import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import type { SampleFile } from '../../../types';
+import type { SampleFile } from '../../../../types';
 import clsx from 'clsx';
-import { useAudioStore } from '../../../stores/useAudioStore';
-import { useUIStore } from '../../../stores/useUIStore';
-import { TagBadge } from '../../Core/TagBadge/TagBadge';
+import { useUIStore } from '../../../../stores/useUIStore';
+import { TagBadge } from '../../../Core/TagBadge/TagBadge';
 
 interface DraggableSampleProps {
   sample: SampleFile;
@@ -22,9 +21,9 @@ function DraggableSample({ sample }: DraggableSampleProps) {
     zIndex: isDragging ? 50 : 1,
   };
 
-  const tagDef = useFileSystemStore((s) => s.tags.find((t: any) => t.id === sample.tag));
+  const tagDef = useCircuitTracksStore((s) => s.tags.find((t: any) => t.id === sample.tag));
   
-  const playSlot = useAudioStore((s) => s.playSlot);
+  const playSlot = useCircuitTracksStore((s) => s.playSlot);
   const setSelectedFile = useUIStore((s) => s.setSelectedFile);
 
   return (
@@ -57,8 +56,8 @@ function DraggableSample({ sample }: DraggableSampleProps) {
 }
 
 export default function StagingArea() {
-  const unassignedFiles = useFileSystemStore((s) => s.unassignedFiles);
-  const rootHandle = useFileSystemStore((s) => s.rootHandle);
+  const unassignedFiles = useCircuitTracksStore((s) => s.unassignedFiles);
+  const rootHandle = useCircuitTracksStore((s) => s.rootHandle);
 
   if (!rootHandle) return null;
 

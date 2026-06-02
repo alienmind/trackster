@@ -3,12 +3,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import rehypeRaw from 'rehype-raw';
-import { useGrindStore } from '../../stores/useGrindStore';
+import { useGrindStore } from '../../../stores/useGrindStore';
 import grindDocUrl from '@doc/GRIND.md?url';
 
-import { useUIStore } from '../../stores/useUIStore';
-import { Button } from '../Core/ui/button';
-import { cn } from '../../lib/utils';
+import { useUIStore } from '../../../stores/useUIStore';
+import { Button } from '../../Core/ui/button';
+import { cn } from '../../../lib/utils';
 import * as Icons from 'lucide-react';
 
 export default function GrindNavigator() {

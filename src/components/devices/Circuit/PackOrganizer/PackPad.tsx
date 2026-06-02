@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { useFileSystemStore } from '../../../stores/useFileSystemStore';
-import type { PackSlot } from '../../../types';
+import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
+import type { PackSlot } from '../../../../types';
 import * as Icons from 'lucide-react';
 
 interface PackPadProps {
@@ -11,7 +11,7 @@ interface PackPadProps {
 }
 
 const PackPad = memo(function PackPad({ slot, onSelect }: PackPadProps) {
-  const { loadPack, activePack } = useFileSystemStore();
+  const { loadPack, activePack } = useCircuitTracksStore();
   const id = `packpad-${slot.index}`;
 
   const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
