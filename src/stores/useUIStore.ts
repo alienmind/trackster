@@ -102,7 +102,16 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   toggleRightPane: () => set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
   setRightPaneCollapsed: (collapsed) => set({ isRightPaneCollapsed: collapsed }),
   setSelectedFile: (file) => set({ selectedFile: file }),
-  setActiveDoc: (doc) => set({ activeDoc: doc, isRightPaneCollapsed: false, isDeviceMinimized: false }),
+  setActiveDoc: (doc) => set((state) => {
+    let newWidth = state.rightPaneWidth;
+    if (doc && typeof window !== 'undefined') {
+      const halfWidth = window.innerWidth * 0.5;
+      if (newWidth < halfWidth) {
+        newWidth = halfWidth;
+      }
+    }
+    return { activeDoc: doc, isRightPaneCollapsed: false, isDeviceMinimized: false, rightPaneWidth: newWidth };
+  }),
   setRightPaneWidth: (width) => set({ rightPaneWidth: width }),
   setDeviceMinimized: (minimized) => set({ isDeviceMinimized: minimized }),
 
