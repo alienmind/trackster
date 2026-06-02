@@ -21,12 +21,14 @@ Other contributions by me
 ### <span style="color:lightblue">2.1 VCO Section</span>
 
 ### 2.1.1 Timbre
+<a id="211-timbre"></a>
 <p> Function varies depending on the model selected, see the 'Oscillators' section for detailed info.</p>
 
 ### 2.1.2 Timbre CV Level
 <p> Attenuates the voltage received at the Timbre CV input. If the CV input is not patched, and a signal is received at the Trig input, this knob will instead control the amount of modulation from the internal envelope generator. </p>
 
 ### 2.1.3 Bank button
+<a id="213-bank-button"></a>
 <p> Toggles between banks. When pressed for longer it can be used to regulate LPG output envelope.</p>
 
 ### 2.1.3.1 Extra functions LPG output envelope
@@ -36,6 +38,7 @@ Other contributions by me
 - **BANK+MORPH**: regulate LPG ring time and decay of internal envelope from short (MORPH=0, 0 yellow LED in the second section) to true VCA (MORPH = max, 4 yellow LEDs in the second section)</p>
 
 ### 2.1.4 Model button
+<a id="214-model-button"></a>
 <p> Toggles between models of a bank. More details later in the guide. When pressed for longer it can be used to regulate the frequency knob range.</p>
 
 ### 2.1.4.1 Extra functions frequency range
@@ -52,9 +55,11 @@ Other contributions by me
  - **HARMONICS=max**: all the LEDs are lit. Full range +/- 4 octave from C8 (with frequency at 12 o'clock)</p>
  
 ### 2.1.5 Harmonics
+<a id="215-harmonics"></a>
 <p> Function varies depending on the model selected, see the 'Oscillators' section for detailed info.</p>
 
 ### 2.1.6 FM knob
+<a id="216-fm-knob"></a>
 <p> Modulates the frequency of the oscillator. The modulation depends on the LFO rate, the Vibrato Osc Mod knob and the FM knob position. This modulation happens IF:
 
  - the FM knob is NOT at 12 o'clock
@@ -63,9 +68,11 @@ Other contributions by me
 The LFO can't be deactivated so if you don't want the modulation to happen set the said knobs in the position above.</p>
 
 ### 2.1.7 Frequency knob
+<a id="217-frequency-knob"></a>
 <p> Changes the base frequency of the played note, the range can be set as explained in 2.1.3.1.</p>
 
 ### 2.1.8 Morph knob
+<a id="218-morph-knob"></a>
 <p> Function varies depending on the model selected, see the 'Oscillators' section for detailed info.</p>
 
 ### 2.1.9 Morph CV level knob
@@ -76,35 +83,45 @@ The LFO can't be deactivated so if you don't want the modulation to happen set t
 <p>The default VCF input is Output 1 from the VCO.</p>
 
 ### 2.2.1 Cutoff
+<a id="221-cutoff"></a>
 <p>Cutoff frequency of the filter.</p>
 
 ### 2.2.2 Mode
+<a id="222-mode"></a>
 <p>Select if the filter is high pass or low pass.</p>
 
 ### 2.2.3 Resonance
+<a id="223-resonance"></a>
 <p>Adjust the amount of enhancement given to the signals at the cutoff frequency.</p>
 
 ### 2.2.4 Mod source
+<a id="224-mod-source"></a>
 <p>Choose wether the filter is modulated by the envelope or the LFO.</p>
 
 ### 2.2.5 VCF mod
+<a id="225-vcf-mod"></a>
 <p>Choose the depth of the modulation of the filter.</p>
 
 ### 2.2.6 Mod polarity
+<a id="226-mod-polarity"></a>
 <p>Select the polarity of the filter modulation.</p>
 
 ### <span style="color:lightblue"> 2.3 Envelope</span>
+<a id="23-envelope"></a>
 <p> Normal envelope interface with attack, decay and sustain knob.</p>
 
 ### <span style="color:lightblue"> 2.4 Vibrato</span>
+<a id="24-vibrato"></a>
 <p>Control the frequency modulation of the oscillator based on the LFO rate. More info in 2.1.5.</p>
 
 ### <span style="color:lightblue"> 2.5 Modulation</span>
+<a id="25-modulation"></a>
 <p>Normal LFO interface, the knob sets the frequency, the lever selects the lfo shape. Both the LFO shapes are available in the out bay.</p>
 
 ### <span style="color:lightblue"> 2.6 Utility</span>
 
 ### 2.6.1 Glide
+<a id="261-glide"></a>
 <p>Glide knob to set the amount of glide between the notes played by the sequencer. It has some extra functions to create ratchets and glide between sequencer notes.</p>
 
 ### 2.6.1.2 Glide extra functions
@@ -115,6 +132,7 @@ The LFO can't be deactivated so if you don't want the modulation to happen set t
 - **TURN GLIDE** while programming a sequence: programs gliding between the current and the next sequencer step.
 
 ### 2.6.2 VC mix
+<a id="262-vc-mix"></a>
 <p>Mixer external to the synth circuit, it can be connected through the patch bay. It can be used to adjust a signal and/or to mix two signals.
 Adjusting a signals example:
 
@@ -129,9 +147,11 @@ Mix two signals example:
 ### <span style="color:lightblue"> 2.7 Output VCA</span>
 
 ### 2.7.1 Volume
+<a id="271-volume"></a>
 <p>It's the volume.</p>
 
 ### 2.7.2 VCA mode
+<a id="272-vca-mode"></a>
 <p>You can select the type of VCA mode:
 
 - **ENV**: The VCA is modulated by the envelope.
@@ -141,6 +161,7 @@ Mix two signals example:
 ## 3. Sequencer
 
 ### <span style="color:lightblue"> 3.1 Tempo/Gate Length</span>
+<a id="31-tempogate-length"></a>
 <p> Adjust the play tempo of the sequencer and of the arpeggiator. It has some extra functions:
 
 - While playing: **SHIFT+TEMPO** adjust the level of 'swing', from the minimum (knob to zero, 1 green LED in the octave location) to the max (knob to max, 8 LEDs)
@@ -367,75 +388,99 @@ In the following table the bank 3 (yellow) standard oscillator types are describ
 | 4      		  |Vox|Formant shift|Reso|Blend Vowels|Same as Out 1|
 
 ### 5.1.1 Virtual Analog
+<a id="511-virtual-analog"></a>
 *(Placeholder for Virtual Analog synth engine details)*
 
 ### 5.1.2 Waveshaping
+<a id="512-waveshaping"></a>
 *(Placeholder for Waveshaping synth engine details)*
 
 ### 5.1.3 FM 2 operators
+<a id="513-fm-2-operators"></a>
 *(Placeholder for FM 2 operators synth engine details)*
 
 ### 5.1.4 Grains
+<a id="514-grains"></a>
 *(Placeholder for Grains synth engine details)*
 
 ### 5.1.5 Additive
+<a id="515-additive"></a>
 *(Placeholder for Additive synth engine details)*
 
 ### 5.1.6 Chords
+<a id="516-chords"></a>
 *(Placeholder for Chords synth engine details)*
 
 ### 5.1.7 Speech
+<a id="517-speech"></a>
 *(Placeholder for Speech synth engine details)*
 
 ### 5.1.8 Karplus strong
+<a id="518-karplus-strong"></a>
 *(Placeholder for Karplus strong synth engine details)*
 
 ### 5.1.9 Supersaw
+<a id="519-supersaw"></a>
 *(Placeholder for Supersaw synth engine details)*
 
 ### 5.1.10 Wavetable oscillator
+<a id="5110-wavetable-oscillator"></a>
 *(Placeholder for Wavetable oscillator synth engine details)*
 
 ### 5.2.1 Rain
+<a id="521-rain"></a>
 *(Placeholder for Rain synth engine details)*
 
 ### 5.2.2 Noise
+<a id="522-noise"></a>
 *(Placeholder for Noise synth engine details)*
 
 ### 5.2.3 Dust
+<a id="523-dust"></a>
 *(Placeholder for Dust synth engine details)*
 
 ### 5.2.4 Modal Strings
+<a id="524-modal-strings"></a>
 *(Placeholder for Modal Strings synth engine details)*
 
 ### 5.2.5 FM drum
+<a id="525-fm-drum"></a>
 *(Placeholder for FM drum synth engine details)*
 
 ### 5.2.6 Bass drum
+<a id="526-bass-drum"></a>
 *(Placeholder for Bass drum synth engine details)*
 
 ### 5.2.7 Snare drum
+<a id="527-snare-drum"></a>
 *(Placeholder for Snare drum synth engine details)*
 
 ### 5.2.8 Hi-hat
+<a id="528-hi-hat"></a>
 *(Placeholder for Hi-hat synth engine details)*
 
 ### 5.2.9 Cowbell
+<a id="529-cowbell"></a>
 *(Placeholder for Cowbell synth engine details)*
 
 ### 5.2.10 Toms
+<a id="5210-toms"></a>
 *(Placeholder for Toms synth engine details)*
 
 ### 5.3.1 BX7
+<a id="531-bx7"></a>
 *(Placeholder for BX7 synth engine details)*
 
 ### 5.3.2 Bassline
+<a id="532-bassline"></a>
 *(Placeholder for Bassline synth engine details)*
 
 ### 5.3.3 Wave generator
+<a id="533-wave-generator"></a>
 *(Placeholder for Wave generator synth engine details)*
 
 ### 5.3.4 Vox
+<a id="534-vox"></a>
 *(Placeholder for Vox synth engine details)*
 
 
