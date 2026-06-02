@@ -386,103 +386,173 @@ In the following table the bank 3 (yellow) standard oscillator types are describ
 | 2      		  |Bassline|Cutoff|Resonance+distortion|Env mod + Decay|Same as Out 1|
 | 3      		  |Wave generator|Waveform|Bit crush|Sample rate|Same as Out 1|
 | 4      		  |Vox|Formant shift|Reso|Blend Vowels|Same as Out 1|
-
 ### 5.1.1 Virtual Analog
 <a id="511-virtual-analog"></a>
-*(Placeholder for Virtual Analog synth engine details)*
+- **Timbre:** Square wave: narrow pulse, full square, hardsync formant
+- **Harmonics:** Detuning between waves
+- **Morph:** Saw: triangle to wide notch saw
+- **Out 2:** Sum of two hardsync'd waveforms
 
 ### 5.1.2 Waveshaping
 <a id="512-waveshaping"></a>
-*(Placeholder for Waveshaping synth engine details)*
+- **Timbre:** Wavefolder amount
+- **Harmonics:** Waveshaper waveform
+- **Morph:** Waveform symmetry
+- **Out 2:** Variant with another waveform curve
 
 ### 5.1.3 FM 2 operators
 <a id="513-fm-2-operators"></a>
-*(Placeholder for FM 2 operators synth engine details)*
+- **Timbre:** Modulation mix
+- **Harmonics:** Frequency ratio
+- **Morph:** 2 modulates own phase <12:00, >12:00-operator 2 modulates operator 1 phase
+- **Out 2:** Sub-Oscillator
 
 ### 5.1.4 Grains
 <a id="514-grains"></a>
-*(Placeholder for Grains synth engine details)*
+- **Timbre:** Formant frequency
+- **Harmonics:** Frequency between formant 1 and 2
+- **Morph:** Formant width and shape
+- **Out 2:** Simulation of filtered waveforms; Harmonics selects filter type (peaking, LP, BP, HP)
 
 ### 5.1.5 Additive
 <a id="515-additive"></a>
-*(Placeholder for Additive synth engine details)*
+- **Timbre:** Most prominent harmonic
+- **Harmonics:** Number of bumps in spectrum
+- **Morph:** Bump shape - flat and wide to peaked and narrow
+- **Out 2:** Variant that includes harmonics from Hammond organ drawbars
 
 ### 5.1.6 Chords
 <a id="516-chords"></a>
-*(Placeholder for Chords synth engine details)*
+- **Timbre:** Chord inversion/transposition
+- **Harmonics:** Chord type
+- **Morph:** Waveform
+- **Out 2:** Chord root note
 
 ### 5.1.7 Speech
 <a id="517-speech"></a>
-*(Placeholder for Speech synth engine details)*
+- **Timbre:** Vocal tamper from deep to high
+- **Harmonics:** Scrolls through formant types, SAM, and LPC vowels/words
+- **Morph:** Word segment selection
+- **Out 2:** Unfiltered vocal signal
 
 ### 5.1.8 Karplus strong
 <a id="518-karplus-strong"></a>
-*(Placeholder for Karplus strong synth engine details)*
+- **Timbre:** Brightness and dust noise sensitivity
+- **Harmonics:** String stiffness
+- **Morph:** Decay time
+- **Out 2:** Copy of Out 1
 
 ### 5.1.9 Supersaw
 <a id="519-supersaw"></a>
-*(Placeholder for Supersaw synth engine details)*
+- **Timbre:** Sets number of waveforms
+- **Harmonics:** Adjusts harmonic content
+- **Morph:** Sub-oscillator level
+- **Out 2:** Copy of Out 1
 
 ### 5.1.10 Wavetable oscillator
 <a id="5110-wavetable-oscillator"></a>
-*(Placeholder for Wavetable oscillator synth engine details)*
+- **Timbre:** Rotates through different waves
+- **Harmonics:** Selects between 4 interpolated banks followed by the same 4 banks, in reverse order, without interpolation
+- **Morph:** Column index
+- **Out 2:** Bit reduced version of Out 1
 
 ### 5.2.1 Rain
 <a id="521-rain"></a>
-*(Placeholder for Rain synth engine details)*
+- **Timbre:** Rain grain density
+- **Harmonics:** Amount of pitch randomization
+- **Morph:** Droplet duration and overlap, culminating in a stack of 8 randomly frequency-modulated waveforms
+- **Out 2:** Variant with sine wave oscillators
 
 ### 5.2.2 Noise
 <a id="522-noise"></a>
-*(Placeholder for Noise synth engine details)*
+- **Timbre:** Clock frequency
+- **Harmonics:** Scrolls through filter response, from LP to BP to HP
+- **Morph:** Filter resonance
+- **Out 2:** Result of 2 BP filters controlled by Harmonics knob
 
 ### 5.2.3 Dust
 <a id="523-dust"></a>
-*(Placeholder for Dust synth engine details)*
+- **Timbre:** Particle density
+- **Harmonics:** Frequency randomization
+- **Morph:** Reverberating all-pass filters followed by increasingly resonant BP filters
+- **Out 2:** Raw dust noise
 
 ### 5.2.4 Modal Strings
 <a id="524-modal-strings"></a>
-*(Placeholder for Modal Strings synth engine details)*
+- **Timbre:** Excitation brightness and dust density
+- **Harmonics:** Amount of harmonic coloration
+- **Morph:** Decay time
+- **Out 2:** Raw exciter signal
 
 ### 5.2.5 FM drum
 <a id="525-fm-drum"></a>
-*(Placeholder for FM drum synth engine details)*
+- **Timbre:** LP filter cutoff
+- **Harmonics:** Blend between harmonic content
+- **Morph:** Decay time
+- **Out 2:** Alternate FM Drum model
 
 ### 5.2.6 Bass drum
 <a id="526-bass-drum"></a>
-*(Placeholder for Bass drum synth engine details)*
+- **Timbre:** Attack brightness and overdrive amount
+- **Harmonics:** Frequency
+- **Morph:** Decay time
+- **Out 2:** Alternate Bass Drum model
 
 ### 5.2.7 Snare drum
 <a id="527-snare-drum"></a>
-*(Placeholder for Snare drum synth engine details)*
+- **Timbre:** Balance between different modes of the drum
+- **Harmonics:** Blend between harmonic and noisy components
+- **Morph:** Decay time
+- **Out 2:** Alternate Snare Drum model
 
 ### 5.2.8 Hi-hat
 <a id="528-hi-hat"></a>
-*(Placeholder for Hi-hat synth engine details)*
+- **Timbre:** HP filter cutoff
+- **Harmonics:** Blend between metallic and filtered noise
+- **Morph:** Decay time
+- **Out 2:** Alternate Hi-hat model
 
 ### 5.2.9 Cowbell
 <a id="529-cowbell"></a>
-*(Placeholder for Cowbell synth engine details)*
+- **Timbre:** Brightness
+- **Harmonics:** Texture
+- **Morph:** Decay time
+- **Out 2:** Alternate Cowbell model
 
 ### 5.2.10 Toms
 <a id="5210-toms"></a>
-*(Placeholder for Toms synth engine details)*
+- **Timbre:** Tone
+- **Harmonics:** Resonance
+- **Morph:** Decay time
+- **Out 2:** Alternate Tom models
 
 ### 5.3.1 BX7
 <a id="531-bx7"></a>
-*(Placeholder for BX7 synth engine details)*
+- **Timbre:** Vibrato
+- **Harmonics:** Preset selection
+- **Morph:** Tremolo
+- **Out 2:** Velocity
 
 ### 5.3.2 Bassline
 <a id="532-bassline"></a>
-*(Placeholder for Bassline synth engine details)*
+- **Timbre:** Cutoff
+- **Harmonics:** Resonance + distortion
+- **Morph:** Env mod + Decay
+- **Out 2:** Accent
 
 ### 5.3.3 Wave generator
 <a id="533-wave-generator"></a>
-*(Placeholder for Wave generator synth engine details)*
+- **Timbre:** Waveform
+- **Harmonics:** Bit Crush
+- **Morph:** Sample Rate
+- **Out 2:** Level
 
 ### 5.3.4 Vox
 <a id="534-vox"></a>
-*(Placeholder for Vox synth engine details)*
-
+- **Timbre:** Formant shift
+- **Harmonics:** Reso
+- **Morph:** Blend Vowels
+- **Out 2:** Level
 
 ## 6 General parameters
 
