@@ -9,8 +9,8 @@ export interface PageConfig {
 }
 
 export const PAGES: readonly PageConfig[] = [
-  { index: 0, label: 'Pack A (1-32)', slotRange: [0, 32],  color: '#ef4444', tags: ['kick', 'snare'] },
-  { index: 1, label: 'Pack B (33-64)', slotRange: [32, 64], color: '#3b82f6', tags: ['hihat', 'cymbal', 'tom', 'perc', 'fx', 'unknown'] },
+  { index: 0, label: 'Page A (1-32)', slotRange: [0, 32],  color: '#ef4444', tags: ['kick', 'snare'] },
+  { index: 1, label: 'Page B (33-64)', slotRange: [32, 64], color: '#3b82f6', tags: ['hihat', 'cymbal', 'tom', 'perc', 'fx', 'unknown'] },
 ] as const;
 
 export const TOTAL_SLOTS = 64;

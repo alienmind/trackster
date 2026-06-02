@@ -48,6 +48,9 @@ export interface CircuitTracksState {
   workspaceMode: 'read' | 'readwrite' | null;
   setWorkspaceMode: (mode: 'read' | 'readwrite') => Promise<boolean>;
   
+  deviceMode: 'packs' | 'samples';
+  setDeviceMode: (mode: 'packs' | 'samples') => void;
+  
   openRootDirectory: (mode?: 'read' | 'readwrite') => Promise<void>;
   rescanRootDirectory: () => Promise<void>;
   loadPack: (packName: string) => Promise<void>;
@@ -320,6 +323,8 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       })),
       
       workspaceMode: null,
+      deviceMode: 'packs',
+      setDeviceMode: (mode) => set({ deviceMode: mode }),
       setWorkspaceMode: async (mode) => {
         const { rootHandle } = get();
         if (!rootHandle) return false;
@@ -370,7 +375,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       for await (const entry of tracksHandle.values()) {
         if (entry.kind === 'directory') {
           packs.push(entry.name);
-          const parsed = parseFilename(entry.name);
+          const parsed = parseFilename(entry.name, true);
           if (parsed && parsed.prefix >= 0 && parsed.prefix < 64) {
             const packFolder: PackFolder = {
               originalDirname: entry.name,
