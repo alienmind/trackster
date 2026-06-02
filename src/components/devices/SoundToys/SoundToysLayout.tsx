@@ -27,18 +27,18 @@ const SOUND_TOYS_LINKS = [
 export default function SoundToysLayout() {
   return (
     <div className="flex-1 flex flex-col h-full bg-neutral-950 overflow-y-auto">
-      <div className="max-w-5xl mx-auto w-full p-8 space-y-12">
+      <div className="max-w-5xl mx-auto w-full p-8 space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-            <Icons.Music size={32} className="text-primary" /> Sound Toys
+          <h1 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+            <Icons.Music size={24} className="text-primary" /> Sound Toys
           </h1>
-          <p className="text-muted-foreground text-lg">Web-based synthesizers, drum machines, and coding environments.</p>
+          <p className="text-muted-foreground text-sm">Web-based synthesizers, drum machines, and coding environments.</p>
         </div>
 
         {SOUND_TOYS_LINKS.map((section, idx) => (
-          <div key={idx} className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2">{section.category}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div key={idx} className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground border-b border-border/50 pb-1.5 uppercase tracking-wider">{section.category}</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {section.links.map((link, lIdx) => {
                 const Icon = link.icon;
                 return (
@@ -47,13 +47,13 @@ export default function SoundToysLayout() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex flex-col items-center justify-center p-6 bg-card border border-border rounded-xl hover:border-primary hover:bg-muted transition-all duration-300 shadow-sm hover:shadow-md"
+                    className="group flex flex-row items-center p-3 bg-card border border-border rounded-lg hover:border-primary hover:bg-muted transition-all duration-200 shadow-sm hover:shadow"
                   >
-                    <Icon size={48} className="mb-4 text-muted-foreground group-hover:text-primary transition-colors duration-300 group-hover:scale-110" />
-                    <span className="font-medium text-foreground text-center group-hover:text-primary transition-colors">{link.name}</span>
-                    <span className="text-xs text-muted-foreground mt-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Open in new tab <Icons.ExternalLink size={12} />
-                    </span>
+                    <Icon size={20} className="mr-3 text-muted-foreground group-hover:text-primary transition-colors duration-200 shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium text-foreground text-sm truncate group-hover:text-primary transition-colors">{link.name}</span>
+                    </div>
+                    <Icons.ExternalLink size={12} className="ml-auto opacity-0 group-hover:opacity-100 text-muted-foreground transition-opacity shrink-0" />
                   </a>
                 );
               })}
