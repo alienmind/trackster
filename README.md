@@ -4,7 +4,7 @@
 <img src="doc/trackster-logo.svg" align="center" width="25%" />
 
 
-🌍 **Latest available**: [https://alienmind.github.io/trackster/](https://alienmind.github.io/trackster/)
+🌍 **Latest production build available (served online, locally installable)**: [https://alienmind.github.io/trackster/](https://alienmind.github.io/trackster/)
 
 > **⚠️ EXPERIMENTAL WARNING: POTENTIAL DATA LOSS ⚠️**
 > **This application is highly experimental and directly modifies the file system of your SD card. Bugs or unexpected behavior CAN and WILL lead to unrecoverable data loss (obliterated packs, renamed/deleted samples).**
@@ -14,9 +14,9 @@
 
 Trackster is an advanced, fully client-side web application designed for organizing, previewing, and managing a hybrid DAWless setup. 
 
-The application leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server.
+This is a personal pet project created to keep track of all the needed information and serve as a "legend" for my specific hybrid dawless setup. It will obviously not work directly for you out of the box, as it's hardcoded for my hardware configuration! However, I may add options to customize the layout with new device types in the future.
 
-**Note**: This is a personal pet project created to keep track of all the needed information and serve as a "legend" for my specific hybrid dawless setup. It will obviously not work directly for you out of the box, as it's hardcoded for my hardware configuration! However, I may add options to customize the layout with new device types in the future.
+**Offline by Design (No Backend)**: The application leverages the File System Access API, Web Audio API, and IndexedDB to provide a seamless, in-browser experience for managing your studio hardware and sample ecosystem without needing to upload anything to a server. The complete lack of a backend or cloud sync is an intentional design decision. Trackster is meant to run entirely locally on your laptop or PC during gigs and live performances - even in the most isolated techno bunker - without relying on the internet. It serves as a robust helper tool for DJs and live performers who want quick access to all their device features from a central cockpit.
 
 ## Features & Gallery
 
@@ -28,6 +28,7 @@ An interactive SVG-based drag-and-drop canvas to visually map out your hardware 
 
 ### Custom Device Creation Workflow
 Want to add new gear? You can easily define new hardware models by simply pasting an image and supplying a JSON definition.
+I will receive a MR with this device and might consider adding it ;-)
 
 ![Add Custom Device](doc/gallery/new%20synth.png)
 *The custom device creation workflow.*
@@ -54,7 +55,6 @@ Work-in-progress integration for the Behringer Grind, Roland S1, Behringer Flow 
 ### Technical Features
 - **Local-first**: Reads and writes directly to your local file system (requires a Chromium-based browser).
 - **Persistent Workspace**: Uses IndexedDB to safely cache your session state, layouts, and SD card handles across reloads.
-- **Offline by Design (No Backend)**: The complete lack of a backend or cloud sync is an intentional design decision. Trackster is meant to run entirely locally on your laptop or PC during gigs and live performances - even in the most isolated techno bunker - without relying on the internet. It serves as a robust helper tool for DJs and live performers who want quick access to all their device features from a central cockpit.
 
 More to come! (see [doc/FUTURE_IDEAS.md](https://github.com/alienmind/trackster/blob/main/doc/FUTURE_IDEAS.md)!)
 
