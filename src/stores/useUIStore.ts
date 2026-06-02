@@ -110,7 +110,18 @@ const storeCreator: StateCreator<UIState> = (set) => ({
         newWidth = halfWidth;
       }
     }
-    return { activeDoc: doc, isRightPaneCollapsed: false, isDeviceMinimized: false, rightPaneWidth: newWidth };
+    
+    let shouldCollapse = false;
+    if (!doc && state.activeMainView !== 'circuit') {
+      shouldCollapse = true;
+    }
+    
+    return { 
+      activeDoc: doc, 
+      isRightPaneCollapsed: doc ? false : shouldCollapse, 
+      isDeviceMinimized: false, 
+      rightPaneWidth: newWidth 
+    };
   }),
   setRightPaneWidth: (width) => set({ rightPaneWidth: width }),
   setDeviceMinimized: (minimized) => set({ isDeviceMinimized: minimized }),

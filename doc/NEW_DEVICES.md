@@ -43,7 +43,7 @@ Copy and paste the following prompt into your favorite LLM, and **attach a pictu
 >   "ports": [
 >     // Map out the physical ports visible on the device.
 >     // ID should conventionally contain "In" or "Out" (e.g. "audioIn", "midiOut") so they are auto-placed on the left/right.
->     // Type must be one of the standard port types: XLR, TRS, TR, MINIJACK, MIDI_5PIN, USB_A, USB_B, USB_C, POWER.
+>     // Type must be one of the standard port types: TS, TRS, MINIJACK_TS, MINIJACK_TRS, XLR_MALE, XLR_FEMALE, SPEAKON, BANANA, RCA, MIDI_5PIN, SPDIF_OPTICAL, SPDIF_COAXIAL, USB_A, USB_B, USB_C, POWER.
 >     { "id": "audioOut", "type": "TRS" },
 >     { "id": "midiIn", "type": "MIDI_5PIN" }
 >   ],
