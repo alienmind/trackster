@@ -7,8 +7,8 @@
 🌍 **Latest production build available (served online, locally installable)**: [https://alienmind.github.io/trackster/](https://alienmind.github.io/trackster/)
 
 > **⚠️ EXPERIMENTAL WARNING: POTENTIAL DATA LOSS ⚠️**
-> **This application is highly experimental and directly modifies the file system of your SD card. Bugs or unexpected behavior CAN and WILL lead to unrecoverable data loss (obliterated packs, renamed/deleted samples).**
-> **It is MANDATORY to keep a backup of your SD card before using this tool. You have been warned! We strongly recommend using the default "Read-Only (Simulated)" mode unless you are 100% sure you want to write changes to your card.**
+> **This application is highly experimental and in some instances directly modifies some of your device files. Bugs or unexpected behavior CAN and WILL lead to unrecoverable data loss (obliterated packs, renamed/deleted samples).**
+> **It is MANDATORY to keep a backup of your data before using this tool. You have been warned! We strongly recommend using the default "Read-Only (Simulated)" mode unless you are 100% sure you want to write changes to your data.**
 
 ## About
 
