@@ -17,23 +17,31 @@ import { OverviewConnection, OverviewNode } from '../../stores/useOverviewStore'
 import { HARDWARE_LIBRARY } from '../../devices';
 import { Circle, Square, ChevronDown, ChevronRight } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
-import { useOverviewStore, DEFAULT_NODES, DEFAULT_CONNECTIONS } from '../../stores/useOverviewStore';
+import { useOverviewStore } from '../../stores/useOverviewStore';
 import { Button } from '../Core/ui/button';
 import RemoveButton from '../Core/ui/RemoveButton';
 import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
 import * as Icons from 'lucide-react';
 
+import cableGuideUrl from '../../../doc/cabletypes/cable-types.md?url';
+
 // Technical Cable Dictionary
 const CABLE_TYPES: Record<string, any> = {
-  audio_ts: { label: "Jack 6.35 to Jack 6.35 (Mono)", category: "audio", color: "#f97316", stroke: 3, dash: "none", marker: "url(#arrowOrange)", filter: "url(#glowOrange)" },
-  audio_trs: { label: "TRS to TRS (Stereo)", category: "audio", color: "#06b6d4", stroke: 4, dash: "none", marker: "url(#arrowCyan)", filter: "url(#glowCyan)" },
+  audio_ts: { label: "TS Jack to TS Jack (Mono)", category: "audio", color: "#f97316", stroke: 3, dash: "none", marker: "url(#arrowOrange)", filter: "url(#glowOrange)" },
+  audio_trs: { label: "TRS Jack to TRS Jack (Stereo/Bal)", category: "audio", color: "#06b6d4", stroke: 4, dash: "none", marker: "url(#arrowCyan)", filter: "url(#glowCyan)" },
   audio_jack_to_minijack: { label: "Jack 6.35 to Mini Jack 3.5", category: "audio", color: "#a855f7", stroke: 3, dash: "none", marker: "url(#arrowPurple)", filter: "url(#glowPurple)" },
-  audio_minijack_to_dual_trs: { label: "Mini Jack to TRS Left/Right (Y cable)", category: "audio", color: "#f472b6", stroke: 4, dash: "none", marker: "url(#arrowPink)", filter: "none" },
-  audio_trs_to_xlr: { label: "TRS to XLR", category: "audio", color: "#2dd4bf", stroke: 4, dash: "none", marker: "url(#arrowTeal)", filter: "none" },
+  audio_minijack_to_dual_trs: { label: "Mini Jack to TRS L/R", category: "audio", color: "#f472b6", stroke: 4, dash: "none", marker: "url(#arrowPink)", filter: "none" },
+  audio_trs_to_xlr: { label: "TRS Jack to XLR", category: "audio", color: "#2dd4bf", stroke: 4, dash: "none", marker: "url(#arrowTeal)", filter: "none" },
   audio_xlr_to_xlr: { label: "XLR to XLR", category: "audio", color: "#fb7185", stroke: 4, dash: "none", marker: "url(#arrowRose)", filter: "none" },
+  audio_rca_to_rca: { label: "RCA to RCA", category: "audio", color: "#ef4444", stroke: 3, dash: "none", marker: "url(#arrowRed)", filter: "none" },
+  audio_speakon: { label: "SpeakOn to SpeakOn", category: "audio", color: "#eab308", stroke: 5, dash: "none", marker: "url(#arrowYellow)", filter: "none" },
+  digital_spdif_opt: { label: "S/PDIF Optical (Toslink)", category: "digital", color: "#dc2626", stroke: 2, dash: "none", marker: "url(#arrowRed)", filter: "url(#glowOrange)" },
+  digital_spdif_coax: { label: "S/PDIF Coaxial (RCA)", category: "digital", color: "#f87171", stroke: 3, dash: "none", marker: "url(#arrowRed)", filter: "none" },
   midi_din: { label: "5-Pin MIDI DIN", category: "midi", color: "#10b981", stroke: 3, dash: "6 4", marker: "url(#arrowEmerald)", filter: "none" },
   midi_din_to_trs: { label: "MIDI DIN to TRS Type A", category: "midi", color: "#34d399", stroke: 3, dash: "6 4", marker: "url(#arrowEmerald)", filter: "none" },
-  midi_usb: { label: "USB Type-B to Type-A", category: "midi", color: "#3b82f6", stroke: 3, dash: "3 3", marker: "url(#arrowBlue)", filter: "none" }
+  midi_usb: { label: "USB Type-B to Type-A", category: "midi", color: "#3b82f6", stroke: 3, dash: "3 3", marker: "url(#arrowBlue)", filter: "none" },
+  midi_usb_c: { label: "USB-C MIDI (IN/OUT)", category: "midi", color: "#60a5fa", stroke: 3, dash: "3 3", marker: "url(#arrowBlue)", filter: "url(#glowCyan)" },
+  power_cable: { label: "Power Cable", category: "power", color: "#4ade80", stroke: 4, dash: "none", marker: "url(#arrowGreen)", filter: "none" }
 };
 
 // Logical MIDI Cables
@@ -86,20 +94,32 @@ const getPortsForNode = (blueprint: any) => {
 
 export default function OverviewTab() {
 
+  const hardcodedLayouts = useMemo(() => {
+    const modules = import.meta.glob('../../../layouts/*.json', { eager: true });
+    return Object.values(modules).map((mod: any) => mod.default || mod);
+  }, []);
+
   useEffect(() => {
     // Initialize if empty
     const savedNodes = localStorage.getItem('alienmind_nodes_v4');
     const savedConnections = localStorage.getItem('alienmind_connections_v4');
+    const customLayoutsStr = localStorage.getItem('alienmind_custom_layouts_v4');
+    
+    if (customLayoutsStr) {
+      useOverviewStore.getState().loadCustomLayouts(JSON.parse(customLayoutsStr));
+    }
+
     if (Object.keys(nodes).length === 0) {
        if (savedNodes) setNodes(() => JSON.parse(savedNodes));
-       else setNodes(() => DEFAULT_NODES);
+       else if (hardcodedLayouts.length > 0) setNodes(() => hardcodedLayouts[0].nodes);
+       
        if (savedConnections) setConnections(() => JSON.parse(savedConnections));
-       else setConnections(() => DEFAULT_CONNECTIONS);
+       else if (hardcodedLayouts.length > 0) setConnections(() => hardcodedLayouts[0].connections);
     }
-  }, []);
+  }, [hardcodedLayouts]);
 
-  const { setActiveMainView } = useUIStore();
-  const { nodes, connections, routingMode, setNodes, setConnections, setRoutingMode, resetLayout, autoArrange, saveLayout, copyLayout, removeNode } = useOverviewStore();
+  const { setActiveMainView, setActiveDoc } = useUIStore();
+  const { nodes, connections, routingMode, customLayouts, setNodes, setConnections, setRoutingMode, resetLayout, autoArrange, saveCustomLayout, removeCustomLayout, removeNode } = useOverviewStore();
   const [draggingNode, setDraggingNode] = useState<any>(null);
   const [draggedCable, setDraggedCable] = useState<any>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -706,15 +726,46 @@ export default function OverviewTab() {
           <hr className="border-border my-2" />
 
           <div className="flex flex-col gap-2">
-            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Layout Actions</h2>
-            <Button variant="secondary" onClick={() => resetLayout(DEFAULT_NODES, DEFAULT_CONNECTIONS)} className="w-full justify-start shadow-sm">
-              <Icons.RefreshCw size={14} className="mr-2" /> Reset
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Layouts</h2>
+            <div className="flex flex-col gap-1 mb-2 max-h-48 overflow-y-auto pr-1">
+              {hardcodedLayouts.map((l: any) => (
+                 <button key={l.id} className="text-left text-xs bg-muted/50 hover:bg-primary/20 hover:text-primary px-2 py-1.5 rounded transition-colors"
+                         onClick={() => resetLayout(l.nodes, l.connections)}>
+                    {l.name}
+                 </button>
+              ))}
+              {customLayouts.map((l: any) => (
+                 <div key={l.id} className="flex group">
+                   <button className="flex-1 text-left text-xs bg-neutral-800 hover:bg-primary/20 hover:text-primary px-2 py-1.5 rounded-l transition-colors"
+                           onClick={() => resetLayout(l.nodes, l.connections)}
+                           onDoubleClick={() => navigator.clipboard.writeText(JSON.stringify(l, null, 2)).then(() => useUIStore.getState().addNotification({ type: 'success', message: 'Custom layout JSON copied to clipboard!' }))}
+                           title="Double click to copy JSON">
+                      {l.name}
+                   </button>
+                   <button className="bg-neutral-800 hover:bg-destructive/80 text-muted-foreground hover:text-white px-2 rounded-r transition-colors opacity-0 group-hover:opacity-100"
+                           onClick={() => removeCustomLayout(l.id)}>
+                      <Icons.Trash2 size={12} />
+                   </button>
+                 </div>
+              ))}
+            </div>
+            <Button variant="secondary" onClick={() => {
+                const name = prompt("Enter a name for the new layout:");
+                if (name) saveCustomLayout(name);
+              }} className="w-full justify-start shadow-sm text-xs h-8">
+              <Icons.Plus size={14} className="mr-2" /> Save New Layout
             </Button>
-            <Button variant="secondary" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })} className="w-full justify-start shadow-sm">
-              <Icons.LayoutGrid size={14} className="mr-2" /> Rearrange
+            <Button variant="secondary" onClick={() => autoArrange({ circuit: 350, grind: 200, s1: 300, minifreak: 400, flow8: 300, ableton: 350 })} className="w-full justify-start shadow-sm text-xs h-8">
+              <Icons.LayoutGrid size={14} className="mr-2" /> Auto Arrange
             </Button>
-            <Button variant="default" onClick={saveLayout} onDoubleClick={copyLayout} className="w-full justify-start shadow-md">
-              <Icons.Save size={14} className="mr-2" /> Save
+          </div>
+
+          <hr className="border-border my-2" />
+
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Documentation</h2>
+            <Button variant="outline" onClick={() => setActiveDoc({ url: cableGuideUrl, type: 'md' })} className="w-full justify-start shadow-sm text-cyan-600 dark:text-cyan-400 border-cyan-800">
+              <Icons.BookOpen size={14} className="mr-2" /> Cable Types Guide
             </Button>
           </div>
         </ResponsiveDrawer>

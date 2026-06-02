@@ -7,7 +7,12 @@
   "ports": [
     { "id": "usbIn", "type": "USB_B" },
     { "id": "usbOut", "type": "USB_B" },
-    { "id": "audioIn", "type": "TRS" },
-    { "id": "audioOut", "type": "XLR" }
+    { "id": "audioIn3", "type": "TRS" },
+    { "id": "audioIn4", "type": "TRS" },
+    { "id": "audioIn5", "type": "TS" },
+    { "id": "audioIn6", "type": "TS" },
+    { "id": "audioIn7", "type": "TS" },
+    { "id": "audioIn8", "type": "TS" },
+    { "id": "audioOut", "type": "XLR_MALE" }
   ]
 }

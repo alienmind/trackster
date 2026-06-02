@@ -5,7 +5,7 @@
   "width": 340,
   "theme": { "border": "border-t-[#8b4513]", "header": "bg-[#2a1a10]", "title": "text-orange-400", "badge": "bg-[#3a2010] text-orange-200" },
   "ports": [
-    { "id": "audioOut", "type": "MINIJACK" },
+    { "id": "audioOut", "type": "MINIJACK_TS" },
     { "id": "midiIn", "type": "MIDI_5PIN" },
     { "id": "midiOut", "type": "MIDI_5PIN" }
   ]
