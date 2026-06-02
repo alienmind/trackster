@@ -160,11 +160,23 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
 
         let buffer = slotIndex >= 0 ? state.decodedBuffers.get(slotIndex) : undefined;
         if (!buffer) {
-          const file = await fileHandle.getFile();
-          const arrayBuffer = await file.arrayBuffer();
-          buffer = await ctx.decodeAudioData(arrayBuffer);
-          if (slotIndex >= 0) {
-            state.decodedBuffers.set(slotIndex, buffer);
+          try {
+            const file = await fileHandle.getFile();
+            const arrayBuffer = await file.arrayBuffer();
+            buffer = await ctx.decodeAudioData(arrayBuffer);
+            if (slotIndex >= 0) {
+              state.decodedBuffers.set(slotIndex, buffer);
+            }
+          } catch (err: any) {
+            import('./useUIStore').then(({ useUIStore }) => {
+              useUIStore.getState().addNotification({ 
+                message: err.name === 'NotFoundError' 
+                  ? 'File not found. The SD card may have been modified or re-mounted. Please click "Open Tracks" to reconnect.' 
+                  : 'Could not access file. Please check permissions.', 
+                type: 'error' 
+              });
+            });
+            return;
           }
         }
 
@@ -403,25 +415,19 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     try {
       const tracksHandle = await getTracksHandle(rootHandle);
       packHandle = await tracksHandle.getDirectoryHandle(packName);
-    } catch (err) {
+    } catch (err: any) {
       logger.error('Error loading pack', packName, err);
+      import('./useUIStore').then(({ useUIStore }) => {
+        useUIStore.getState().addNotification({ 
+          message: err.name === 'NotFoundError' ? 'Pack not found or access lost. Please click "Mount SD Card" to restore access.' : 'Could not access pack. Please check permissions.', 
+          type: 'error' 
+        });
+      });
       return;
     }
 
     const existingSlots = get().slotsByPack[packName];
     const existingUnassigned = get().unassignedFilesByPack[packName];
-
-    if (existingSlots && existingUnassigned) {
-      set((state) => ({
-        activePack: packName,
-        activePackHandle: packHandle,
-        slots: existingSlots,
-        unassignedFiles: existingUnassigned,
-        history: state.historyByPack[packName] || [],
-        pendingChanges: countAllPendingChanges(state.slotsByPack, state.packSlots, state.applyTagsToFilenames),
-      }));
-      return;
-    }
 
     const newSlots: PadSlot[] = Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null }));
     const newUnassigned: SampleFile[] = [];
@@ -477,18 +483,49 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
 
     await findWavFiles(packHandle);
     
+    // Reconcile handles if we had existing layout
+    let finalSlots = newSlots;
+    let finalUnassigned = newUnassigned;
+
+    if (existingSlots && existingUnassigned) {
+      const allScanned = new Map<string, SampleFile>();
+      newSlots.forEach(s => { if (s.sample) allScanned.set(s.sample.originalFilename, s.sample); });
+      newUnassigned.forEach(s => allScanned.set(s.originalFilename, s));
+
+      finalSlots = existingSlots.map(slot => {
+        if (!slot.sample) return slot;
+        const fresh = allScanned.get(slot.sample.originalFilename);
+        if (fresh) {
+          allScanned.delete(slot.sample.originalFilename);
+          return { ...slot, sample: { ...slot.sample, fileHandle: fresh.fileHandle, parentDirHandle: fresh.parentDirHandle, size: fresh.size } };
+        }
+        return { ...slot, sample: null }; // File deleted externally
+      });
+
+      finalUnassigned = existingUnassigned.map(sample => {
+        const fresh = allScanned.get(sample.originalFilename);
+        if (fresh) {
+          allScanned.delete(sample.originalFilename);
+          return { ...sample, fileHandle: fresh.fileHandle, parentDirHandle: fresh.parentDirHandle, size: fresh.size };
+        }
+        return null;
+      }).filter(Boolean) as SampleFile[];
+
+      finalUnassigned.push(...Array.from(allScanned.values()));
+    }
+
     set((state) => {
-      const newSlotsByPack = { ...state.slotsByPack, [packName]: newSlots };
+      const newSlotsByPack = { ...state.slotsByPack, [packName]: finalSlots };
       return { 
         activePack: packName,
         activePackHandle: packHandle,
-        slots: newSlots, 
-        unassignedFiles: newUnassigned, 
+        slots: finalSlots, 
+        unassignedFiles: finalUnassigned, 
         pendingChanges: countAllPendingChanges(newSlotsByPack, get().packSlots, get().applyTagsToFilenames), 
-        history: [],
+        history: state.historyByPack[packName] || [],
         slotsByPack: newSlotsByPack,
-        unassignedFilesByPack: { ...state.unassignedFilesByPack, [packName]: newUnassigned },
-        historyByPack: { ...state.historyByPack, [packName]: [] }
+        unassignedFilesByPack: { ...state.unassignedFilesByPack, [packName]: finalUnassigned },
+        historyByPack: { ...state.historyByPack, [packName]: state.historyByPack[packName] || [] }
       };
     });
   },
