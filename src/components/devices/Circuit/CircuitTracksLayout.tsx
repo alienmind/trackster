@@ -1,6 +1,4 @@
 import CircuitTracksDevice from './CircuitTracksDevice';
-import FileInspector from '../../Core/FileInspector/FileInspector';
-import Oscilloscope from '../../Core/Oscilloscope/Oscilloscope';
 import StagingArea from './StagingArea/StagingArea';
 import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
@@ -10,16 +8,13 @@ import DisclaimerModal from '../../Core/DisclaimerModal/DisclaimerModal';
 import { useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
 import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
-import PendingChangesPane from '../../Core/PendingChangesPane/PendingChangesPane';
 import StatusBar from '../../Core/StatusBar/StatusBar';
 import ManualsList from '../../Core/ManualsList/ManualsList';
-import PdfViewer from '../../Core/PdfViewer/PdfViewer';
 
 export default function CircuitTracksLayout() {
   const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useCircuitTracksStore();
   const scanDuplicates = useCircuitTracksStore((s) => s.scanDuplicates);
   const { activePage, setActivePage } = useUIStore();
-  const activePdfUrl = useUIStore((s) => s.activePdfUrl);
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
   useEffect(() => {
@@ -108,24 +103,10 @@ export default function CircuitTracksLayout() {
 
         {/* Center Panel - Device */}
         <div className="flex-1 overflow-hidden flex flex-col bg-neutral-950">
-          {activePdfUrl ? (
-            <PdfViewer />
-          ) : (
-            <div className="flex-1 overflow-y-auto flex items-center justify-center">
-              <CircuitTracksDevice />
-            </div>
-          )}
-        </div>
-
-        {/* Right Panel */}
-        <div className="w-80 bg-card border-l border-border p-4 flex flex-col gap-4 overflow-y-auto shadow-xl z-10">
-          <FileInspector />
-          <div className="relative border border-border/50 rounded bg-black overflow-hidden shadow-inner h-48 flex-none">
-            <Oscilloscope />
+          <div className="flex-1 overflow-y-auto flex items-center justify-center">
+            <CircuitTracksDevice />
           </div>
         </div>
-
-        <PendingChangesPane />
       </div>
 
       <div className="hidden md:block">

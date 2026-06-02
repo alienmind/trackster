@@ -4,7 +4,7 @@ import type { PageIndex, Notification, SampleFile } from '../types';
 
 interface UIState {
   activePage: PageIndex;
-  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton';
+  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | 'soundtoys';
   selectedPadIndex: number | null;
   isCommitDialogOpen: boolean;
   notifications: Notification[];
@@ -12,14 +12,16 @@ interface UIState {
   isLeftPaneCollapsed: boolean;
   isRightPaneCollapsed: boolean;
   selectedFile: SampleFile | null;
-  activePdfUrl: string | null;
+  activeDoc: { url: string; type: 'pdf' | 'md' } | null;
+  rightPaneWidth: number;
+  isDeviceMinimized: boolean;
 
   isDuplicateModalOpen: boolean;
   duplicateClusters: SampleFile[][];
 
   isMobileDrawerOpen: boolean;
 
-  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton') => void;
+  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | 'soundtoys') => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null) => void;
   openCommitDialog: () => void;
@@ -30,7 +32,9 @@ interface UIState {
   toggleRightPane: () => void;
   setRightPaneCollapsed: (collapsed: boolean) => void;
   setSelectedFile: (file: SampleFile | null) => void;
-  setActivePdfUrl: (url: string | null) => void;
+  setActiveDoc: (doc: { url: string; type: 'pdf' | 'md' } | null) => void;
+  setRightPaneWidth: (width: number) => void;
+  setDeviceMinimized: (minimized: boolean) => void;
 
   openDuplicateModal: (clusters: SampleFile[][]) => void;
   closeDuplicateModal: () => void;
@@ -48,9 +52,11 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isCommitDialogOpen: false,
   notifications: [],
   isLeftPaneCollapsed: false,
-  isRightPaneCollapsed: false,
+  isRightPaneCollapsed: true,
   selectedFile: null,
-  activePdfUrl: null,
+  activeDoc: null,
+  rightPaneWidth: 400,
+  isDeviceMinimized: false,
 
   isDuplicateModalOpen: false,
   duplicateClusters: [],
@@ -58,7 +64,15 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   deferredPrompt: null,
 
-  setActiveMainView: (view) => set({ activeMainView: view, activePdfUrl: null }),
+  setActiveMainView: (view) => set((state) => {
+    let rightPaneCollapsed = state.isRightPaneCollapsed;
+    if (view === 'circuit') {
+      rightPaneCollapsed = false; // Always open for circuit tracks
+    } else if (!state.activeDoc) {
+      rightPaneCollapsed = true; // Collapse for other views if no doc is open
+    }
+    return { activeMainView: view, activeDoc: null, isRightPaneCollapsed: rightPaneCollapsed };
+  }),
   setActivePage: (page) => {
     set({ activePage: page });
     // Side effect to update css variable can be handled here or in a component
@@ -88,7 +102,9 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   toggleRightPane: () => set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
   setRightPaneCollapsed: (collapsed) => set({ isRightPaneCollapsed: collapsed }),
   setSelectedFile: (file) => set({ selectedFile: file }),
-  setActivePdfUrl: (url) => set({ activePdfUrl: url }),
+  setActiveDoc: (doc) => set({ activeDoc: doc, isRightPaneCollapsed: false, isDeviceMinimized: false }),
+  setRightPaneWidth: (width) => set({ rightPaneWidth: width }),
+  setDeviceMinimized: (minimized) => set({ isDeviceMinimized: minimized }),
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
   closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] }),
@@ -103,8 +119,11 @@ export const useUIStore = create<UIState>()(
     {
       name: 'trackster-ui-storage',
       partialize: (state: any) => ({
+        activePage: state.activePage,
+        activeMainView: state.activeMainView,
         isLeftPaneCollapsed: state.isLeftPaneCollapsed,
-        isRightPaneCollapsed: state.isRightPaneCollapsed
+        isRightPaneCollapsed: state.isRightPaneCollapsed,
+        rightPaneWidth: state.rightPaneWidth
       })
     }
   )
