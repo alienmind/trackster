@@ -11,6 +11,8 @@ export default function CommitDialog() {
   const closeCommitDialog = useUIStore((s) => s.closeCommitDialog);
   const commitChanges = useCircuitTracksStore((s) => s.commitChanges);
   const executeRenamePlan = useCircuitTracksStore((s) => s.executeRenamePlan);
+  const clearExecuteProgress = useCircuitTracksStore((s) => s.clearExecuteProgress);
+  const executeProgress = useCircuitTracksStore((s) => s.executeProgress);
   
   const [plan, setPlan] = useState<RenamePlan | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -26,13 +28,21 @@ export default function CommitDialog() {
   const handleExecute = async () => {
     if (!plan) return;
     setIsExecuting(true);
-    await executeRenamePlan(plan);
-    setIsExecuting(false);
-    closeCommitDialog();
+    try {
+      await executeRenamePlan(plan);
+    } finally {
+      setIsExecuting(false);
+      clearExecuteProgress();
+      closeCommitDialog();
+    }
   };
 
+  const progressPercent = executeProgress
+    ? Math.round((executeProgress.current / executeProgress.total) * 100)
+    : 0;
+
   return (
-    <Dialog open={isCommitDialogOpen} onOpenChange={(open) => !open && closeCommitDialog()}>
+    <Dialog open={isCommitDialogOpen} onOpenChange={(open) => !open && !isExecuting && closeCommitDialog()}>
       <DialogContent className="sm:max-w-2xl bg-card border-border overflow-hidden flex flex-col max-h-[90vh]">
         <DialogHeader className="flex flex-row items-center justify-between pr-8">
           <DialogTitle className="text-xl font-bold">Review Changes</DialogTitle>
@@ -43,21 +53,43 @@ export default function CommitDialog() {
           )}
         </DialogHeader>
         
-        <ScrollArea className="mt-4 border border-border rounded-md flex-1 min-h-0">
-          <div className="p-4 space-y-2">
-            {!plan || plan.operations.length === 0 ? (
-              <div className="text-muted-foreground text-center py-8">No changes to commit.</div>
-            ) : (
-              plan.operations.map((op, i) => (
-                <div key={i} className="flex items-center space-x-4 bg-muted p-3 rounded text-sm font-mono border border-border min-w-0">
-                  <div className="flex-1 text-destructive line-through opacity-80 truncate" title={op.from}>{op.from}</div>
-                  <div className="text-muted-foreground shrink-0">→</div>
-                  <div className="flex-1 text-green-500 truncate" title={op.to}>{op.to}</div>
-                </div>
-              ))
-            )}
+        {isExecuting && executeProgress ? (
+          <div className="mt-4 space-y-3 px-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground font-mono truncate mr-4">
+                {executeProgress.phase}
+              </span>
+              <span className="text-foreground font-bold tabular-nums shrink-0">
+                {progressPercent}%
+              </span>
+            </div>
+            <div className="w-full h-3 bg-muted rounded-full overflow-hidden border border-border">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-150 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              {executeProgress.current} / {executeProgress.total} steps completed
+            </p>
           </div>
-        </ScrollArea>
+        ) : (
+          <ScrollArea className="mt-4 border border-border rounded-md flex-1 min-h-0">
+            <div className="p-4 space-y-2">
+              {!plan || plan.operations.length === 0 ? (
+                <div className="text-muted-foreground text-center py-8">No changes to commit.</div>
+              ) : (
+                plan.operations.map((op, i) => (
+                  <div key={i} className="flex items-center space-x-4 bg-muted p-3 rounded text-sm font-mono border border-border min-w-0">
+                    <div className="flex-1 text-destructive line-through opacity-80 truncate" title={op.from}>{op.from}</div>
+                    <div className="text-muted-foreground shrink-0">→</div>
+                    <div className="flex-1 text-green-500 truncate" title={op.to}>{op.to}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        )}
         
         <DialogFooter className="mt-6">
           <Button
@@ -79,3 +111,4 @@ export default function CommitDialog() {
     </Dialog>
   );
 }
+

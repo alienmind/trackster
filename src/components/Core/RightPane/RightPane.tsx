@@ -8,6 +8,7 @@ export default function RightPane({ children }: { children: React.ReactNode }) {
   const isDeviceMinimized = useUIStore((s) => s.isDeviceMinimized);
   const setDeviceMinimized = useUIStore((s) => s.setDeviceMinimized);
   const isRightPaneCollapsed = useUIStore((s) => s.isRightPaneCollapsed);
+  const activeMainView = useUIStore((s) => s.activeMainView);
 
   const isResizing = useRef(false);
 
@@ -41,7 +42,7 @@ export default function RightPane({ children }: { children: React.ReactNode }) {
     e.preventDefault();
   };
 
-  if (isRightPaneCollapsed) {
+  if (isRightPaneCollapsed && activeMainView !== 'circuit') {
     return null;
   }
 

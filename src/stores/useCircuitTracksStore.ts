@@ -526,6 +526,11 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     }
 
     set((state) => {
+      // Clear audio cache when switching packs to prevent playing old cached audio
+      if (state.activePack !== packName) {
+        state.decodedBuffers.clear();
+      }
+
       const newSlotsByPack = { ...state.slotsByPack, [packName]: finalSlots };
       return { 
         activePack: packName,
