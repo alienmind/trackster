@@ -48,7 +48,7 @@ export default function App() {
   
   const moveSlot = useCircuitTracksStore((s) => s.moveSlot);
   const movePackSlot = useCircuitTracksStore((s) => s.movePackSlot);
-  const assignToSlot = useCircuitTracksStore((s) => s.assignToSlot);
+
   const confirmModal = useUIStore((s) => s.confirmModal);
   const closeConfirmModal = useUIStore((s) => s.closeConfirmModal);
 
@@ -115,9 +115,18 @@ export default function App() {
       return;
     }
 
+    const selectedPads = useUIStore.getState().selectedPads;
+
+    if (activeType === 'pad' && overType === 'staging') {
+      const fromIndex = parseInt(active.id.toString().replace('pad-', ''), 10);
+      const indicesToMove = selectedPads.includes(fromIndex) ? selectedPads : [fromIndex];
+      useCircuitTracksStore.getState().clearSlots(indicesToMove);
+      return;
+    }
+
     if (activeType === 'unassigned' && overType === 'pad') {
       const targetIndex = parseInt(over.id.toString().replace('pad-', ''), 10);
-      assignToSlot(active.data.current!.sample, targetIndex);
+      useCircuitTracksStore.getState().assignMultipleToSlots([active.data.current!.sample], targetIndex);
       return;
     }
 
@@ -130,7 +139,13 @@ export default function App() {
     if (activeType === 'pad' && overType === 'pad' && active.id !== over.id) {
       const fromIndex = parseInt(active.id.toString().replace('pad-', ''), 10);
       const toIndex = parseInt(over.id.toString().replace('pad-', ''), 10);
-      moveSlot(fromIndex, toIndex);
+      
+      const indicesToMove = selectedPads.includes(fromIndex) ? selectedPads : [fromIndex];
+      if (indicesToMove.length > 1) {
+        useCircuitTracksStore.getState().moveSlots(indicesToMove, toIndex);
+      } else {
+        moveSlot(fromIndex, toIndex);
+      }
     }
   };
 
@@ -262,16 +277,23 @@ export default function App() {
                 </div>
               )}
               {activeDragItem.type === 'pad' && activeDragItem.data.sample && (
-                <div className="h-24 w-[110px] bg-muted border-2 border-primary rounded-md p-2 flex flex-col items-center justify-center shadow-2xl relative">
-                  <div className="absolute left-2 top-2 text-xs text-muted-foreground font-mono">{activeDragItem.data.index}</div>
-                  <div className="flex h-full flex-col items-center justify-center pt-3 gap-1">
-                    {useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag) ? (
-                      <TagBadge tag={useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag)!} />
-                    ) : (
-                      <div className="w-8 h-8" />
-                    )}
-                    <div className="w-full truncate text-center text-xs font-medium text-foreground px-1">
-                      {activeDragItem.data.sample.displayName}
+                <div className="relative">
+                  {useUIStore.getState().selectedPads.length > 1 && useUIStore.getState().selectedPads.includes(activeDragItem.data.index) && (
+                    <div className="absolute -top-3 -right-3 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-[10px] font-bold shadow-lg z-10">
+                      {useUIStore.getState().selectedPads.length}
+                    </div>
+                  )}
+                  <div className="h-24 w-[110px] bg-muted border-2 border-primary rounded-md p-2 flex flex-col items-center justify-center shadow-2xl relative">
+                    <div className="absolute left-2 top-2 text-xs text-muted-foreground font-mono">{activeDragItem.data.index}</div>
+                    <div className="flex h-full flex-col items-center justify-center pt-3 gap-1">
+                      {useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag) ? (
+                        <TagBadge tag={useCircuitTracksStore.getState().tags.find(t => t.id === activeDragItem.data.sample?.tag)!} />
+                      ) : (
+                        <div className="w-8 h-8" />
+                      )}
+                      <div className="w-full truncate text-center text-xs font-medium text-foreground px-1">
+                        {activeDragItem.data.sample.displayName}
+                      </div>
                     </div>
                   </div>
                 </div>

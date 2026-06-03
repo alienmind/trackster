@@ -1,5 +1,5 @@
 import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import type { SampleFile } from '../../../../types';
 import clsx from 'clsx';
@@ -60,6 +60,11 @@ export default function StagingArea() {
   const unassignedFiles = useCircuitTracksStore((s) => s.unassignedFiles);
   const rootHandle = useCircuitTracksStore((s) => s.rootHandle);
 
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'staging-area',
+    data: { type: 'staging' }
+  });
+
   if (!rootHandle) return null;
 
   return (
@@ -74,9 +79,19 @@ export default function StagingArea() {
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
+      <div className="px-4 py-2 bg-muted/50 border-b border-border text-[10px] text-muted-foreground leading-tight">
+        <span className="font-semibold text-primary/80">NOTE:</span> These files are fully considered by automatic sample management (Duplicate Scan and Auto Arrange) and can exceed 64 items. Drag pads here to free up slots!
+      </div>
+
+      <div 
+        ref={setNodeRef}
+        className={clsx(
+          "flex-1 overflow-y-auto p-2 flex flex-col gap-2 transition-colors",
+          isOver ? "bg-primary/10 ring-2 ring-inset ring-primary/30" : ""
+        )}
+      >
         {unassignedFiles.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground m-auto text-center px-4">No unassigned files in this pack.</div>
+          <div className="text-[11px] text-muted-foreground m-auto text-center px-4 pt-10">No unassigned files in this pack.</div>
         ) : (
           unassignedFiles.map(f => (
             <DraggableSample key={f.originalFilename} sample={f} />

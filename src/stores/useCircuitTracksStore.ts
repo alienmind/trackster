@@ -70,11 +70,14 @@ export interface CircuitTracksState {
   movePackSlot: (fromIndex: number, toIndex: number) => void;
   moveToPack: (file: SampleFile, targetPackName: string) => void;
   moveSlot: (fromIndex: number, toIndex: number) => void;
+  moveSlots: (fromIndices: number[], toStartIndex: number) => void;
   clearSlot: (index: number) => void;
+  clearSlots: (indices: number[]) => void;
   clearPackSlot: (index: number) => void;
   duplicatePack: (index: number) => void;
   renamePack: (index: number, newDisplayName: string) => void;
   assignToSlot: (file: SampleFile, slotIndex: number) => void;
+  assignMultipleToSlots: (files: SampleFile[], startIndex: number) => void;
   removeFile: (file: SampleFile) => void;
   renameFile: (file: SampleFile, newDisplayName: string) => void;
   assignTagToSlot: (tagId: string, slotIndex: number) => void;
@@ -341,6 +344,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       clearDuplicates: () => {
         set({ duplicatePairs: [] });
       },
+
 
       rootHandle: null,
       packs: [],
@@ -722,6 +726,56 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     });
   },
 
+  moveSlots: (fromIndices, toStartIndex) => {
+    logger.log(`[Store] Moving multiple slots from [${fromIndices.join(',')}] to start index ${toStartIndex}`);
+    if (fromIndices.length === 0) return;
+
+    set((state) => {
+      if (!state.activePack) return state;
+      const snapshot = state.slots.map((s) => ({ ...s }));
+      const newSlots = [...state.slots];
+      const newUnassigned = [...state.unassignedFiles];
+      
+      const samplesToMove: import('../types').SampleFile[] = [];
+      fromIndices.forEach(idx => {
+        const sample = newSlots[idx]!.sample;
+        if (sample) {
+          samplesToMove.push(sample);
+          newSlots[idx] = { ...newSlots[idx]!, sample: null };
+        }
+      });
+      
+      let currentIndex = toStartIndex;
+      for (const sample of samplesToMove) {
+        if (currentIndex < 64) {
+          const overwritten = newSlots[currentIndex]!.sample;
+          if (overwritten) {
+            newUnassigned.push(overwritten);
+          }
+          newSlots[currentIndex] = { ...newSlots[currentIndex]!, sample };
+          currentIndex++;
+        } else {
+          newUnassigned.push(sample);
+        }
+      }
+      
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames, state.packs);
+
+      return {
+        slots: newSlots,
+        unassignedFiles: newUnassigned,
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
+        pendingChanges
+      };
+    });
+  },
+
   clearSlot: (index) => {
     logger.log(`[Store] Clearing slot ${index}`);
     set((state) => {
@@ -734,6 +788,43 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
 
       const newUnassigned = [...state.unassignedFiles, slot.sample];
       newSlots[index] = { ...slot, sample: null };
+
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames, state.packs);
+
+      return {
+        slots: newSlots,
+        unassignedFiles: newUnassigned,
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
+        pendingChanges
+      };
+    });
+  },
+
+  clearSlots: (indices) => {
+    logger.log(`[Store] Clearing slots [${indices.join(',')}]`);
+    set((state) => {
+      if (!state.activePack || indices.length === 0) return state;
+      const snapshot = state.slots.map((s) => ({ ...s }));
+      const newSlots = [...state.slots];
+      const newUnassigned = [...state.unassignedFiles];
+      
+      let changed = false;
+      indices.forEach(index => {
+        const slot = newSlots[index]!;
+        if (slot.sample) {
+          newUnassigned.push(slot.sample);
+          newSlots[index] = { ...slot, sample: null };
+          changed = true;
+        }
+      });
+      
+      if (!changed) return state;
 
       const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
       const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
@@ -914,6 +1005,48 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         }
       }
 
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames, state.packs);
+
+      return {
+        slots: newSlots,
+        unassignedFiles: newUnassigned,
+        history: newHistory,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
+        pendingChanges
+      };
+    });
+  },
+
+  assignMultipleToSlots: (files, startIndex) => {
+    logger.log(`[Store] Assigning ${files.length} files starting at ${startIndex}`);
+    set((state) => {
+      if (!state.activePack || files.length === 0) return state;
+      const snapshot = state.slots.map((s) => ({ ...s }));
+      const newSlots = [...state.slots];
+      let newUnassigned = [...state.unassignedFiles];
+      
+      const fileOriginalNames = new Set(files.map(f => f.originalFilename));
+      newUnassigned = newUnassigned.filter(f => !fileOriginalNames.has(f.originalFilename));
+      
+      let currentIndex = startIndex;
+      for (const file of files) {
+        if (currentIndex < 64) {
+          const overwritten = newSlots[currentIndex]!.sample;
+          if (overwritten) {
+            newUnassigned.push(overwritten);
+          }
+          newSlots[currentIndex] = { index: currentIndex, sample: file };
+          currentIndex++;
+        } else {
+          newUnassigned.push(file);
+        }
+      }
+      
       const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
       const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
       const newHistory = [...state.history, snapshot];
