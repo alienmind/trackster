@@ -20,6 +20,7 @@ import Toolbar from './components/Core/Toolbar/Toolbar';
 import DocumentViewer from './components/Core/DocumentViewer/DocumentViewer';
 import RightPane from './components/Core/RightPane/RightPane';
 import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
+import StagingArea from './components/devices/Circuit/StagingArea/StagingArea';
 import FileInspector from './components/Core/FileInspector/FileInspector';
 import Oscilloscope from './components/Core/Oscilloscope/Oscilloscope';
 import { TagBadge } from './components/Core/TagBadge/TagBadge';
@@ -189,8 +190,13 @@ export default function App() {
           <RightPane>
             {activeMainView === 'circuit' ? (
               <div className="flex flex-col h-full overflow-hidden w-full">
-                <div className="flex-1 overflow-hidden">
-                  <PendingChangesPane />
+                <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <PendingChangesPane />
+                  </div>
+                  <div className="flex-1 border-t border-border bg-card overflow-hidden min-h-0">
+                    <StagingArea />
+                  </div>
                 </div>
                 <div className="p-4 flex flex-col gap-4 border-t border-border shrink-0 bg-card overflow-y-auto max-h-[50%]">
                   <FileInspector />
