@@ -68,6 +68,12 @@ Currently we can preview the samples on each bank, extend the ability to work wi
   * Drums 1-4: CC `8`, `18`, `44`, `50` (Ch 10) followed by Notes `60`, `62`, `64`, `65`.
   * MIDI 1 & MIDI 2: PGM `0-63` (Ch 3/4) followed by Note `60` ON.
 
+### Interactive Scales Visualizer
+Enable the Scales button functionality to explore musical scales dynamically within the UI.
+* **Visual Piano Keyboard**: Toggle the layout into a piano shape, highlighting which specific notes are valid within the currently selected scale (e.g., Phrygian, Dorian, etc.).
+* **Scale Explanations**: Provide textual information detailing what each specific scale mode is about and what kind of musical feeling or emotion it "evokes".
+* **Interactive Discovery**: Allow users to easily view different scale types and immediately see the theoretical mapping to understand how it operates.
+
 ---
 
 ## Behringer FLOW 8
