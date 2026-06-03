@@ -7,19 +7,35 @@ import * as Icons from 'lucide-react';
 import { buildFilename } from '../../../utils/fileNaming';
 
 export default function PendingChangesPane() {
-  const { slotsByPack, packSlots, undo, historyByPack, activePack, applyTagsToFilenames, workspaceMode } = useCircuitTracksStore();
+  const { slotsByPack, packSlots, undo, historyByPack, activePack, applyTagsToFilenames, workspaceMode, packs } = useCircuitTracksStore();
   const openCommitDialog = useUIStore((s) => s.openCommitDialog);
 
   // Compute all rename plans to show in the UI
   const packRenames = [];
+  const packDeletions = [];
+  const packCopies = [];
   let totalSampleRenames = 0;
   const sampleRenamesByPack: Record<string, any[]> = {};
 
+  const packOccurrences = new Map<string, string[]>();
   for (const s of packSlots) {
     if (s.pack) {
       const to = `${s.index.toString().padStart(2, '0')}_${s.pack.displayName}`;
-      if (s.pack.originalDirname !== to) {
-        packRenames.push({ from: s.pack.originalDirname, to });
+      if (!packOccurrences.has(s.pack.originalDirname)) packOccurrences.set(s.pack.originalDirname, []);
+      packOccurrences.get(s.pack.originalDirname)!.push(to);
+    }
+  }
+
+  for (const original of packs) {
+    const occurrences = packOccurrences.get(original);
+    if (!occurrences || occurrences.length === 0) {
+      packDeletions.push(original);
+    } else {
+      if (occurrences[0] !== original) {
+        packRenames.push({ from: original, to: occurrences[0] });
+      }
+      for (let i = 1; i < occurrences.length; i++) {
+        packCopies.push({ from: original, to: occurrences[i] });
       }
     }
   }
@@ -44,7 +60,7 @@ export default function PendingChangesPane() {
     }
   }
 
-  const totalChanges = packRenames.length + totalSampleRenames;
+  const totalChanges = packRenames.length + packDeletions.length + packCopies.length + totalSampleRenames;
   const history = activePack ? historyByPack[activePack] || [] : [];
   const canUndo = history.length > 0;
 
@@ -109,6 +125,41 @@ export default function PendingChangesPane() {
                       <div className="text-xs text-muted-foreground line-through opacity-70">{r.from}</div>
                       <div className="text-foreground font-medium flex items-center gap-1 mt-0.5">
                         <Icons.ArrowRight size={10} className="text-primary" /> {r.to}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {packCopies.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Icons.Copy size={12} /> Pack Duplicates
+                </h3>
+                <ul className="space-y-2">
+                  {packCopies.map((r, i) => (
+                    <li key={i} className="text-sm bg-muted/50 p-2 rounded-md border border-border">
+                      <div className="text-xs text-muted-foreground opacity-70">From: {r.from}</div>
+                      <div className="text-foreground font-medium flex items-center gap-1 mt-0.5">
+                        <Icons.ArrowRight size={10} className="text-primary" /> {r.to}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {packDeletions.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-red-500/80 uppercase tracking-wider flex items-center gap-1.5">
+                  <Icons.Trash2 size={12} /> Pack Removals
+                </h3>
+                <ul className="space-y-2">
+                  {packDeletions.map((name, i) => (
+                    <li key={i} className="text-sm bg-red-500/10 p-2 rounded-md border border-red-500/20">
+                      <div className="text-red-500/80 font-medium flex items-center gap-1">
+                        <Icons.X size={14} /> {name}
                       </div>
                     </li>
                   ))}

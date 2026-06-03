@@ -124,3 +124,5 @@ Global commands affecting the whole mixer use **MIDI Channel 16**:
 
 ### Device Specific Features
 * Patch management, logical CC mapping control from the browser, and backup handling.
+## Coding Guidelines for LLMs
+- **HARD RULE:** There should be no direct destructive operations (like deletions or moves) executed immediately in this application. It ALWAYS goes to the pending operations state first, and then the user clicks Commit to apply them. All operations interactively performed should be a dry run in the UI state, and only when we commit are they actually applied to the filesystem.
