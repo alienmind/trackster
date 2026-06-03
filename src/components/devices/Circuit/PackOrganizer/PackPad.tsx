@@ -11,7 +11,7 @@ interface PackPadProps {
 }
 
 const PackPad = memo(function PackPad({ slot, onSelect }: PackPadProps) {
-  const { loadPack, activePack, clearPackSlot, duplicatePack, renamePack } = useCircuitTracksStore();
+  const { loadPack, activePack, clearPackSlot, duplicatePack, renamePack, circuitToolMode, setCircuitToolMode } = useCircuitTracksStore();
   const id = `packpad-${slot.index}`;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -51,11 +51,25 @@ const PackPad = memo(function PackPad({ slot, onSelect }: PackPadProps) {
     zIndex: isDragging ? 50 : 1,
   };
 
+  const handleClear = () => {
+    if (window.confirm(`Are you sure you want to completely remove "${slot.pack?.displayName || slot.pack?.originalDirname}" from your SD Card?\n\nThis cannot be undone.`)) {
+      clearPackSlot(slot.index);
+    }
+  };
+
   const handleClick = () => {
     if (isDragging || isEditing) return;
     if (slot.pack) {
-      loadPack(slot.pack.originalDirname);
-      onSelect?.();
+      if (circuitToolMode === 'duplicate') {
+        duplicatePack(slot.index);
+        setCircuitToolMode(null);
+      } else if (circuitToolMode === 'clear') {
+        handleClear();
+        setCircuitToolMode(null);
+      } else {
+        loadPack(slot.pack.originalDirname);
+        onSelect?.();
+      }
     }
   };
 
@@ -136,7 +150,7 @@ const PackPad = memo(function PackPad({ slot, onSelect }: PackPadProps) {
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              clearPackSlot(slot.index);
+              handleClear();
             }}
             title="Remove pack"
             className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 bg-black/20 rounded-full hover:bg-red-500/80 text-white z-10 cursor-pointer"

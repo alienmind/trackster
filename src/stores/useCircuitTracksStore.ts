@@ -52,6 +52,9 @@ export interface CircuitTracksState {
   deviceMode: 'packs' | 'samples';
   setDeviceMode: (mode: 'packs' | 'samples') => void;
   
+  circuitToolMode: 'duplicate' | 'clear' | null;
+  setCircuitToolMode: (mode: 'duplicate' | 'clear' | null) => void;
+  
   openRootDirectory: (mode?: 'read' | 'readwrite') => Promise<void>;
   rescanRootDirectory: () => Promise<void>;
   loadPack: (packName: string) => Promise<void>;
@@ -330,7 +333,9 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       
       workspaceMode: null,
       deviceMode: 'packs',
-      setDeviceMode: (mode) => set({ deviceMode: mode }),
+      circuitToolMode: null,
+      setDeviceMode: (mode) => set({ deviceMode: mode, circuitToolMode: null }),
+      setCircuitToolMode: (mode) => set((state) => ({ circuitToolMode: state.circuitToolMode === mode ? null : mode })),
       setWorkspaceMode: async (mode) => {
         const { rootHandle } = get();
         if (!rootHandle) return false;

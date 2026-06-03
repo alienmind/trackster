@@ -14,6 +14,8 @@ import ScaleFit from '../../Core/ui/ScaleFit';
 export default function CircuitTracksDevice() {
   const deviceMode = useCircuitTracksStore((s) => s.deviceMode);
   const setDeviceMode = useCircuitTracksStore((s) => s.setDeviceMode);
+  const circuitToolMode = useCircuitTracksStore((s) => s.circuitToolMode);
+  const setCircuitToolMode = useCircuitTracksStore((s) => s.setCircuitToolMode);
 
   const slots = useCircuitTracksStore((s) => s.slots);
   const packSlots = useCircuitTracksStore((s) => s.packSlots);
@@ -107,10 +109,28 @@ export default function CircuitTracksDevice() {
             <FunctionButton icon={<UpArrow />} />
             <FunctionButton label={"1-16\n17-32"} />
             <FunctionButton topLabel="Tap" label={"Tempo\nSwing"} />
-            <FunctionButton topLabel="Click" label="Clear" />
-            <FunctionButton topLabel="Mutate" label="Duplicate" />
+            <FunctionButton 
+              topLabel="Click" 
+              label="Clear" 
+              isActive={circuitToolMode === 'clear'} 
+              onClick={() => setCircuitToolMode('clear')} 
+              className={`!opacity-100 transition-all ${circuitToolMode === 'clear' ? 'ring-2 ring-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.6)] bg-[#2a1a1a]' : 'ring-1 ring-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.1)] hover:shadow-[0_0_12px_rgba(239,68,68,0.3)]'}`}
+            />
+            <FunctionButton 
+              topLabel="Mutate" 
+              label="Duplicate" 
+              isActive={circuitToolMode === 'duplicate'} 
+              onClick={() => setCircuitToolMode('duplicate')} 
+              className={`!opacity-100 transition-all ${circuitToolMode === 'duplicate' ? 'ring-2 ring-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.6)] bg-[#1a1a2a]' : 'ring-1 ring-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.1)] hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]'}`}
+            />
             <FunctionButton topLabel="Setup" label="Save" />
-            <FunctionButton topLabel="Packs" label="Projects" isActive={deviceMode === 'packs'} onClick={() => setDeviceMode('packs')} className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all" />
+            <FunctionButton 
+              topLabel="Packs" 
+              label="Projects" 
+              isActive={deviceMode === 'packs'} 
+              onClick={() => setDeviceMode('packs')} 
+              className={`!opacity-100 transition-all ${deviceMode === 'packs' ? 'ring-2 ring-white/60 shadow-[0_0_15px_rgba(255,255,255,0.6)] bg-[#2a2a2a]' : 'ring-1 ring-white/20 shadow-[0_0_8px_rgba(255,255,255,0.1)] hover:shadow-[0_0_12px_rgba(255,255,255,0.3)]'}`}
+            />
             <FunctionButton label="Shift" />
           </div>
 
