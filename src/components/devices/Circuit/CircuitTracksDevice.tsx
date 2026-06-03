@@ -14,8 +14,8 @@ import ScaleFit from '../../Core/ui/ScaleFit';
 export default function CircuitTracksDevice() {
   const deviceMode = useCircuitTracksStore((s) => s.deviceMode);
   const setDeviceMode = useCircuitTracksStore((s) => s.setDeviceMode);
-  const circuitToolMode = useCircuitTracksStore((s) => s.circuitToolMode);
-  const setCircuitToolMode = useCircuitTracksStore((s) => s.setCircuitToolMode);
+  const duplicateActivePack = useCircuitTracksStore((s) => s.duplicateActivePack);
+  const clearActivePack = useCircuitTracksStore((s) => s.clearActivePack);
 
   const slots = useCircuitTracksStore((s) => s.slots);
   const packSlots = useCircuitTracksStore((s) => s.packSlots);
@@ -112,22 +112,22 @@ export default function CircuitTracksDevice() {
             <FunctionButton 
               topLabel="Click" 
               label="Clear" 
-              isActive={circuitToolMode === 'clear'} 
-              onClick={() => setCircuitToolMode('clear')} 
+              isActive={true} 
+              onClick={clearActivePack} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
             />
             <FunctionButton 
               topLabel="Mutate" 
               label="Duplicate" 
-              isActive={circuitToolMode === 'duplicate'} 
-              onClick={() => setCircuitToolMode('duplicate')} 
+              isActive={true} 
+              onClick={duplicateActivePack} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
             />
             <FunctionButton topLabel="Setup" label="Save" />
             <FunctionButton 
               topLabel="Packs" 
               label="Projects" 
-              isActive={deviceMode === 'packs'} 
+              isActive={true} 
               onClick={() => setDeviceMode(deviceMode === 'packs' ? 'samples' : 'packs')} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
             />
