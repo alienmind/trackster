@@ -11,7 +11,7 @@ interface PackPadProps {
 }
 
 const PackPad = memo(function PackPad({ slot, onSelect }: PackPadProps) {
-  const { loadPack, activePack, clearPackSlot, duplicatePack, renamePack, circuitToolMode, setCircuitToolMode } = useCircuitTracksStore();
+  const { loadPack, activePack, clearPackSlot, duplicatePack, renamePack } = useCircuitTracksStore();
   const id = `packpad-${slot.index}`;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -60,16 +60,8 @@ const PackPad = memo(function PackPad({ slot, onSelect }: PackPadProps) {
   const handleClick = () => {
     if (isDragging || isEditing) return;
     if (slot.pack) {
-      if (circuitToolMode === 'duplicate') {
-        duplicatePack(slot.index);
-        setCircuitToolMode(null);
-      } else if (circuitToolMode === 'clear') {
-        handleClear();
-        setCircuitToolMode(null);
-      } else {
-        loadPack(slot.pack.originalDirname);
-        onSelect?.();
-      }
+      loadPack(slot.pack.originalDirname);
+      onSelect?.();
     }
   };
 

@@ -51,9 +51,8 @@ export interface CircuitTracksState {
   
   deviceMode: 'packs' | 'samples';
   setDeviceMode: (mode: 'packs' | 'samples') => void;
-  
-  circuitToolMode: 'duplicate' | 'clear' | null;
-  setCircuitToolMode: (mode: 'duplicate' | 'clear' | null) => void;
+  duplicateActivePack: () => void;
+  clearActivePack: () => void;
   
   openRootDirectory: (mode?: 'read' | 'readwrite') => Promise<void>;
   rescanRootDirectory: () => Promise<void>;
@@ -333,9 +332,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       
       workspaceMode: null,
       deviceMode: 'packs',
-      circuitToolMode: null,
-      setDeviceMode: (mode) => set({ deviceMode: mode, circuitToolMode: null }),
-      setCircuitToolMode: (mode) => set((state) => ({ circuitToolMode: state.circuitToolMode === mode ? null : mode })),
+      setDeviceMode: (mode) => set({ deviceMode: mode }),
       setWorkspaceMode: async (mode) => {
         const { rootHandle } = get();
         if (!rootHandle) return false;
@@ -742,10 +739,30 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         slotsByPack: newSlotsByPack,
         unassignedFilesByPack: newUnassignedByPack,
         historyByPack: newHistoryByPack,
-        ...(isActive ? { activePack: null, activePackHandle: null, slots: Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null })), unassignedFiles: [], history: [] } : {}),
+        ...(isActive ? { activePack: null, activePackHandle: null, slots: Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null })), unassignedFiles: [], history: [], deviceMode: 'packs' } : {}),
         pendingChanges
       };
     });
+  },
+
+  clearActivePack: () => {
+    const state = get();
+    if (!state.activePack) return;
+    const slot = state.packSlots.find(s => s.pack?.originalDirname === state.activePack);
+    if (!slot || !slot.pack) return;
+
+    if (window.confirm(`Are you sure you want to completely remove "${slot.pack.displayName || slot.pack.originalDirname}" from your SD Card?\n\nThis cannot be undone.`)) {
+      get().clearPackSlot(slot.index);
+    }
+  },
+
+  duplicateActivePack: () => {
+    const state = get();
+    if (!state.activePack) return;
+    const slot = state.packSlots.find(s => s.pack?.originalDirname === state.activePack);
+    if (slot && slot.pack) {
+      get().duplicatePack(slot.index);
+    }
   },
 
   duplicatePack: (index) => {
