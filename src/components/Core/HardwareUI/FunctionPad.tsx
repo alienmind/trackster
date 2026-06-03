@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface FunctionPadProps {
   label?: string;
@@ -11,16 +11,9 @@ interface FunctionPadProps {
   className?: string;
 }
 
-export const FunctionPad = ({ label, subLabel, icon, labelColor, subLabelColor, isActive: externalIsActive, onClick, className = '' }: FunctionPadProps) => {
-  const [internalIsActive, setInternalIsActive] = useState(false);
-
-  const isActive = externalIsActive !== undefined ? externalIsActive : internalIsActive;
-  
+export const FunctionPad = ({ label, subLabel, icon, labelColor, subLabelColor, isActive = false, onClick, className = '' }: FunctionPadProps) => {
   const handleClick = () => {
     if (onClick) onClick();
-    if (externalIsActive === undefined) {
-      setInternalIsActive(!internalIsActive);
-    }
   };
 
   return (

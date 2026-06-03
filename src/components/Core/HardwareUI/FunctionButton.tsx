@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface FunctionButtonProps {
   label?: string;
@@ -11,16 +11,9 @@ interface FunctionButtonProps {
   onClick?: () => void;
 }
 
-export const FunctionButton = ({ label, topLabel, bottomLabel, icon, labelColor, className, isActive: externalIsActive, onClick }: FunctionButtonProps) => {
-  const [internalIsActive, setInternalIsActive] = useState(false);
-
-  const isActive = externalIsActive !== undefined ? externalIsActive : internalIsActive;
-  
+export const FunctionButton = ({ label, topLabel, bottomLabel, icon, labelColor, className, isActive = false, onClick }: FunctionButtonProps) => {
   const handleClick = () => {
     if (onClick) onClick();
-    if (externalIsActive === undefined) {
-      setInternalIsActive(!internalIsActive);
-    }
   };
 
   return (
