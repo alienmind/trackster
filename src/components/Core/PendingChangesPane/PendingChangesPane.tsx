@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { Button } from '../../Core/ui/button';
@@ -10,7 +9,6 @@ import { buildFilename } from '../../../utils/fileNaming';
 export default function PendingChangesPane() {
   const { slotsByPack, packSlots, undo, historyByPack, activePack, applyTagsToFilenames, workspaceMode } = useCircuitTracksStore();
   const openCommitDialog = useUIStore((s) => s.openCommitDialog);
-  const isCollapsed = useUIStore((s) => s.isRightPaneCollapsed);
 
   // Compute all rename plans to show in the UI
   const packRenames = [];
@@ -49,18 +47,6 @@ export default function PendingChangesPane() {
   const totalChanges = packRenames.length + totalSampleRenames;
   const history = activePack ? historyByPack[activePack] || [] : [];
   const canUndo = history.length > 0;
-
-  const prevTotalChanges = useRef(totalChanges);
-  const setRightPaneCollapsed = useUIStore((s) => s.setRightPaneCollapsed);
-
-  useEffect(() => {
-    if (prevTotalChanges.current === 0 && totalChanges > 0) {
-      if (isCollapsed && setRightPaneCollapsed) setRightPaneCollapsed(false);
-    } else if (prevTotalChanges.current > 0 && totalChanges === 0) {
-      if (!isCollapsed && setRightPaneCollapsed) setRightPaneCollapsed(true);
-    }
-    prevTotalChanges.current = totalChanges;
-  }, [totalChanges, isCollapsed, setRightPaneCollapsed]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-card border-b border-border">
