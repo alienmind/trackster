@@ -1,5 +1,4 @@
 import CircuitTracksDevice from './CircuitTracksDevice';
-import StagingArea from './StagingArea/StagingArea';
 import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { Button } from '../../Core/ui/button';
@@ -105,8 +104,6 @@ export default function CircuitTracksLayout() {
           </div>
           
           <DownloadsList devicePrefix="circuit-tracks" />
-
-          <StagingArea />
         </ResponsiveDrawer>
 
         {/* Center Panel - Device */}

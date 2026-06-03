@@ -36,6 +36,7 @@ export interface CircuitTracksState {
   unassignedFiles: SampleFile[];
   tags: TagDefinition[];
   pendingChanges: number;
+  executeProgress: { current: number; total: number; phase: string } | null;
   history: PadSlot[][];
   
   slotsByPack: Record<string, PadSlot[]>;
@@ -59,6 +60,9 @@ export interface CircuitTracksState {
   moveToPack: (file: SampleFile, targetPackName: string) => void;
   moveSlot: (fromIndex: number, toIndex: number) => void;
   clearSlot: (index: number) => void;
+  clearPackSlot: (index: number) => void;
+  duplicatePack: (index: number) => void;
+  renamePack: (index: number, newDisplayName: string) => void;
   assignToSlot: (file: SampleFile, slotIndex: number) => void;
   removeFile: (file: SampleFile) => void;
   renameFile: (file: SampleFile, newDisplayName: string) => void;
@@ -69,6 +73,7 @@ export interface CircuitTracksState {
   autoArrange: () => void;
   commitChanges: () => Promise<RenamePlan>;
   executeRenamePlan: (plan: RenamePlan) => Promise<void>;
+  clearExecuteProgress: () => void;
   undo: () => void;
 }
 
@@ -311,6 +316,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       unassignedFiles: [],
       tags: [...TAG_DEFINITIONS],
       pendingChanges: 0,
+      executeProgress: null,
       history: [],
       slotsByPack: {},
       unassignedFilesByPack: {},
@@ -699,6 +705,107 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     });
   },
 
+  clearPackSlot: (index) => {
+    logger.log(`[Store] Clearing pack slot ${index}`);
+    set((state) => {
+      const newPackSlots = [...state.packSlots];
+      const slot = newPackSlots[index]!;
+      if (!slot.pack) return state;
+
+      const packName = slot.pack.originalDirname;
+      newPackSlots[index] = { ...slot, pack: null };
+
+      // Remove associated data for this pack
+      const newSlotsByPack = { ...state.slotsByPack };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack };
+      const newHistoryByPack = { ...state.historyByPack };
+      delete newSlotsByPack[packName];
+      delete newUnassignedByPack[packName];
+      delete newHistoryByPack[packName];
+
+      // If this was the active pack, clear the selection
+      const isActive = state.activePack === packName;
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, newPackSlots, state.applyTagsToFilenames);
+
+      return {
+        packSlots: newPackSlots,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: newHistoryByPack,
+        ...(isActive ? { activePack: null, activePackHandle: null, slots: Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null })), unassignedFiles: [], history: [] } : {}),
+        pendingChanges
+      };
+    });
+  },
+
+  duplicatePack: (index) => {
+    logger.log(`[Store] Duplicating pack at slot ${index}`);
+    set((state) => {
+      const slot = state.packSlots[index];
+      if (!slot?.pack) return state;
+
+      // Find next empty slot
+      const emptyIndex = state.packSlots.findIndex(s => s.pack === null);
+      if (emptyIndex === -1) {
+        logger.warn(`[Store] No empty pack slots available for duplication`);
+        return state;
+      }
+
+      const srcPack = slot.pack;
+      const newDisplayName = `${srcPack.displayName} Copy`;
+      // The new pack is a UI-only clone. It shares the same dirHandle as the
+      // source so that computeRenamePlan can produce a copy operation at commit
+      // time (it will see two packSlots referencing the same originalDirname).
+      const newPack: PackFolder = {
+        originalDirname: srcPack.originalDirname,
+        displayName: newDisplayName,
+        originalSlotIndex: emptyIndex,
+        dirHandle: srcPack.dirHandle,
+      };
+
+      const newPackSlots = [...state.packSlots];
+      newPackSlots[emptyIndex] = { ...newPackSlots[emptyIndex]!, pack: newPack };
+
+      // Clone the samples data for this pack
+      const srcSlots = state.slotsByPack[srcPack.originalDirname];
+      const srcUnassigned = state.unassignedFilesByPack[srcPack.originalDirname];
+      const newSlotsByPack = { ...state.slotsByPack };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack };
+
+      // Use a temporary key for the duplicated pack data — the pack name
+      // will be resolved at commit time based on the slot index + displayName.
+      const dupeKey = `${emptyIndex.toString().padStart(2, '0')}_${newDisplayName}`;
+      if (srcSlots) newSlotsByPack[dupeKey] = srcSlots.map(s => ({ ...s }));
+      if (srcUnassigned) newUnassignedByPack[dupeKey] = [...srcUnassigned];
+
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, newPackSlots, state.applyTagsToFilenames);
+
+      return {
+        packSlots: newPackSlots,
+        slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        pendingChanges
+      };
+    });
+  },
+
+  renamePack: (index, newDisplayName) => {
+    logger.log(`[Store] Renaming pack at slot ${index} to "${newDisplayName}"`);
+    set((state) => {
+      const slot = state.packSlots[index];
+      if (!slot?.pack) return state;
+
+      const newPackSlots = [...state.packSlots];
+      newPackSlots[index] = {
+        ...slot,
+        pack: { ...slot.pack, displayName: newDisplayName }
+      };
+
+      const pendingChanges = countAllPendingChanges(state.slotsByPack, newPackSlots, state.applyTagsToFilenames);
+      return { packSlots: newPackSlots, pendingChanges };
+    });
+  },
+
   renameFile: (file, newDisplayName) => {
     logger.log(`[Store] Renaming file ${file.displayName} to ${newDisplayName}`);
     set((state) => {
@@ -952,17 +1059,51 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
   
   commitChanges: async () => {
     logger.log(`[Store] Committing changes... computing plan...`);
-    const { rootHandle, slotsByPack, packSlots, applyTagsToFilenames } = get();
+    const { rootHandle, slotsByPack, packSlots, applyTagsToFilenames, packs } = get();
     if (!rootHandle) return { operations: [], createdAt: new Date() };
 
-    return computeRenamePlan(slotsByPack, packSlots, rootHandle, applyTagsToFilenames);
+    const tracksHandle = await getTracksHandle(rootHandle);
+
+    return computeRenamePlan(slotsByPack, packSlots, packs, tracksHandle, applyTagsToFilenames);
   },
   
+  clearExecuteProgress: () => set({ executeProgress: null }),
+
   executeRenamePlan: async (plan) => {
     const { activePack } = get();
     if (!activePack) return;
 
+    const totalSteps = plan.operations.length * 2; // Pass 1 + Pass 2
+    let completedSteps = 0;
+
+    const reportProgress = (phase: string) => {
+      set({ executeProgress: { current: completedSteps, total: totalSteps, phase } });
+    };
+
+    // Yield to the browser so it can repaint the UI between operations
+    const yieldToUI = () => new Promise<void>(r => setTimeout(r, 0));
+
     logger.log(`[executeRenamePlan] Starting with ${plan.operations.length} operations, activePack=${activePack}`);
+    reportProgress('Preparing...');
+
+    const copyDirectoryContents = async (srcHandle: FileSystemDirectoryHandle, destHandle: FileSystemDirectoryHandle, onProgress?: (name: string) => void) => {
+      for await (const entry of srcHandle.values()) {
+        if (entry.kind === 'file') {
+          if (onProgress) onProgress(entry.name);
+          const fileHandle = await srcHandle.getFileHandle(entry.name);
+          const file = await fileHandle.getFile();
+          const newFile = await destHandle.getFileHandle(entry.name, { create: true });
+          const writable = await newFile.createWritable();
+          await writable.write(file);
+          await writable.close();
+          await yieldToUI(); // Unfreeze the browser
+        } else if (entry.kind === 'directory') {
+          const subDirHandle = await srcHandle.getDirectoryHandle(entry.name);
+          const newDir = await destHandle.getDirectoryHandle(entry.name, { create: true });
+          await copyDirectoryContents(subDirHandle, newDir, onProgress);
+        }
+      }
+    };
 
     // Build a map from originalFilename → packName BEFORE renaming anything.
     // We can't use parentDirHandle.name because files may live in subdirectories (e.g. "PCM")
@@ -980,36 +1121,41 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       }
     }
 
-    // Pass 1: rename each file/folder to a temp name (copy+delete, never use .move() which can hang on USB)
+    // Pass 1: rename each file/folder to a temp name.
+    // We create new directories and move files individually, avoiding data duplication.
     for (let opIdx = 0; opIdx < plan.operations.length; opIdx++) {
       const op = plan.operations[opIdx]!;
       const dir = op.parentDirHandle;
+      const action = op.action || 'move';
       const tempName = `__tmp_${op.to}`;
-      logger.log(`[executeRenamePlan] Pass1 op${opIdx}: ${op.type} "${op.from}" -> temp "${tempName}"`);
+      reportProgress(`Preparing (${op.type}): ${op.from}`);
+      await yieldToUI();
       try {
-        if (op.type === 'file') {
-          const file = await (op.handle as FileSystemFileHandle).getFile();
-          const newFileHandle = await dir.getFileHandle(tempName, { create: true });
-          const writable = await newFileHandle.createWritable();
-          await writable.write(file);
-          await writable.close();
-          await dir.removeEntry(op.from);
-        } else if (op.type === 'pack') {
-          const newDirHandle = await dir.getDirectoryHandle(tempName, { create: true });
-          const oldDirHandle = op.handle as FileSystemDirectoryHandle;
-          for await (const entry of oldDirHandle.values()) {
-            if (entry.kind === 'file') {
-              const file = await (entry as FileSystemFileHandle).getFile();
-              const newFile = await newDirHandle.getFileHandle(entry.name, { create: true });
-              const writable = await newFile.createWritable();
-              await writable.write(file);
-              await writable.close();
-            }
+        if (action === 'delete') {
+          logger.log(`[executeRenamePlan] Pass1 op${opIdx}: ${op.type} DELETE "${op.from}"`);
+          await dir.removeEntry(op.from, { recursive: op.type === 'pack' });
+        } else {
+          logger.log(`[executeRenamePlan] Pass1 op${opIdx}: ${op.type} ${action.toUpperCase()} "${op.from}" -> temp "${tempName}"`);
+          if (op.type === 'file') {
+            const file = await (op.handle as FileSystemFileHandle).getFile();
+            const newFileHandle = await dir.getFileHandle(tempName, { create: true });
+            const writable = await newFileHandle.createWritable();
+            await writable.write(file);
+            await writable.close();
+            if (action === 'move') await dir.removeEntry(op.from);
+          } else if (op.type === 'pack') {
+            const newDirHandle = await dir.getDirectoryHandle(tempName, { create: true });
+            const oldDirHandle = op.handle as FileSystemDirectoryHandle;
+            await copyDirectoryContents(oldDirHandle, newDirHandle, (fileName) => {
+              reportProgress(`Preparing (${op.type}): ${op.from} → ${fileName}`);
+            });
+            if (action === 'move') await dir.removeEntry(op.from, { recursive: true });
           }
-          await dir.removeEntry(op.from, { recursive: true });
         }
+        completedSteps++;
         logger.log(`[executeRenamePlan] Pass1 op${opIdx}: done`);
       } catch (err) {
+        completedSteps++;
         logger.error(`[executeRenamePlan] Pass1 op${opIdx} FAILED:`, err);
       }
     }
@@ -1020,15 +1166,25 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       from: string; 
       to: string; 
       handle: FileSystemFileHandle; 
+      parentDirHandle: FileSystemDirectoryHandle;
       newPrefix: number;
       newName: string;
       newHasTag: boolean;
     }> = [];
 
+    const renamedPacksHandles: Record<string, FileSystemDirectoryHandle> = {};
+
     for (let opIdx = 0; opIdx < plan.operations.length; opIdx++) {
       const op = plan.operations[opIdx]!;
+      const action = op.action || 'move';
+      if (action === 'delete') {
+        completedSteps++;
+        continue;
+      }
       const dir = op.parentDirHandle;
       const tempName = `__tmp_${op.to}`;
+      reportProgress(`Finalizing (${op.type}): ${op.to}`);
+      await yieldToUI();
       logger.log(`[executeRenamePlan] Pass2 op${opIdx}: temp "${tempName}" -> "${op.to}"`);
       try {
         if (op.type === 'file') {
@@ -1049,6 +1205,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
             from: op.from,
             to: op.to,
             handle: finalHandle,
+            parentDirHandle: dir,
             newPrefix: parsed ? parsed.prefix : -1,
             newName: parsed ? parsed.name : '',
             newHasTag: parsed ? parsed.hasOriginalTagPrefix : false
@@ -1056,19 +1213,16 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         } else if (op.type === 'pack') {
           const oldDirHandle = await dir.getDirectoryHandle(tempName);
           const newDirHandle = await dir.getDirectoryHandle(op.to, { create: true });
-          for await (const entry of oldDirHandle.values()) {
-            if (entry.kind === 'file') {
-              const file = await (entry as FileSystemFileHandle).getFile();
-              const newFile = await newDirHandle.getFileHandle(entry.name, { create: true });
-              const writable = await newFile.createWritable();
-              await writable.write(file);
-              await writable.close();
-            }
-          }
+          await copyDirectoryContents(oldDirHandle, newDirHandle, (fileName) => {
+            reportProgress(`Finalizing (${op.type}): ${op.to} → ${fileName}`);
+          });
           await dir.removeEntry(tempName, { recursive: true });
+          renamedPacksHandles[op.to] = newDirHandle;
         }
+        completedSteps++;
         logger.log(`[executeRenamePlan] Pass2 op${opIdx}: done`);
       } catch (err) {
+        completedSteps++;
         logger.error(`[executeRenamePlan] Pass2 op${opIdx} FAILED:`, err);
       }
     }
@@ -1076,39 +1230,86 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     logger.log(`[executeRenamePlan] File updates collected:`, fileUpdates.map(u => `"${u.from}" -> "${u.to}" (pack: ${u.packName})`));
 
     // Determine if any packs were renamed
-    let newActivePack = activePack;
+    let newActivePack: string | null = activePack;
     const renamedPacks: Record<string, string> = {};
 
     for (const op of plan.operations) {
       if (op.type === 'pack') {
-        renamedPacks[op.from] = op.to;
-        if (op.from === activePack) {
-          newActivePack = op.to;
+        const action = op.action || 'move';
+        if (action === 'move') {
+          renamedPacks[op.from] = op.to;
+          if (op.from === activePack) {
+            newActivePack = op.to;
+          }
+        } else if (action === 'delete') {
+          if (op.from === activePack) {
+            newActivePack = null;
+          }
+        } else if (action === 'copy') {
+          // Track the new handle for the copied pack
+          renamedPacks[op.to] = op.to; // The copy now maps to its new name
+        }
+      }
+    }
+
+    // Update file handles for copied packs before state update
+    for (const op of plan.operations) {
+      if (op.type === 'pack' && op.action === 'copy') {
+        const newDirHandle = renamedPacksHandles[op.to];
+        if (newDirHandle) {
+          const packSlots = get().slotsByPack[op.to];
+          if (packSlots) {
+            for (const slot of packSlots) {
+              if (slot.sample) {
+                try {
+                  const newHandle = await newDirHandle.getFileHandle(slot.sample.originalFilename);
+                  fileUpdates.push({
+                    packName: op.to,
+                    from: slot.sample.originalFilename,
+                    to: slot.sample.originalFilename,
+                    handle: newHandle,
+                    parentDirHandle: newDirHandle,
+                    newPrefix: slot.sample.originalSlotIndex,
+                    newName: slot.sample.displayName,
+                    newHasTag: slot.sample.hasOriginalTagPrefix || false
+                  });
+                } catch (err) {
+                  // File might not exist if it was deleted
+                }
+              }
+            }
+          }
         }
       }
     }
 
     // Update state directly - manual sync avoids stale FS cache issues
     set(state => {
-      const newSlotsByPack = { ...state.slotsByPack };
-      const newUnassignedByPack = { ...state.unassignedFilesByPack };
-      const newHistoryByPack = { ...state.historyByPack };
+      let newSlotsByPack = { ...state.slotsByPack };
+      let newUnassignedByPack = { ...state.unassignedFilesByPack };
+      let newHistoryByPack = { ...state.historyByPack };
 
-      // 1. Rename keys for packs that were renamed
-      for (const [from, to] of Object.entries(renamedPacks)) {
-        if (newSlotsByPack[from]) {
-          newSlotsByPack[to] = newSlotsByPack[from];
-          delete newSlotsByPack[from];
-        }
-        if (newUnassignedByPack[from]) {
-          newUnassignedByPack[to] = newUnassignedByPack[from];
-          delete newUnassignedByPack[from];
-        }
-        if (newHistoryByPack[from]) {
-          newHistoryByPack[to] = newHistoryByPack[from];
-          delete newHistoryByPack[from];
-        }
+      // 1. Rename keys for packs that were renamed (use temporary objects to avoid clobbering on swaps)
+      const nextSlotsByPack: Record<string, PadSlot[]> = {};
+      const nextUnassignedByPack: Record<string, SampleFile[]> = {};
+      const nextHistoryByPack: Record<string, PadSlot[][]> = {};
+
+      for (const key of Object.keys(newSlotsByPack)) {
+        const to = renamedPacks[key] || key;
+        nextSlotsByPack[to] = newSlotsByPack[key]!;
       }
+      for (const key of Object.keys(newUnassignedByPack)) {
+        const to = renamedPacks[key] || key;
+        nextUnassignedByPack[to] = newUnassignedByPack[key]!;
+      }
+      for (const key of Object.keys(newHistoryByPack)) {
+        const to = renamedPacks[key] || key;
+        nextHistoryByPack[to] = newHistoryByPack[key]!;
+      }
+
+      newSlotsByPack = nextSlotsByPack;
+      newUnassignedByPack = nextUnassignedByPack;
+      newHistoryByPack = nextHistoryByPack;
 
       // 2. Update files directly in slotsByPack to match new filenames on disk
       for (const update of fileUpdates) {
@@ -1128,7 +1329,8 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
                   originalSlotIndex: update.newPrefix,
                   displayName: update.newName || slot.sample.displayName,
                   hasOriginalTagPrefix: update.newHasTag,
-                  fileHandle: update.handle
+                  fileHandle: update.handle,
+                  parentDirHandle: update.parentDirHandle
                 }
               };
               found = true;
@@ -1157,11 +1359,41 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       const finalSlots = newActivePack ? (newSlotsByPack[newActivePack] || state.slots) : state.slots;
       const finalUnassigned = newActivePack ? (newUnassignedByPack[newActivePack] || state.unassignedFiles) : state.unassignedFiles;
       
-      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames);
+      const newPackSlots = state.packSlots.map(slot => {
+        if (slot.pack) {
+          // If this slot's originalDirname was moved, use the new name
+          let newDirname = slot.pack.originalDirname;
+          const expectedTo = `${slot.index.toString().padStart(2, '0')}_${slot.pack.displayName}`;
+          
+          // Check if this specific slot was subject to an operation
+          const op = plan.operations.find(o => o.type === 'pack' && o.to === expectedTo);
+          if (op) {
+            newDirname = op.to;
+          } else if (renamedPacks[slot.pack.originalDirname]) {
+             // Fallback for moves if exact match not found (though it should be)
+             newDirname = renamedPacks[slot.pack.originalDirname]!;
+          }
+
+          if (newDirname !== slot.pack.originalDirname) {
+            return {
+              ...slot,
+              pack: {
+                ...slot.pack,
+                originalDirname: newDirname,
+                dirHandle: renamedPacksHandles[newDirname] || slot.pack.dirHandle
+              }
+            };
+          }
+        }
+        return slot;
+      });
+
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, newPackSlots, state.applyTagsToFilenames);
       logger.log(`[executeRenamePlan] After state update: pendingChanges=${pendingChanges}`);
 
       return {
         activePack: newActivePack,
+        packSlots: newPackSlots,
         slotsByPack: newSlotsByPack,
         unassignedFilesByPack: newUnassignedByPack,
         historyByPack: newHistoryByPack,

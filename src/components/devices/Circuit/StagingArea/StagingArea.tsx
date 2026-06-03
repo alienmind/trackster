@@ -5,6 +5,7 @@ import type { SampleFile } from '../../../../types';
 import clsx from 'clsx';
 import { useUIStore } from '../../../../stores/useUIStore';
 import { TagBadge } from '../../../Core/TagBadge/TagBadge';
+import * as Icons from 'lucide-react';
 
 interface DraggableSampleProps {
   sample: SampleFile;
@@ -62,10 +63,15 @@ export default function StagingArea() {
   if (!rootHandle) return null;
 
   return (
-    <div className="flex flex-col mt-4 border border-border/50 rounded-lg overflow-hidden flex-1 min-h-[200px] bg-black/20">
-      <div className="px-3 py-2 border-b border-border/50 bg-black/40 flex items-center justify-between">
-        <div className="text-sm font-semibold text-foreground">Staging Area</div>
-        <div className="text-xs font-mono text-muted-foreground">{unassignedFiles.length}</div>
+    <div className="flex flex-col h-full overflow-hidden bg-card">
+      <div className="flex-none border-b border-border flex items-center justify-between px-4 h-14 bg-muted/30">
+        <div className="flex items-center gap-2">
+          <Icons.Inbox size={16} className="text-primary" />
+          <h2 className="font-semibold text-sm">Staging Area</h2>
+        </div>
+        <div className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          {unassignedFiles.length}
+        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">

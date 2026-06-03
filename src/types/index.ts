@@ -84,6 +84,9 @@ export interface RenameOperation {
   /** 'file' for sample files, 'pack' for pack folders */
   type: 'file' | 'pack';
 
+  /** 'move' (default), 'copy', or 'delete' */
+  action?: 'move' | 'copy' | 'delete';
+
   /** Current filename or dirname on disk */
   from: string;
 
