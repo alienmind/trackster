@@ -120,7 +120,7 @@ export default function App() {
     if (activeType === 'pad' && overType === 'staging') {
       const fromIndex = parseInt(active.id.toString().replace('pad-', ''), 10);
       const indicesToMove = selectedPads.includes(fromIndex) ? selectedPads : [fromIndex];
-      useCircuitTracksStore.getState().clearSlots(indicesToMove);
+      useCircuitTracksStore.getState().copySlotsToStaging(indicesToMove);
       return;
     }
 
