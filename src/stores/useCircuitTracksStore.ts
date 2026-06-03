@@ -1076,7 +1076,6 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
 
   executeRenamePlan: async (plan) => {
     const { activePack } = get();
-    if (!activePack) return;
 
     const totalSteps = plan.operations.length * 2; // Pass 1 + Pass 2
     let completedSteps = 0;
