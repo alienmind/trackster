@@ -9,6 +9,7 @@ import { computeArrangement } from '../utils/autoArrange';
 import { computeRenamePlan } from '../utils/renamePlan';
 import { TAG_DEFINITIONS } from '../utils/constants';
 import { computeSimilarity } from '../utils/similarity';
+import { useUIStore } from './useUIStore';
 
 export interface CircuitTracksState {
   // Audio State
@@ -751,9 +752,16 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     const slot = state.packSlots.find(s => s.pack?.originalDirname === state.activePack);
     if (!slot || !slot.pack) return;
 
-    if (window.confirm(`Are you sure you want to completely remove "${slot.pack.displayName || slot.pack.originalDirname}" from your SD Card?\n\nThis cannot be undone.`)) {
-      get().clearPackSlot(slot.index);
-    }
+    useUIStore.getState().showConfirmModal({
+      title: "Delete Pack",
+      description: `Are you sure you want to completely remove "${slot.pack.displayName || slot.pack.originalDirname}" from your SD Card?\n\nThis cannot be undone.`,
+      confirmText: "Delete Pack",
+      cancelText: "Cancel",
+      destructive: true,
+      onConfirm: () => {
+        get().clearPackSlot(slot.index);
+      }
+    });
   },
 
   duplicateActivePack: () => {
