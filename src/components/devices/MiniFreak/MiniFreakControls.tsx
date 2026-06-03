@@ -1,7 +1,8 @@
 
 
-// --- SVGS & SILKSCREEN GRAPHICS ---
+import React, { useState, useRef } from 'react';
 
+// --- SVGS & SILKSCREEN GRAPHICS ---
 export const SpaceGraphics = () => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-60 z-0">
     <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -13,8 +14,8 @@ export const SpaceGraphics = () => (
       <circle cx="780" cy="40" r="1.5" fill="#fff" />
       <circle cx="820" cy="25" r="1" fill="#fff" />
       <circle cx="800" cy="70" r="2" fill="#fff" />
-      <path d="M 790 60 L 810 80 M 810 60 L 790 80" stroke="#fff" strokeWidth="0.5" />
-      <path d="M 850 90 L 870 70 L 900 80 L 920 50" fill="none" stroke="#fff" strokeWidth="0.5" />
+      <path d="M 790 60 L 810 80 M 810 60 L 790 80" stroke="#fff" strokeWidth="0.0" className="hidden" />
+      <path d="M 850 90 L 870 70 L 900 80 L 920 50" fill="none" stroke="#fff" strokeWidth="0.0" className="hidden" />
       <circle cx="850" cy="90" r="1.5" fill="#fff" />
       <circle cx="870" cy="70" r="1.5" fill="#fff" />
       <circle cx="900" cy="80" r="1.5" fill="#fff" />
@@ -38,19 +39,46 @@ export const ShiftRing = () => (
   </svg>
 );
 
-export const ChevronPattern = () => (
-  <svg width="100%" height="100%" viewBox="0 0 40 200" preserveAspectRatio="none" className="opacity-40">
-    {[...Array(8)].map((_, i) => (
-      <g key={i} transform={`translate(0, ${i * 24 + 10})`}>
-        <path d="M 6 10 L 20 20 L 34 10 M 6 16 L 20 26 L 34 16 M 6 22 L 20 32 L 34 22" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
-      </g>
-    ))}
-  </svg>
-);
+export const ChevronPattern = ({ isPitch = false }: { isPitch?: boolean }) => {
+  const downPath = "M 6 10 L 20 20 L 34 10 M 6 16 L 20 26 L 34 16 M 6 22 L 20 32 L 34 22";
+  const upPath   = "M 6 32 L 20 22 L 34 32 M 6 26 L 20 16 L 34 26 M 6 20 L 20 10 L 34 20";
+
+  if (isPitch) {
+    return (
+      <svg width="100%" height="100%" viewBox="0 0 40 200" preserveAspectRatio="none" className="opacity-40">
+        <line x1="6" y1="105" x2="34" y2="105" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+        
+        {/* Top half: points upwards */}
+        {[10, 34, 58].map((yOff, i) => (
+          <g key={`up-${i}`} transform={`translate(0, ${yOff})`}>
+            <path d={upPath} fill="none" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+          </g>
+        ))}
+        
+        {/* Bottom half: points downwards */}
+        {[110, 134, 158].map((yOff, i) => (
+          <g key={`down-${i}`} transform={`translate(0, ${yOff})`}>
+            <path d={downPath} fill="none" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+          </g>
+        ))}
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="100%" height="100%" viewBox="0 0 40 200" preserveAspectRatio="none" className="opacity-40">
+      {[...Array(7)].map((_, i) => (
+        <g key={i} transform={`translate(0, ${i * 24 + 10})`}>
+          <path d={upPath} fill="none" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+        </g>
+      ))}
+    </svg>
+  );
+};
 
 // --- COMPONENTS ---
 
-export const WhiteBtn = ({ label, subLabel, isShift = false, hasLed = false, ledActive = false }: { label?: string, subLabel?: string, isShift?: boolean, hasLed?: boolean, ledActive?: boolean }) => (
+export const WhiteBtn = ({ label, subLabel, isShift = false, hasLed = false, ledActive = false, noLabelSpace = false }: { label?: string, subLabel?: string, isShift?: boolean, hasLed?: boolean, ledActive?: boolean, noLabelSpace?: boolean }) => (
   <div className="flex flex-col items-center relative">
     {isShift && <ShiftRing />}
     <button className="w-[20px] h-[20px] rounded-full bg-[#cbd5e1] border border-[#94a3b8] shadow-[0_2px_4px_rgba(0,0,0,0.5),inset_0_-1px_1px_rgba(0,0,0,0.1),inset_0_1px_2px_rgba(255,255,255,0.8)] active:translate-y-[1px] active:shadow-none z-10 transition-all flex items-center justify-center relative overflow-hidden">
@@ -58,23 +86,34 @@ export const WhiteBtn = ({ label, subLabel, isShift = false, hasLed = false, led
         <div className={`absolute w-1.5 h-1.5 rounded-full top-[3px] left-1/2 -translate-x-1/2 ${ledActive ? 'bg-cyan-400 shadow-[0_0_6px_#22d3ee]' : 'bg-[#111]'}`} />
       )}
     </button>
-    <div className="mt-1 flex flex-col items-center h-6 z-10">
-      {label && <span className="text-[8px] text-gray-300 font-bold leading-none text-center whitespace-nowrap">{label}</span>}
-      {subLabel && <span className="text-[8px] text-cyan-500 font-bold leading-tight text-center whitespace-nowrap">{subLabel}</span>}
-    </div>
+    {!noLabelSpace && (
+      <div className="mt-1 flex flex-col items-center h-6 z-10">
+        {label && <span className="text-[8px] text-gray-300 font-bold leading-none text-center">{label}</span>}
+        {subLabel && <span className="text-[8px] text-cyan-500 font-bold leading-tight text-center">{subLabel}</span>}
+      </div>
+    )}
   </div>
 );
 
-export const Selector = ({ title, titleColor = "text-gray-500", labels, activeIdx = 0 }: { title: string, titleColor?: string, labels: string[], activeIdx?: number }) => (
+export const Selector = ({ title, titleColor = "text-gray-500", labels, activeIdx = 0, titlePosition = "top" }: { title: string, titleColor?: string, labels: string[], activeIdx?: number, titlePosition?: "top" | "bottom" }) => (
   <div className="flex flex-col items-center mr-2">
-    <span className={`text-[8px] ${titleColor} font-bold uppercase tracking-widest mb-1`}>{title}</span>
+    {titlePosition === 'top' && (
+      <span className={`text-[8px] ${titleColor} font-bold uppercase tracking-widest mb-1`}>{title}</span>
+    )}
     <div className="flex items-center gap-1.5">
-      <WhiteBtn />
+      <div className="relative flex flex-col items-center">
+        <WhiteBtn noLabelSpace={true} />
+        {titlePosition === 'bottom' && (
+          <div className="absolute top-[24px] left-1/2 -translate-x-1/2 flex justify-center pointer-events-none whitespace-nowrap">
+            <span className={`text-[8px] ${titleColor} font-bold uppercase tracking-widest`}>{title}</span>
+          </div>
+        )}
+      </div>
       <div className="flex flex-col gap-1 justify-center">
         {labels.map((lbl, i) => (
           <div key={lbl} className="flex items-center gap-1.5">
             <div className={`w-1.5 h-1.5 rounded-full ${i === activeIdx ? 'bg-orange-500 shadow-[0_0_6px_#ff5500]' : 'bg-[#1a1a1a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)]'}`} />
-            <span className="text-[7px] text-gray-400 font-bold tracking-wider leading-none whitespace-nowrap">{lbl}</span>
+            <span className="text-[7px] text-gray-400 font-bold tracking-wider leading-none">{lbl}</span>
           </div>
         ))}
       </div>
@@ -91,7 +130,7 @@ export const ModMatrix = () => {
       
       {/* Y Axis Labels */}
       <div className="flex flex-col justify-between pr-2 text-[8px] font-semibold text-gray-400 text-right leading-[11px]">
-        {rows.map(r => <span key={r} className="whitespace-nowrap">{r}</span>)}
+        {rows.map(r => <span key={r}>{r}</span>)}
       </div>
       
       <div className="flex flex-col">
@@ -126,20 +165,77 @@ export const ModMatrix = () => {
   );
 };
 
+const InteractiveTouchStrip = ({ ledSide, isPitch = false }: { ledSide: 'left' | 'right', isPitch?: boolean }) => {
+  const [value, setValue] = useState(isPitch ? 7 : 14);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handlePointer = (e: React.PointerEvent<HTMLDivElement> | PointerEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    let y = e.clientY - rect.top;
+    if (y < 0) y = 0;
+    if (y > rect.height) y = rect.height;
+    
+    const step = Math.round((y / rect.height) * 14);
+    setValue(step);
+  };
+
+  const handlePointerUp = () => {
+    if (isPitch) {
+      setValue(7);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.buttons > 0) {
+      handlePointer(e);
+      e.preventDefault();
+    }
+  };
+
+  return (
+    <div className="flex gap-2 relative h-full">
+      {ledSide === 'left' && (
+        <div className="flex flex-col gap-1 justify-between h-full py-2">
+          {[...Array(15)].map((_, i) => (
+            <div key={i} className={`w-[3px] h-[3px] rounded-full ${i >= value ? 'bg-cyan-400 shadow-[0_0_4px_#22d3ee]' : 'bg-[#222]'}`} />
+          ))}
+        </div>
+      )}
+      
+      <div 
+        ref={containerRef}
+        className="w-8 h-full bg-[#111] rounded border border-[#000] shadow-[inset_0_2px_10px_rgba(0,0,0,1)] relative overflow-hidden cursor-ns-resize"
+        onPointerDown={(e) => {
+          (e.target as HTMLElement).setPointerCapture(e.pointerId);
+          handlePointer(e);
+        }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={(e) => {
+          (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+          handlePointerUp();
+        }}
+        onPointerCancel={handlePointerUp}
+        style={{ touchAction: 'none' }}
+      >
+        <ChevronPattern isPitch={isPitch} />
+      </div>
+
+      {ledSide === 'right' && (
+        <div className="flex flex-col gap-1 justify-between h-full py-2">
+          {[...Array(15)].map((_, i) => (
+            <div key={i} className={`w-[3px] h-[3px] rounded-full ${i >= value ? 'bg-cyan-400 shadow-[0_0_4px_#22d3ee]' : 'bg-[#222]'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const TouchStrips = () => (
   <div className="flex gap-4 px-5 py-4 bg-[#1a1b1e] rounded border border-[#2a2d33] shadow-inner h-48 relative z-10">
-    <div className="w-8 h-full bg-[#111] rounded border border-[#000] shadow-[inset_0_2px_10px_rgba(0,0,0,1)] relative overflow-hidden">
-      <ChevronPattern />
-      <div className="absolute flex flex-col gap-1 left-1.5 inset-y-2 justify-between">
-        {[...Array(15)].map((_, i) => <div key={i} className={`w-[3px] h-[3px] rounded-full ${i === 7 ? 'bg-cyan-400 shadow-[0_0_4px_#22d3ee]' : 'bg-[#222]'}`} />)}
-      </div>
-    </div>
-    <div className="w-8 h-full bg-[#111] rounded border border-[#000] shadow-[inset_0_2px_10px_rgba(0,0,0,1)] relative overflow-hidden">
-      <ChevronPattern />
-      <div className="absolute flex flex-col gap-1 left-1.5 inset-y-2 justify-between">
-        {[...Array(15)].map((_, i) => <div key={i} className={`w-[3px] h-[3px] rounded-full ${i > 10 ? 'bg-cyan-400 shadow-[0_0_4px_#22d3ee]' : 'bg-[#222]'}`} />)}
-      </div>
-    </div>
+    <InteractiveTouchStrip ledSide="left" isPitch={true} />
+    <InteractiveTouchStrip ledSide="right" isPitch={false} />
   </div>
 );
 

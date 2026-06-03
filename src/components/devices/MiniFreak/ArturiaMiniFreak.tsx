@@ -19,18 +19,24 @@ export default function ArturiaMiniFreak() {
       <SpaceGraphics />
 
       {/* --- TOP CONTROL PANEL --- */}
-      <div className="flex px-8 py-6 relative z-10 gap-6">
+      <div className="flex justify-between px-8 py-6 relative z-10">
         
         {/* COLUMN 1: Matrix / Performance */}
-        <div className="flex flex-col justify-between border-r border-dashed border-[#444] pr-4 gap-6">
+        <div className="flex flex-col justify-between gap-6">
            <div className="h-[90px] flex items-center gap-4">
               <ModMatrix />
               <Knob label="Amount" size={38} variant="black" />
            </div>
            <div className="h-[90px] flex items-end pb-1 gap-2.5">
               <WhiteBtn label="Shift" isShift />
-              <WhiteBtn label="-" subLabel="Octave" />
-              <WhiteBtn label="+" />
+              <div className="flex gap-2.5 relative">
+                <WhiteBtn label="-" />
+                <WhiteBtn label="+" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center h-6 z-10 pointer-events-none">
+                  <span className="text-[8px] leading-none opacity-0">-</span>
+                  <span className="text-[8px] text-cyan-500 font-bold leading-tight text-center">Octave</span>
+                </div>
+              </div>
               <WhiteBtn label="Hold/Rest" />
               <WhiteBtn label="Chord" subLabel="Scales" hasLed ledActive />
               <div className="ml-1"><Knob label="Glide" size={38} variant="black" /></div>
@@ -38,20 +44,20 @@ export default function ArturiaMiniFreak() {
         </div>
 
         {/* COLUMN 2: Osc / LFO */}
-        <div className="flex flex-col justify-between border-r border-dashed border-[#444] pr-4 gap-6">
+        <div className="flex flex-col justify-between gap-6">
            <div className="h-[90px] flex items-center gap-3">
               <Selector title="Oscillators" labels={['1', '2']} activeIdx={0} />
               <Knob label="Tune / Oct" subLabel=" " size={38} variant="black" />
            </div>
            <div className="h-[90px] flex items-end pb-1 gap-3">
-              <Selector title="LFO" titleColor="text-cyan-500" labels={['1', '2']} activeIdx={0} />
+              <Selector title="LFO" titleColor="text-cyan-500" labels={['1', '2']} activeIdx={0} titlePosition="bottom" />
               <Knob label="Rate / Trig" subLabel=" " size={38} variant="black" />
               <Knob label="Wave / Load" subLabel=" " size={38} variant="black" />
            </div>
         </div>
 
         {/* COLUMN 3: Orange Knobs / Display */}
-        <div className="flex flex-col justify-between border-r border-dashed border-[#444] pr-4 gap-6 relative">
+        <div className="flex flex-col justify-between gap-6 relative">
            <div className="h-[90px] flex items-center gap-4 z-10">
               <Knob variant="orange" label="Type" size={38} />
               <Knob variant="orange" label="Wave" size={38} />
@@ -92,7 +98,7 @@ export default function ArturiaMiniFreak() {
         </div>
 
         {/* COLUMN 4: Filter / CycEnv */}
-        <div className="flex flex-col justify-between border-r border-dashed border-[#444] pr-4 gap-6">
+        <div className="flex flex-col justify-between gap-6">
            <div className="h-[90px] flex items-center gap-3">
               <Selector title="Filter" labels={['LP', 'BP', 'HP']} activeIdx={0} />
               <Knob label="Cutoff" size={38} variant="black" />
@@ -185,7 +191,7 @@ export default function ArturiaMiniFreak() {
       </div>
 
       {/* --- BOTTOM PANEL: Touch Strips & Keyboard --- */}
-      <div className="flex bg-[#1d1f24] relative z-10">
+      <div className="flex bg-[#1d1f24] relative z-10 pr-6">
         
         {/* Left Performance Controls */}
         <div className="w-64 p-6 flex items-start gap-6 border-r border-[#111]">
