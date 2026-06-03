@@ -2,6 +2,7 @@ import { memo, useState, useRef, useEffect } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
+import { useUIStore } from '../../../../stores/useUIStore';
 import type { PackSlot } from '../../../../types';
 import * as Icons from 'lucide-react';
 
@@ -52,9 +53,16 @@ const PackPad = memo(function PackPad({ slot, onSelect }: PackPadProps) {
   };
 
   const handleClear = () => {
-    if (window.confirm(`Are you sure you want to completely remove "${slot.pack?.displayName || slot.pack?.originalDirname}" from your SD Card?\n\nThis cannot be undone.`)) {
-      clearPackSlot(slot.index);
-    }
+    useUIStore.getState().showConfirmModal({
+      title: "Delete Pack",
+      description: `Are you sure you want to completely remove "${slot.pack?.displayName || slot.pack?.originalDirname}" from your SD Card?\n\nThis cannot be undone.`,
+      confirmText: "Delete Pack",
+      cancelText: "Cancel",
+      destructive: true,
+      onConfirm: () => {
+        clearPackSlot(slot.index);
+      }
+    });
   };
 
   const handleClick = () => {

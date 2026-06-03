@@ -21,6 +21,16 @@ interface UIState {
 
   isMobileDrawerOpen: boolean;
 
+  confirmModal: {
+    isOpen: boolean;
+    title: React.ReactNode;
+    description: React.ReactNode;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    destructive?: boolean;
+  };
+
   setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | 'soundtoys') => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null) => void;
@@ -40,6 +50,9 @@ interface UIState {
   closeDuplicateModal: () => void;
 
   setMobileDrawerOpen: (isOpen: boolean) => void;
+
+  showConfirmModal: (options: Omit<UIState['confirmModal'], 'isOpen'>) => void;
+  closeConfirmModal: () => void;
 
   deferredPrompt: any | null;
   setDeferredPrompt: (prompt: any | null) => void;
@@ -61,6 +74,12 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isDuplicateModalOpen: false,
   duplicateClusters: [],
   isMobileDrawerOpen: false,
+  confirmModal: {
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  },
 
   deferredPrompt: null,
 
@@ -128,6 +147,10 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
   closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] }),
+
+  showConfirmModal: (options) => set({ confirmModal: { ...options, isOpen: true } }),
+  closeConfirmModal: () => set((state) => ({ confirmModal: { ...state.confirmModal, isOpen: false } })),
+
   setMobileDrawerOpen: (isOpen) => set({ isMobileDrawerOpen: isOpen }),
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt })

@@ -14,6 +14,7 @@ import {
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import CommitDialog from './components/Core/CommitDialog/CommitDialog';
+import ConfirmModal from './components/Core/ConfirmModal/ConfirmModal';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
 import BrowserWarning from './components/Core/BrowserWarning/BrowserWarning';
 import Toolbar from './components/Core/Toolbar/Toolbar';
@@ -48,6 +49,8 @@ export default function App() {
   const moveSlot = useCircuitTracksStore((s) => s.moveSlot);
   const movePackSlot = useCircuitTracksStore((s) => s.movePackSlot);
   const assignToSlot = useCircuitTracksStore((s) => s.assignToSlot);
+  const confirmModal = useUIStore((s) => s.confirmModal);
+  const closeConfirmModal = useUIStore((s) => s.closeConfirmModal);
 
   const initAudioContext = useCircuitTracksStore((s) => s.initAudioContext);
   const [activeDragItem, setActiveDragItem] = useState<{ id: string, type: string, data: any } | null>(null);
@@ -233,6 +236,19 @@ export default function App() {
 
         <CommitDialog />
         <DuplicateScanModal />
+        <ConfirmModal 
+          isOpen={confirmModal.isOpen} 
+          title={confirmModal.title} 
+          description={confirmModal.description}
+          confirmText={confirmModal.confirmText}
+          cancelText={confirmModal.cancelText}
+          destructive={confirmModal.destructive}
+          onConfirm={() => {
+            confirmModal.onConfirm();
+            closeConfirmModal();
+          }}
+          onCancel={closeConfirmModal}
+        />
 
         <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
           {activeDragItem ? (
