@@ -7,7 +7,7 @@ import * as Icons from 'lucide-react';
 import { buildFilename } from '../../../utils/fileNaming';
 
 export default function PendingChangesPane() {
-  const { slotsByPack, packSlots, undo, historyByPack, activePack, applyTagsToFilenames, workspaceMode, packs } = useCircuitTracksStore();
+  const { slotsByPack, packSlots, undo, historyByPack, activePack, applyTagsToFilenames, workspaceMode, packs, packHistory, deviceMode } = useCircuitTracksStore();
   const openCommitDialog = useUIStore((s) => s.openCommitDialog);
 
   // Compute all rename plans to show in the UI
@@ -62,7 +62,7 @@ export default function PendingChangesPane() {
 
   const totalChanges = packRenames.length + packDeletions.length + packCopies.length + totalSampleRenames;
   const history = activePack ? historyByPack[activePack] || [] : [];
-  const canUndo = history.length > 0;
+  const canUndo = deviceMode === 'packs' ? packHistory.length > 0 : history.length > 0;
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-card border-b border-border">

@@ -11,6 +11,13 @@ import { TAG_DEFINITIONS } from '../utils/constants';
 import { computeSimilarity } from '../utils/similarity';
 import { useUIStore } from './useUIStore';
 
+export interface PackHistoryEntry {
+  packSlots: PackSlot[];
+  slotsByPack: Record<string, PadSlot[]>;
+  unassignedFilesByPack: Record<string, SampleFile[]>;
+  historyByPack: Record<string, PadSlot[][]>;
+}
+
 export interface CircuitTracksState {
   // Audio State
   audioContext: AudioContext | null;
@@ -39,6 +46,7 @@ export interface CircuitTracksState {
   pendingChanges: number;
   executeProgress: { current: number; total: number; phase: string } | null;
   history: PadSlot[][];
+  packHistory: PackHistoryEntry[];
   
   slotsByPack: Record<string, PadSlot[]>;
   unassignedFilesByPack: Record<string, SampleFile[]>;
@@ -116,6 +124,13 @@ const countPendingChanges = (slots: PadSlot[], packSlots: PackSlot[], applyTagsT
   }
   return count;
 };
+
+const snapshotPackState = (state: CircuitTracksState): PackHistoryEntry => ({
+  packSlots: state.packSlots.map(s => ({ ...s, pack: s.pack ? { ...s.pack } : null })),
+  slotsByPack: { ...state.slotsByPack },
+  unassignedFilesByPack: { ...state.unassignedFilesByPack },
+  historyByPack: { ...state.historyByPack }
+});
 
 const countAllPendingChanges = (slotsByPack: Record<string, PadSlot[]>, packSlots: PackSlot[], applyTagsToFilenames: boolean, originalPacks: string[]) => {
   let count = 0;
@@ -338,6 +353,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       pendingChanges: 0,
       executeProgress: null,
       history: [],
+      packHistory: [],
       slotsByPack: {},
       unassignedFilesByPack: {},
       historyByPack: {},
@@ -658,16 +674,22 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     if (fromIndex === toIndex) return;
 
     set((state) => {
-      const newSlots = [...state.packSlots];
-      const fromSlot = newSlots[fromIndex]!;
-      const toSlot = newSlots[toIndex]!;
+      const newPackHistory = [...state.packHistory, snapshotPackState(state)];
+      const newPackSlots = [...state.packSlots];
+      const fromSlot = newPackSlots[fromIndex]!;
+      const toSlot = newPackSlots[toIndex]!;
       
       const tempPack = fromSlot.pack;
-      newSlots[fromIndex] = { ...fromSlot, pack: toSlot.pack };
-      newSlots[toIndex] = { ...toSlot, pack: tempPack };
+      newPackSlots[fromIndex] = { ...fromSlot, pack: toSlot.pack };
+      newPackSlots[toIndex] = { ...toSlot, pack: tempPack };
       
-      const pendingChanges = countAllPendingChanges(state.slotsByPack, newSlots, state.applyTagsToFilenames, state.packs);
-      return { packSlots: newSlots, pendingChanges };
+      const pendingChanges = countAllPendingChanges(state.slotsByPack, newPackSlots, state.applyTagsToFilenames, state.packs);
+
+      return {
+        packSlots: newPackSlots,
+        packHistory: newPackHistory,
+        pendingChanges
+      };
     });
   },
 
@@ -733,6 +755,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
   clearPackSlot: (index) => {
     logger.log(`[Store] Clearing pack slot ${index}`);
     set((state) => {
+      const newPackHistory = [...state.packHistory, snapshotPackState(state)];
       const newPackSlots = [...state.packSlots];
       const slot = newPackSlots[index]!;
       if (!slot.pack) return state;
@@ -757,6 +780,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         slotsByPack: newSlotsByPack,
         unassignedFilesByPack: newUnassignedByPack,
         historyByPack: newHistoryByPack,
+        packHistory: newPackHistory,
         ...(isActive ? { activePack: null, activePackHandle: null, slots: Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null })), unassignedFiles: [], history: [], deviceMode: 'packs' } : {}),
         pendingChanges
       };
@@ -796,6 +820,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       const slot = state.packSlots[index];
       if (!slot?.pack) return state;
 
+      const newPackHistory = [...state.packHistory, snapshotPackState(state)];
       // Find next empty slot
       const emptyIndex = state.packSlots.findIndex(s => s.pack === null);
       if (emptyIndex === -1) {
@@ -836,6 +861,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         packSlots: newPackSlots,
         slotsByPack: newSlotsByPack,
         unassignedFilesByPack: newUnassignedByPack,
+        packHistory: newPackHistory,
         pendingChanges
       };
     });
@@ -847,6 +873,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       const slot = state.packSlots[index];
       if (!slot?.pack) return state;
 
+      const newPackHistory = [...state.packHistory, snapshotPackState(state)];
       const newPackSlots = [...state.packSlots];
       newPackSlots[index] = {
         ...slot,
@@ -854,7 +881,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       };
 
       const pendingChanges = countAllPendingChanges(state.slotsByPack, newPackSlots, state.applyTagsToFilenames, state.packs);
-      return { packSlots: newPackSlots, pendingChanges };
+      return { packSlots: newPackSlots, packHistory: newPackHistory, pendingChanges };
     });
   },
 
@@ -1451,6 +1478,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         slots: finalSlots,
         unassignedFiles: finalUnassigned,
         history: [],
+        packHistory: [],
         pendingChanges
       };
     });
@@ -1460,6 +1488,21 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
   
   undo: () => {
     set((state) => {
+      if (state.deviceMode === 'packs') {
+        if (state.packHistory.length === 0) return state;
+        const newPackHistory = [...state.packHistory];
+        const prev = newPackHistory.pop()!;
+        const pendingChanges = countAllPendingChanges(prev.slotsByPack, prev.packSlots, state.applyTagsToFilenames, state.packs);
+        return {
+          packSlots: prev.packSlots,
+          slotsByPack: prev.slotsByPack,
+          unassignedFilesByPack: prev.unassignedFilesByPack,
+          historyByPack: prev.historyByPack,
+          packHistory: newPackHistory,
+          pendingChanges
+        };
+      }
+
       if (!state.activePack || state.history.length === 0) return state;
       const newHistory = [...state.history];
       const prevSlots = newHistory.pop()!;
@@ -1502,6 +1545,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         tags: state.tags,
         pendingChanges: state.pendingChanges,
         history: state.history,
+        packHistory: state.packHistory,
         slotsByPack: state.slotsByPack,
         unassignedFilesByPack: state.unassignedFilesByPack,
         historyByPack: state.historyByPack,
