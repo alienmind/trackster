@@ -6,6 +6,7 @@ interface UIState {
   activePage: PageIndex;
   activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | 'soundtoys';
   selectedPadIndex: number | null;
+  selectedPads: number[];
   isCommitDialogOpen: boolean;
   notifications: Notification[];
 
@@ -33,7 +34,7 @@ interface UIState {
 
   setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | 'soundtoys') => void;
   setActivePage: (page: PageIndex) => void;
-  selectPad: (index: number | null) => void;
+  selectPad: (index: number | null, shiftKey?: boolean, ctrlKey?: boolean) => void;
   openCommitDialog: () => void;
   closeCommitDialog: () => void;
   addNotification: (notification: Omit<Notification, 'id'>) => void;
@@ -62,6 +63,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   activePage: 0,
   activeMainView: 'overview',
   selectedPadIndex: null,
+  selectedPads: [],
   isCommitDialogOpen: false,
   notifications: [],
   isLeftPaneCollapsed: false,
@@ -97,8 +99,37 @@ const storeCreator: StateCreator<UIState> = (set) => ({
     // Side effect to update css variable can be handled here or in a component
   },
 
-  selectPad: (index) => {
-    set({ selectedPadIndex: index });
+  selectPad: (index, shiftKey, ctrlKey) => {
+    set((state) => {
+      if (index === null) {
+        return { selectedPadIndex: null, selectedPads: [] };
+      }
+
+      if (ctrlKey) {
+        const isSelected = state.selectedPads.includes(index);
+        return {
+          selectedPadIndex: index,
+          selectedPads: isSelected
+            ? state.selectedPads.filter(p => p !== index)
+            : [...state.selectedPads, index],
+        };
+      }
+
+      if (shiftKey && state.selectedPadIndex !== null) {
+        const start = Math.min(state.selectedPadIndex, index);
+        const end = Math.max(state.selectedPadIndex, index);
+        const range = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+        return {
+          selectedPadIndex: index, // keep the latest click as anchor
+          selectedPads: Array.from(new Set([...state.selectedPads, ...range])),
+        };
+      }
+
+      return {
+        selectedPadIndex: index,
+        selectedPads: [index],
+      };
+    });
   },
 
   openCommitDialog: () => set({ isCommitDialogOpen: true }),
