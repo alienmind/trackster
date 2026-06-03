@@ -80,7 +80,7 @@ export default function StagingArea() {
       </div>
       
       <div className="px-4 py-2 bg-muted/50 border-b border-border text-[10px] text-muted-foreground leading-tight">
-        <span className="font-semibold text-primary/80">NOTE:</span> These files are fully considered by automatic sample management (Duplicate Scan and Auto Arrange) and can exceed 64 items. Drag pads here to free up slots!
+        <span className="font-semibold text-primary/80">NOTE:</span> These files are fully considered by automatic sample management (Duplicate Scan and Auto Arrange) and can exceed 64 items. Drag pads here to copy them for exchange!
       </div>
 
       <div 

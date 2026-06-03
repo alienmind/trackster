@@ -73,6 +73,7 @@ export interface CircuitTracksState {
   moveSlots: (fromIndices: number[], toStartIndex: number) => void;
   clearSlot: (index: number) => void;
   clearSlots: (indices: number[]) => void;
+  copySlotsToStaging: (indices: number[]) => void;
   clearPackSlot: (index: number) => void;
   duplicatePack: (index: number) => void;
   renamePack: (index: number, newDisplayName: string) => void;
@@ -836,6 +837,43 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         unassignedFiles: newUnassigned,
         history: newHistory,
         slotsByPack: newSlotsByPack,
+        unassignedFilesByPack: newUnassignedByPack,
+        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
+        pendingChanges
+      };
+    });
+  },
+
+  copySlotsToStaging: (indices) => {
+    logger.log(`[Store] Copying slots [${indices.join(',')}] to staging`);
+    set((state) => {
+      if (!state.activePack || indices.length === 0) return state;
+      const snapshot = state.slots.map((s) => ({ ...s }));
+      const newSlots = [...state.slots];
+      const newUnassigned = [...state.unassignedFiles];
+      
+      let changed = false;
+      const existingNames = new Set(newUnassigned.map(f => f.originalFilename));
+      
+      indices.forEach(index => {
+        const slot = newSlots[index]!;
+        if (slot.sample && !existingNames.has(slot.sample.originalFilename)) {
+          newUnassigned.push(slot.sample);
+          existingNames.add(slot.sample.originalFilename);
+          changed = true;
+        }
+      });
+      
+      if (!changed) return state;
+
+      const newSlotsByPack = { ...state.slotsByPack, [state.activePack]: newSlots };
+      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
+      const newHistory = [...state.history, snapshot];
+      const pendingChanges = countAllPendingChanges(newSlotsByPack, state.packSlots, state.applyTagsToFilenames, state.packs);
+
+      return {
+        unassignedFiles: newUnassigned,
+        history: newHistory,
         unassignedFilesByPack: newUnassignedByPack,
         historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
         pendingChanges
