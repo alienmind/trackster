@@ -114,29 +114,29 @@ export default function CircuitTracksDevice() {
               label="Clear" 
               isActive={circuitToolMode === 'clear'} 
               onClick={() => setCircuitToolMode('clear')} 
-              className={`!opacity-100 transition-all ${circuitToolMode === 'clear' ? 'ring-2 ring-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.6)] bg-[#2a1a1a]' : 'ring-1 ring-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.1)] hover:shadow-[0_0_12px_rgba(239,68,68,0.3)]'}`}
+              className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
             />
             <FunctionButton 
               topLabel="Mutate" 
               label="Duplicate" 
               isActive={circuitToolMode === 'duplicate'} 
               onClick={() => setCircuitToolMode('duplicate')} 
-              className={`!opacity-100 transition-all ${circuitToolMode === 'duplicate' ? 'ring-2 ring-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.6)] bg-[#1a1a2a]' : 'ring-1 ring-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.1)] hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]'}`}
+              className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
             />
             <FunctionButton topLabel="Setup" label="Save" />
             <FunctionButton 
               topLabel="Packs" 
               label="Projects" 
               isActive={deviceMode === 'packs'} 
-              onClick={() => setDeviceMode('packs')} 
-              className={`!opacity-100 transition-all ${deviceMode === 'packs' ? 'ring-2 ring-white/60 shadow-[0_0_15px_rgba(255,255,255,0.6)] bg-[#2a2a2a]' : 'ring-1 ring-white/20 shadow-[0_0_8px_rgba(255,255,255,0.1)] hover:shadow-[0_0_12px_rgba(255,255,255,0.3)]'}`}
+              onClick={() => setDeviceMode(deviceMode === 'packs' ? 'samples' : 'packs')} 
+              className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
             />
             <FunctionButton label="Shift" />
           </div>
 
           {/* ROW 2: Track Select & Pattern Square Pads */}
           <div className="grid grid-cols-10 gap-3 mb-3 opacity-50">
-            <FunctionPad label="Preset" isActive={deviceMode === 'samples'} onClick={() => setDeviceMode('samples')} className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all" />
+            <FunctionPad label="Preset" className="!opacity-100 ring-2 ring-transparent transition-all" />
             <FunctionPad label="Synth 1" labelColor="text-fuchsia-400" />
             <FunctionPad label="Synth 2" labelColor="text-fuchsia-400" />
             <FunctionPad label="MIDI 1" />
