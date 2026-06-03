@@ -26,7 +26,7 @@ export interface HardwareDeviceData {
 }
 
 export interface HardwareBlueprint extends HardwareDeviceData {
-  visual: () => React.ReactNode;
+  visual?: () => React.ReactNode;
 }
 
 export interface OverviewNode {

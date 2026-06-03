@@ -1,6 +1,6 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
-import data from '../../devices/circuit.json';
+import data from '../../devices/circuittracks/circuit.json';
 
 export const circuit: HardwareBlueprint = {
   ...(data as unknown as HardwareBlueprint),

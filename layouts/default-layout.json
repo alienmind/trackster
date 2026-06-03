@@ -1,12 +1,12 @@
 {
-  "id": "custom_1780415618422",
+  "id": "custom_1780513639489",
   "name": "Default Layout",
   "nodes": {
     "n_circuit": {
       "id": "n_circuit",
       "type": "circuit",
-      "x": 2113.61777895312,
-      "y": 565.8057478116821,
+      "x": 2049.3690163063275,
+      "y": 306.0676383397557,
       "zIndex": 35,
       "isExpanded": false,
       "circuitLogicalOuts": {
@@ -19,17 +19,17 @@
     "n_grind": {
       "id": "n_grind",
       "type": "grind",
-      "x": 1194.056408009184,
-      "y": 648.2825204782869,
-      "zIndex": 32,
+      "x": 1169.9251961003847,
+      "y": 585.638510205241,
+      "zIndex": 41,
       "isExpanded": false,
       "logicalInChannel": 1
     },
     "n_s1": {
       "id": "n_s1",
       "type": "s1",
-      "x": 1602.2758644240032,
-      "y": 1026.72622673601,
+      "x": 1811.6956709189897,
+      "y": 827.4078019043545,
       "zIndex": 37,
       "isExpanded": false,
       "logicalInChannel": 2
@@ -37,8 +37,8 @@
     "n_minifreak": {
       "id": "n_minifreak",
       "type": "minifreak",
-      "x": 747.4058500914077,
-      "y": -12.405850091407686,
+      "x": 736.4555110307512,
+      "y": 231.7867109612344,
       "zIndex": 38,
       "isExpanded": false,
       "logicalInChannel": 3
@@ -46,267 +46,179 @@
     "n_flow8": {
       "id": "n_flow8",
       "type": "flow8",
-      "x": 2777.7322017354068,
-      "y": 1001.4814571342806,
-      "zIndex": 36,
+      "x": 2695.4941362057957,
+      "y": 229.37818381131575,
+      "zIndex": 33,
       "isExpanded": false
     },
     "n_ableton": {
       "id": "n_ableton",
       "type": "ableton",
-      "x": 3417.4562247012664,
-      "y": 366.52457280217493,
-      "zIndex": 38,
+      "x": 3253.9074125444085,
+      "y": 310.5278484270192,
+      "zIndex": 40,
       "isExpanded": false
     }
   },
   "connections": {
-    "c_s1_flow8_7": {
-      "id": "c_s1_flow8_7",
-      "source": "n_s1",
-      "target": "n_flow8",
-      "sourcePort": "audioOut",
-      "targetPort": "audioIn7",
-      "type": "audio_minijack_to_dual_trs",
-      "label": "Y Cable L",
-      "startOffset": {
-        "x": 150,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      }
-    },
-    "c_s1_flow8_8": {
-      "id": "c_s1_flow8_8",
-      "source": "n_s1",
-      "target": "n_flow8",
-      "sourcePort": "audioOut",
-      "targetPort": "audioIn8",
-      "type": "audio_minijack_to_dual_trs",
-      "label": "Y Cable R",
-      "startOffset": {
-        "x": 150,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 2390.1937180900472,
-        "y": 1464.6655095207773
-      }
-    },
-    "c_circuit_s1_midi": {
-      "id": "c_circuit_s1_midi",
-      "source": "n_circuit",
-      "target": "n_s1",
-      "sourcePort": "midiOut",
-      "targetPort": "midiIn",
-      "type": "midi_din_to_trs",
-      "label": "MIDI to TRS",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 2032.3369051939187,
-        "y": 1011.8324808797047
-      }
-    },
-    "c_circuit_flow8_5": {
-      "id": "c_circuit_flow8_5",
-      "source": "n_circuit",
-      "target": "n_flow8",
-      "sourcePort": "phonesOut",
-      "targetPort": "audioIn5",
-      "type": "audio_minijack_to_dual_trs",
-      "label": "Phones Y L",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 2597.9541900321124,
-        "y": 854.104122588994
-      }
-    },
-    "c_circuit_flow8_6": {
-      "id": "c_circuit_flow8_6",
-      "source": "n_circuit",
-      "target": "n_flow8",
-      "sourcePort": "phonesOut",
-      "targetPort": "audioIn6",
-      "type": "audio_minijack_to_dual_trs",
-      "label": "Phones Y R",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 2591.170174621759,
-        "y": 943.9923267761732
-      }
-    },
-    "c_circuit_minifreak_midi": {
-      "id": "c_circuit_minifreak_midi",
-      "source": "n_circuit",
-      "target": "n_minifreak",
-      "sourcePort": "midiThru",
-      "targetPort": "midiIn",
-      "type": "midi_din",
-      "label": "MIDI DIN",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 1652.4320422141427,
-        "y": 592.9195292903979
-      }
-    },
-    "c_minifreak_grind_midi": {
-      "id": "c_minifreak_grind_midi",
-      "source": "n_minifreak",
-      "target": "n_grind",
-      "sourcePort": "midiThru",
-      "targetPort": "midiIn",
-      "type": "midi_din",
-      "label": "MIDI DIN",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 1105.47079975442,
-        "y": 602.2475504796334
-      }
-    },
-    "c_minifreak_ableton_usb": {
-      "id": "c_minifreak_ableton_usb",
-      "source": "n_minifreak",
-      "target": "n_ableton",
-      "sourcePort": "usbA",
-      "targetPort": "usbIn",
-      "type": "midi_usb",
-      "label": "MF to PC",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 2289.281488861044,
-        "y": 250.32675106756395
-      }
-    },
-    "c_flow8_ableton_usb": {
-      "id": "c_flow8_ableton_usb",
-      "source": "n_flow8",
-      "target": "n_ableton",
-      "sourcePort": "usbOut",
-      "targetPort": "usbIn",
-      "type": "midi_usb",
-      "label": "Flow 8 to PC",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 3281.443742625192,
-        "y": 747.255879875932
-      }
-    },
-    "c_minifreak_flow8_3": {
-      "id": "c_minifreak_flow8_3",
-      "source": "n_minifreak",
-      "target": "n_flow8",
-      "sourcePort": "audioOutL",
-      "targetPort": "audioIn3",
-      "type": "audio_trs",
-      "label": "TS to TRS L",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 1798.2883735367352,
-        "y": 754.0398952862851
-      }
-    },
-    "c_minifreak_flow8_4": {
-      "id": "c_minifreak_flow8_4",
-      "source": "n_minifreak",
-      "target": "n_flow8",
-      "sourcePort": "audioOutR",
-      "targetPort": "audioIn4",
-      "type": "audio_trs",
-      "label": "TS to TRS R",
-      "startOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "endOffset": {
-        "x": 50,
-        "y": 50
-      },
-      "midPoint": {
-        "x": 2231.6173578730427,
-        "y": 403.8150997268039
-      }
-    },
-    "c_grind_circuit_audio": {
-      "id": "c_grind_circuit_audio",
+    "c_grind_audio": {
+      "id": "c_grind_audio",
       "source": "n_grind",
       "target": "n_circuit",
-      "sourcePort": "audioOut",
-      "targetPort": "audioIn1",
       "type": "audio_jack_to_minijack",
-      "label": "Minijack to Jack",
+      "label": "Jack 6.35 to Mini Jack 3.5",
       "startOffset": {
-        "x": 50,
+        "x": 300,
+        "y": 100
+      },
+      "endOffset": {
+        "x": 0,
+        "y": 50
+      },
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn1"
+    },
+    "c_s1_audio": {
+      "id": "c_s1_audio",
+      "source": "n_s1",
+      "target": "n_circuit",
+      "type": "audio_jack_to_minijack",
+      "label": "Jack 6.35 to Mini Jack 3.5",
+      "startOffset": {
+        "x": 230,
         "y": 50
       },
       "endOffset": {
-        "x": 50,
+        "x": 0,
+        "y": 100
+      },
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn2"
+    },
+    "c_circuit_audio": {
+      "id": "c_circuit_audio",
+      "source": "n_circuit",
+      "target": "n_flow8",
+      "type": "audio_minijack_to_dual_trs",
+      "label": "Mini Jack to TRS Left/Right (Y cable)",
+      "startOffset": {
+        "x": 350,
         "y": 50
       },
+      "endOffset": {
+        "x": 0,
+        "y": 150
+      },
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn",
       "midPoint": {
-        "x": 1788.1123504212055,
-        "y": 879.5441803778183
+        "x": 2502.5340748440053,
+        "y": 470.51250797937223
+      }
+    },
+    "c_mf_audio": {
+      "id": "c_mf_audio",
+      "source": "n_minifreak",
+      "target": "n_flow8",
+      "type": "audio_trs_to_xlr",
+      "label": "TRS to XLR",
+      "startOffset": {
+        "x": 300,
+        "y": 100
+      },
+      "endOffset": {
+        "x": 0,
+        "y": 100
+      },
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn",
+      "midPoint": {
+        "x": 1764.4812221557506,
+        "y": 143.09737006573997
+      }
+    },
+    "c_flow_usb": {
+      "id": "c_flow_usb",
+      "source": "n_flow8",
+      "target": "n_ableton",
+      "type": "midi_usb",
+      "label": "USB Type-B to Type-A",
+      "startOffset": {
+        "x": 300,
+        "y": 100
+      },
+      "endOffset": {
+        "x": 0,
+        "y": 50
+      },
+      "sourcePort": "usbOut",
+      "targetPort": "usbIn",
+      "midPoint": {
+        "x": 3136.5587064560223,
+        "y": 423.42605001854884
+      }
+    },
+    "c_midi_master": {
+      "id": "c_midi_master",
+      "source": "n_circuit",
+      "target": "n_minifreak",
+      "type": "midi_din",
+      "label": "5-Pin MIDI DIN",
+      "startOffset": {
+        "x": 350,
+        "y": 150
+      },
+      "endOffset": {
+        "x": 0,
+        "y": 200
+      },
+      "sourcePort": "midiOut",
+      "targetPort": "midiIn",
+      "midPoint": {
+        "x": 1769.956391686079,
+        "y": 425.61611783068014
+      }
+    },
+    "c_midi_2": {
+      "id": "c_midi_2",
+      "source": "n_minifreak",
+      "target": "n_grind",
+      "type": "midi_din",
+      "label": "5-Pin MIDI DIN",
+      "startOffset": {
+        "x": 300,
+        "y": 150
+      },
+      "endOffset": {
+        "x": 0,
+        "y": 150
+      },
+      "sourcePort": "midiOut",
+      "targetPort": "midiIn",
+      "midPoint": {
+        "x": 1110.745980234552,
+        "y": 518.6939998462612
+      }
+    },
+    "c_midi_3": {
+      "id": "c_midi_3",
+      "source": "n_grind",
+      "target": "n_s1",
+      "type": "midi_din_to_trs",
+      "label": "MIDI DIN to TRS Type A",
+      "startOffset": {
+        "x": 300,
+        "y": 150
+      },
+      "endOffset": {
+        "x": 0,
+        "y": 150
+      },
+      "sourcePort": "midiOut",
+      "targetPort": "midiIn",
+      "midPoint": {
+        "x": 1668.1182384219726,
+        "y": 915.0962738420301
       }
     }
   }

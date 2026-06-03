@@ -94,6 +94,9 @@ const getPortsForNode = (blueprint: any) => {
   return mappedPorts;
 };
 
+const deviceImages = import.meta.glob('../../../devices/*/device.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+
+
 export default function OverviewTab() {
 
   const hardcodedLayouts = useMemo(() => {
@@ -966,8 +969,17 @@ export default function OverviewTab() {
 
               {/* Graphic SVG Component */}
               {isHardwareExpanded && (
-                <div className="p-3 bg-neutral-800">
-                  <blueprint.visual />
+                <div className="p-3 bg-black flex justify-center items-center">
+                  {(() => {
+                    const matchKey = Object.keys(deviceImages).find(key => key.includes(`/${nodeState.type}/`) || (nodeState.type === 'circuit' && key.includes('/circuittracks/')));
+                    if (matchKey && deviceImages[matchKey]) {
+                       return <img src={deviceImages[matchKey]} alt={blueprint.model} className="h-48 w-full object-contain drop-shadow-2xl filter brightness-110" />;
+                    }
+                    if (blueprint.visual) {
+                       return <blueprint.visual />;
+                    }
+                    return <div className="text-neutral-500 italic text-sm">No visual available</div>;
+                  })()}
                 </div>
               )}
 

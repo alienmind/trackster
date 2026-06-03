@@ -1,7 +1,7 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 import { Laptop } from 'lucide-react';
 
-import data from '../../devices/ableton.json';
+import data from '../../devices/ableton/ableton.json';
 
 export const ableton: HardwareBlueprint = {
   ...(data as unknown as HardwareBlueprint),
