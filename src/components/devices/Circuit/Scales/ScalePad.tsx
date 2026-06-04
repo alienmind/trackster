@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
-import { DISABLED_ROOT_PADS, ROOT_PAD_NAMES, SCALE_MODES, getAllowedPads } from './scalesData';
+import { usePianoAudioStore } from '../../../../stores/usePianoAudioStore';
+import { DISABLED_ROOT_PADS, ROOT_PAD_NAMES, SCALE_MODES, getAllowedPads, CHROMATIC_PADS } from './scalesData';
 
 interface ScalePadProps {
   index: number;
@@ -8,6 +9,7 @@ interface ScalePadProps {
 
 const ScalePad = memo(function ScalePad({ index }: ScalePadProps) {
   const { activeRootNote, setActiveRootNote, activeScaleType, setActiveScaleType } = useCircuitTracksStore();
+  const { playPreview } = usePianoAudioStore();
 
   const isRootSection = index < 16;
   const isScaleSection = index >= 16;
@@ -25,11 +27,29 @@ const ScalePad = memo(function ScalePad({ index }: ScalePadProps) {
   const allowedPads = getAllowedPads(activeRootNote, activeScaleType);
   const isNoteInScale = isRootSection && allowedPads.includes(index);
 
-  const handleClick = () => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (isRootSection && isAllowedRoot) {
+      (e.target as Element).setPointerCapture(e.pointerId);
       setActiveRootNote(index);
+      
+      const rootIdx = CHROMATIC_PADS.indexOf(index);
+      const scale = SCALE_MODES[activeScaleType];
+      if (rootIdx !== -1 && scale) {
+        playPreview(rootIdx, scale.intervals);
+      }
     } else if (isScaleSection && scaleData) {
       setActiveScaleType(index);
+      
+      const rootIdx = CHROMATIC_PADS.indexOf(activeRootNote);
+      if (rootIdx !== -1) {
+        playPreview(rootIdx, scaleData.intervals);
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (isRootSection && isAllowedRoot) {
+      (e.target as Element).releasePointerCapture(e.pointerId);
     }
   };
 
@@ -66,9 +86,11 @@ const ScalePad = memo(function ScalePad({ index }: ScalePadProps) {
 
   return (
     <div
-      onClick={handleClick}
+      onPointerDown={isClickable ? handlePointerDown : undefined}
+      onPointerUp={isClickable ? handlePointerUp : undefined}
+      onPointerCancel={isClickable ? handlePointerUp : undefined}
       className={`
-        relative w-full aspect-square rounded-sm transition-all duration-150 outline-none focus:outline-none flex flex-col items-center justify-center p-1 text-center leading-tight
+        relative w-full aspect-square rounded-sm transition-all duration-150 outline-none focus:outline-none flex flex-col items-center justify-center p-1 text-center leading-tight touch-none
         ${bgClass}
         ${shadowClass}
         ${isClickable ? 'cursor-pointer hover:brightness-110 active:translate-y-[2px] active:shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)]' : 'cursor-default pointer-events-none'}
@@ -79,7 +101,7 @@ const ScalePad = memo(function ScalePad({ index }: ScalePadProps) {
       </div>
       
       {innerText && (
-        <span className="text-[11px] md:text-[13px] font-bold drop-shadow-md select-none mt-2">
+        <span className="text-[11px] md:text-[13px] font-bold drop-shadow-md select-none mt-2 pointer-events-none">
           {innerText}
         </span>
       )}

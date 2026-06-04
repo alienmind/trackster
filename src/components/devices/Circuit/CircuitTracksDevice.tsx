@@ -7,6 +7,7 @@ import SortablePad from './Grid/SortablePad';
 import PackPad from './PackOrganizer/PackPad';
 import ScalePad from './Scales/ScalePad';
 import ScalesDrawer from './Scales/ScalesDrawer';
+import TempoDrawer from './Tempo/TempoDrawer';
 import { Knob } from '../../Core/HardwareUI/Knob';
 import { FunctionButton } from '../../Core/HardwareUI/FunctionButton';
 import { FunctionPad } from '../../Core/HardwareUI/FunctionPad';
@@ -101,6 +102,7 @@ export default function CircuitTracksDevice() {
       <div className="w-[1000px] bg-[#18181a] rounded-2xl p-8 shadow-2xl border-t border-gray-700/20 ring-1 ring-black relative overflow-hidden">
         
         <ScalesDrawer />
+        <TempoDrawer />
 
         {/* KNOBS SECTION */}
         <div className="grid grid-cols-11 w-full relative mb-10 mt-2 gap-y-6">
@@ -131,7 +133,13 @@ export default function CircuitTracksDevice() {
             <FunctionButton icon={<DownArrow />} />
             <FunctionButton icon={<UpArrow />} />
             <FunctionButton label={"1-16\n17-32"} />
-            <FunctionButton topLabel="Tap" label={"Tempo\nSwing"} />
+            <FunctionButton 
+              topLabel="Tap" 
+              label={"Tempo\nSwing"} 
+              isActive={deviceMode === 'tempo'}
+              onClick={() => setDeviceMode(deviceMode === 'tempo' ? 'samples' : 'tempo')}
+              className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
+            />
             <FunctionButton 
               topLabel="Click" 
               label="Clear" 

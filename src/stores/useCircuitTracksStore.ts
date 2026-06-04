@@ -11,6 +11,8 @@ import { TAG_DEFINITIONS } from '../utils/constants';
 import { computeSimilarity } from '../utils/similarity';
 import { useUIStore } from './useUIStore';
 
+export type DeviceMode = 'samples' | 'packs' | 'scales' | 'tempo';
+
 export interface PackHistoryEntry {
   packSlots: PackSlot[];
   slotsByPack: Record<string, PadSlot[]>;
@@ -58,12 +60,24 @@ export interface CircuitTracksState {
   workspaceMode: 'read' | 'readwrite' | null;
   setWorkspaceMode: (mode: 'read' | 'readwrite') => Promise<boolean>;
   
-  deviceMode: 'packs' | 'samples' | 'scales';
-  setDeviceMode: (mode: 'packs' | 'samples' | 'scales') => void;
+  deviceMode: DeviceMode;
+  setDeviceMode: (mode: DeviceMode) => void;
+  bpm: number;
+  setBpm: (bpm: number) => void;
   activeRootNote: number;
   setActiveRootNote: (padIndex: number) => void;
   activeScaleType: number;
   setActiveScaleType: (padIndex: number) => void;
+  scalesViewMode: 'description' | 'piano';
+  setScalesViewMode: (mode: 'description' | 'piano') => void;
+  previewSequence: 'full' | '1-3-5' | '1-3-5-7-9' | '1-3-5-7-9-11';
+  setPreviewSequence: (seq: 'full' | '1-3-5' | '1-3-5-7-9' | '1-3-5-7-9-11') => void;
+  previewLoop: 'one-off' | 'continuous';
+  setPreviewLoop: (mode: 'one-off' | 'continuous') => void;
+  previewArpMode: 'up' | 'up-down' | 'random';
+  setPreviewArpMode: (mode: 'up' | 'up-down' | 'random') => void;
+  previewSustain: 'on' | 'off';
+  setPreviewSustain: (mode: 'on' | 'off') => void;
   duplicateActivePack: () => void;
   clearActivePack: () => void;
   
@@ -196,6 +210,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
           const ctx = new AudioContext();
           const analyser = ctx.createAnalyser();
           analyser.fftSize = 2048;
+          analyser.connect(ctx.destination);
           set({ audioContext: ctx, analyser });
         }
       },
@@ -374,12 +389,24 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       })),
       
       workspaceMode: null,
-      deviceMode: 'packs',
+      deviceMode: 'samples',
       setDeviceMode: (mode) => set({ deviceMode: mode }),
+      bpm: 120,
+      setBpm: (bpm) => set({ bpm }),
       activeRootNote: 8,
       setActiveRootNote: (padIndex) => set({ activeRootNote: padIndex }),
       activeScaleType: 16,
       setActiveScaleType: (padIndex) => set({ activeScaleType: padIndex }),
+      scalesViewMode: 'description',
+      setScalesViewMode: (mode) => set({ scalesViewMode: mode }),
+      previewSequence: 'full',
+      setPreviewSequence: (seq) => set({ previewSequence: seq }),
+      previewLoop: 'one-off',
+      setPreviewLoop: (mode) => set({ previewLoop: mode }),
+      previewArpMode: 'up',
+      setPreviewArpMode: (mode) => set({ previewArpMode: mode }),
+      previewSustain: 'on',
+      setPreviewSustain: (mode) => set({ previewSustain: mode }),
       setWorkspaceMode: async (mode) => {
         const { rootHandle } = get();
         if (!rootHandle) return false;
@@ -1728,6 +1755,15 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         slotsByPack: state.slotsByPack,
         unassignedFilesByPack: state.unassignedFilesByPack,
         historyByPack: state.historyByPack,
+        deviceMode: state.deviceMode,
+        activeRootNote: state.activeRootNote,
+        activeScaleType: state.activeScaleType,
+        scalesViewMode: state.scalesViewMode,
+        previewSequence: state.previewSequence,
+        previewLoop: state.previewLoop,
+        previewArpMode: state.previewArpMode,
+        previewSustain: state.previewSustain,
+        bpm: state.bpm,
       }),
     }
   )

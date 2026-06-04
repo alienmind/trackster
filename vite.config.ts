@@ -45,6 +45,9 @@ export default defineConfig({
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5000000,
+      }
     }),
   ],
 });
