@@ -58,8 +58,12 @@ export interface CircuitTracksState {
   workspaceMode: 'read' | 'readwrite' | null;
   setWorkspaceMode: (mode: 'read' | 'readwrite') => Promise<boolean>;
   
-  deviceMode: 'packs' | 'samples';
-  setDeviceMode: (mode: 'packs' | 'samples') => void;
+  deviceMode: 'packs' | 'samples' | 'scales';
+  setDeviceMode: (mode: 'packs' | 'samples' | 'scales') => void;
+  activeRootNote: number;
+  setActiveRootNote: (padIndex: number) => void;
+  activeScaleType: number;
+  setActiveScaleType: (padIndex: number) => void;
   duplicateActivePack: () => void;
   clearActivePack: () => void;
   
@@ -372,6 +376,10 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       workspaceMode: null,
       deviceMode: 'packs',
       setDeviceMode: (mode) => set({ deviceMode: mode }),
+      activeRootNote: 8,
+      setActiveRootNote: (padIndex) => set({ activeRootNote: padIndex }),
+      activeScaleType: 16,
+      setActiveScaleType: (padIndex) => set({ activeScaleType: padIndex }),
       setWorkspaceMode: async (mode) => {
         const { rootHandle } = get();
         if (!rootHandle) return false;
