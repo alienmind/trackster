@@ -67,7 +67,7 @@ Deep integration for the Novation Circuit Tracks, featuring advanced tools like 
 - **Tracks: Magic Sort**: Automatically tag and arrange your drum samples into a sensible layout.
 - **Tracks: Waveform Preview**: Visualize and playback audio samples directly in the app.
 - **Tracks: Duplicate Detection**: Scan for potential duplicates to save space on your SD card.
-- **Tracks: Interactive Scales Visualizer**: Transform the 32-pad grid into an interactive scale explorer with a dedicated visual piano keyboard, highlighting active root notes and mapping emotional characteristics for 16 different scale types.
+- **Tracks: Interactive Scales Visualizer**: Transform the 32-pad grid into an interactive scale explorer with a dedicated visual piano keyboard, highlighting active root notes and mapping emotional characteristics for 16 different scale types. Includes a live arpeggiator engine to audition scales with adjustable tempo, sequence mode, loop mode, and sustain.
 
 ![Circuit Tracks Scales Mode](doc/gallery/circuitscalesmode.png)
 *Circuit Tracks interactive scales visualizer with dynamic piano keyboard and descriptive hints.*
