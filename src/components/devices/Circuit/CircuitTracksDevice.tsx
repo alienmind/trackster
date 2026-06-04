@@ -5,6 +5,9 @@ import { PAGES } from '../../../utils/constants';
 import type { PageIndex } from '../../../types';
 import SortablePad from './Grid/SortablePad';
 import PackPad from './PackOrganizer/PackPad';
+import ScalePad from './Scales/ScalePad';
+import ScalesDrawer from './Scales/ScalesDrawer';
+import TempoDrawer from './Tempo/TempoDrawer';
 import { Knob } from '../../Core/HardwareUI/Knob';
 import { FunctionButton } from '../../Core/HardwareUI/FunctionButton';
 import { FunctionPad } from '../../Core/HardwareUI/FunctionPad';
@@ -80,9 +83,26 @@ export default function CircuitTracksDevice() {
 
   const padsToRender = deviceMode === 'packs' ? activePackSlots : activePageSlots;
 
+  const renderPadRow = (startIndex: number, endIndex: number) => {
+    if (deviceMode === 'scales') {
+      return Array.from({ length: endIndex - startIndex }, (_, i) => {
+        const absoluteIndex = startIndex + i;
+        return <ScalePad key={`scale-${absoluteIndex}`} index={absoluteIndex} />;
+      });
+    }
+    return padsToRender.slice(startIndex, endIndex).map((slot: any) => 
+      deviceMode === 'packs' 
+        ? <PackPad key={`pack-${slot.index}`} slot={slot} onSelect={() => setDeviceMode('samples')} /> 
+        : <SortablePad key={`pad-${slot.index}`} slot={slot} />
+    );
+  };
+
   return (
     <ScaleFit baseWidth={1050} baseHeight={800} maxScale={4}>
-      <div className="w-[1000px] bg-[#18181a] rounded-2xl p-8 shadow-2xl border-t border-gray-700/20 ring-1 ring-black">
+      <div className="w-[1000px] bg-[#18181a] rounded-2xl p-8 shadow-2xl border-t border-gray-700/20 ring-1 ring-black relative overflow-hidden">
+        
+        <ScalesDrawer />
+        <TempoDrawer />
 
         {/* KNOBS SECTION */}
         <div className="grid grid-cols-11 w-full relative mb-10 mt-2 gap-y-6">
@@ -104,11 +124,22 @@ export default function CircuitTracksDevice() {
           
           {/* ROW 1: Small Rectangular Buttons */}
           <div className="grid grid-cols-10 gap-x-3 mb-2 opacity-50">
-            <FunctionButton label="Scales" />
+            <FunctionButton 
+              label="Scales" 
+              isActive={true} 
+              onClick={() => setDeviceMode(deviceMode === 'scales' ? 'samples' : 'scales')}
+              className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
+            />
             <FunctionButton icon={<DownArrow />} />
             <FunctionButton icon={<UpArrow />} />
             <FunctionButton label={"1-16\n17-32"} />
-            <FunctionButton topLabel="Tap" label={"Tempo\nSwing"} />
+            <FunctionButton 
+              topLabel="Tap" 
+              label={"Tempo\nSwing"} 
+              isActive={deviceMode === 'tempo'}
+              onClick={() => setDeviceMode(deviceMode === 'tempo' ? 'samples' : 'tempo')}
+              className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
+            />
             <FunctionButton 
               topLabel="Click" 
               label="Clear" 
@@ -153,17 +184,17 @@ export default function CircuitTracksDevice() {
             
             {/* ROW 3 */}
             <FunctionPad label="Note" subLabel="Expand" className="opacity-50" />
-            {padsToRender.slice(0, 8).map((slot: any) => deviceMode === 'packs' ? <PackPad key={`pack-${slot.index}`} slot={slot} onSelect={() => setDeviceMode('samples')} /> : <SortablePad key={`pad-${slot.index}`} slot={slot} />)}
+            {renderPadRow(0, 8)}
             <FunctionPad label="Mixer" labelColor="text-cyan-400" className="opacity-50" />
 
             {/* ROW 4 */}
             <FunctionPad label="Velocity" subLabel="Fixed" className="opacity-50" />
-            {padsToRender.slice(8, 16).map((slot: any) => deviceMode === 'packs' ? <PackPad key={`pack-${slot.index}`} slot={slot} onSelect={() => setDeviceMode('samples')} /> : <SortablePad key={`pad-${slot.index}`} slot={slot} />)}
+            {renderPadRow(8, 16)}
             <FunctionPad label="FX" subLabel="Side Chain" className="opacity-50" />
 
             {/* ROW 5 */}
             <FunctionPad label="Gate" subLabel="Micro Step" className="opacity-50" />
-            {padsToRender.slice(16, 24).map((slot: any) => deviceMode === 'packs' ? <PackPad key={`pack-${slot.index}`} slot={slot} onSelect={() => setDeviceMode('samples')} /> : <SortablePad key={`pad-${slot.index}`} slot={slot} />)}
+            {renderPadRow(16, 24)}
             <FunctionPad 
               icon={<RecordIcon />} 
               label="Rec"
@@ -174,7 +205,7 @@ export default function CircuitTracksDevice() {
 
             {/* ROW 6 */}
             <FunctionPad label="Pattern Settings" subLabel="Probability" className="opacity-50" />
-            {padsToRender.slice(24, 32).map((slot: any) => deviceMode === 'packs' ? <PackPad key={`pack-${slot.index}`} slot={slot} onSelect={() => setDeviceMode('samples')} /> : <SortablePad key={`pad-${slot.index}`} slot={slot} />)}
+            {renderPadRow(24, 32)}
             <FunctionPad icon={<PlayIcon />} className="opacity-50" />
 
           </div>
