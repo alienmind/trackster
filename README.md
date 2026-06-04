@@ -22,13 +22,15 @@ Additionally, this repository serves as a preservation effort. As some manufactu
 
 ## Features & Gallery
 
-### DAWless Overview Canvas
+### General Features
+
+#### DAWless Overview Canvas
 An interactive SVG-based drag-and-drop canvas to visually map out your hardware synths, mixers, audio cables, and MIDI routing.
 
 ![Overview Dashboard](doc/gallery/overview.png)
 *The interactive DAWless overview canvas, mapping out hardware synths, mixers, audio cables, and MIDI routing.*
 
-### Advanced Cable Management
+#### Advanced Cable Management
 Trackster tracks not just devices, but the literal physical cables and ports bridging your studio. It allows for complex configurations such as Y-Cables and USB hubs, and features distinct visual representations for different audio and MIDI cables. 
 
 - **Color Coded**: Cables are visually sorted by type (Orange for TS, Cyan for TRS, Emerald for MIDI, etc.).
@@ -39,15 +41,22 @@ Trackster tracks not just devices, but the literal physical cables and ports bri
 ![Cable Management](doc/gallery/cablemanagement.png)
 *Drag and drop dynamic connection anchors between device ports, color-coded by cable type.*
 
-### Custom Device Creation Workflow
+#### Custom Device Creation Workflow
 Want to add new gear? You can easily define new hardware models by simply pasting an image and supplying a JSON definition.
 I will receive a MR with this device and might consider adding it ;-)
 
 ![Add Custom Device](doc/gallery/new%20synth.png)
 *The custom device creation workflow.*
 
-### Hardware Integrations: Novation Circuit Tracks
-Deep integration for the Novation Circuit Tracks, featuring advanced tools like sample management, wave preview, and pack organization. Read and write directly to your SD card.
+#### Technical Features
+- **Local-first**: Reads and writes directly to your local file system (requires a Chromium-based browser).
+- **Persistent Workspace**: Uses IndexedDB to safely cache your session state, layouts, and SD card handles across reloads.
+
+
+### Device Specific Integrations
+
+#### Novation Circuit Tracks
+Deep integration for the Novation Circuit Tracks, featuring advanced tools like sample management, wave preview, pack organization, and interactive scales exploration. Read and write directly to your SD card.
 
 ![Circuit Tracks Integration](doc/gallery/circuittracks.png)
 *Circuit Tracks integration featuring advanced tools like sample management, wave preview, and pack organization.*
@@ -58,16 +67,27 @@ Deep integration for the Novation Circuit Tracks, featuring advanced tools like 
 - **Tracks: Magic Sort**: Automatically tag and arrange your drum samples into a sensible layout.
 - **Tracks: Waveform Preview**: Visualize and playback audio samples directly in the app.
 - **Tracks: Duplicate Detection**: Scan for potential duplicates to save space on your SD card.
+- **Tracks: Interactive Scales Visualizer**: Transform the 32-pad grid into an interactive scale explorer with a dedicated visual piano keyboard, highlighting active root notes and mapping emotional characteristics for 16 different scale types.
 
-### Hardware Integrations: Behringer Grind, Roland S1, others (WIP)
-Work-in-progress integration for the Behringer Grind, Roland S1, Behringer Flow 8, showing device-specific controls and routing.
+![Circuit Tracks Scales Mode](doc/gallery/circuitscalesmode.png)
+*Circuit Tracks interactive scales visualizer with dynamic piano keyboard and descriptive hints.*
+
+#### Arturia MiniFreak
+Interactive UI mappings and visualization to manage patching, routing, and preset organization for the Arturia MiniFreak synthesizer.
+
+#### Behringer Grind
+Work-in-progress integration for the Behringer Grind, displaying device-specific hardware controls and routing anchors.
 
 ![Behringer Grind Integration (WIP)](doc/gallery/grind.png)
-*Work-in-progress integration for the Behringer Grind & others.
+*Work-in-progress integration for the Behringer Grind.*
 
-### Technical Features
-- **Local-first**: Reads and writes directly to your local file system (requires a Chromium-based browser).
-- **Persistent Workspace**: Uses IndexedDB to safely cache your session state, layouts, and SD card handles across reloads.
+#### Roland S1
+Work-in-progress integration for the Roland S1 Tweak Synthesizer, offering dynamic MIDI and audio routing visualizations.
+
+#### Behringer Flow 8
+Work-in-progress digital mixer integration to visualize input/output routing and track channel strips across your hardware setup.
+
+
 
 More to come! (see [doc/FUTURE_IDEAS.md](https://github.com/alienmind/trackster/blob/main/doc/FUTURE_IDEAS.md)!)
 

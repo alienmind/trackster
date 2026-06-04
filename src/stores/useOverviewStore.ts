@@ -23,6 +23,7 @@ export interface HardwareDeviceData {
     badge: string;
   };
   ports: PortDef[];
+  hideFromToolbar?: boolean;
 }
 
 export interface HardwareBlueprint extends HardwareDeviceData {
