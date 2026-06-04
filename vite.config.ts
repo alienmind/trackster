@@ -34,9 +34,9 @@ export default defineConfig({
       includeAssets: ['favicon.svg'],
       manifest: {
         start_url: process.env.VITE_BASE || '/',
-        name: 'Tracks(ter) - Circuit Tracks PCM Manager',
+        name: 'Tracks(ter) - A DAWless management tool',
         short_name: 'Tracks(ter)',
-        description: 'Manage, audition, and arrange samples for the Novation Circuit Tracks',
+        description: 'Organize, preview, and manage your hybrid DAWless setup and sample packs.',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',
