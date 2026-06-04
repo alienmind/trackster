@@ -9,12 +9,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
 import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
 import StatusBar from '../../Core/StatusBar/StatusBar';
 import DownloadsList from '../../Core/DownloadsList/DownloadsList';
+import BrowserWarning from '../../Core/BrowserWarning/BrowserWarning';
 
 export default function CircuitTracksLayout() {
   const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames, deviceMode } = useCircuitTracksStore();
   const scanDuplicates = useCircuitTracksStore((s) => s.scanDuplicates);
   const { activePage, setActivePage } = useUIStore();
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+  const [isBrowserWarningOpen, setIsBrowserWarningOpen] = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem('autoOpenDisclaimer') === 'true') {
@@ -33,7 +35,13 @@ export default function CircuitTracksLayout() {
             <TooltipTrigger render={<div className="focus:outline-none w-full" />}>
               <Button
                 variant="success"
-                onClick={() => setIsDisclaimerOpen(true)}
+                onClick={() => {
+                  if ('showDirectoryPicker' in window) {
+                    setIsDisclaimerOpen(true);
+                  } else {
+                    setIsBrowserWarningOpen(true);
+                  }
+                }}
                 className="font-semibold shadow-md w-full justify-start"
               >
                 <Icons.HardDrive className="mr-2" size={16} />
@@ -123,6 +131,7 @@ export default function CircuitTracksLayout() {
       </div>
 
       <DisclaimerModal isOpen={isDisclaimerOpen} onClose={() => setIsDisclaimerOpen(false)} />
+      {isBrowserWarningOpen && <BrowserWarning onClose={() => setIsBrowserWarningOpen(false)} />}
     </div>
   );
 }
