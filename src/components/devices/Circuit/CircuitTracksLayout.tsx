@@ -11,7 +11,7 @@ import StatusBar from '../../Core/StatusBar/StatusBar';
 import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 
 export default function CircuitTracksLayout() {
-  const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames } = useCircuitTracksStore();
+  const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames, deviceMode } = useCircuitTracksStore();
   const scanDuplicates = useCircuitTracksStore((s) => s.scanDuplicates);
   const { activePage, setActivePage } = useUIStore();
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
@@ -77,15 +77,19 @@ export default function CircuitTracksLayout() {
               </Button>
             </div>
             
-            <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Pages</h3>
-            <div className="flex flex-col gap-2">
-              <Button variant="state" data-state={activePage === 0 ? 'active' : 'inactive'} className="justify-start" onClick={() => { setActivePage(0); useCircuitTracksStore.getState().setDeviceMode('samples'); }}>
-                 Page A (1-32)
-              </Button>
-              <Button variant="state" data-state={activePage === 1 ? 'active' : 'inactive'} className="justify-start" onClick={() => { setActivePage(1); useCircuitTracksStore.getState().setDeviceMode('samples'); }}>
-                 Page B (33-64)
-              </Button>
-            </div>
+            {deviceMode === 'samples' && (
+              <>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2 px-1">Sample Pack Pages</h3>
+                <div className="flex flex-col gap-2">
+                  <Button variant="state" data-state={activePage === 0 ? 'active' : 'inactive'} className="justify-start" onClick={() => { setActivePage(0); useCircuitTracksStore.getState().setDeviceMode('samples'); }}>
+                     Page A (1-32)
+                  </Button>
+                  <Button variant="state" data-state={activePage === 1 ? 'active' : 'inactive'} className="justify-start" onClick={() => { setActivePage(1); useCircuitTracksStore.getState().setDeviceMode('samples'); }}>
+                     Page B (33-64)
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
           
           <div className="mt-8">
@@ -108,7 +112,7 @@ export default function CircuitTracksLayout() {
 
         {/* Center Panel - Device */}
         <div className="flex-1 overflow-hidden flex flex-col bg-neutral-950">
-          <div className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="flex-1 overflow-y-auto flex items-center justify-center p-8">
             <CircuitTracksDevice />
           </div>
         </div>

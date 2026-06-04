@@ -7,5 +7,6 @@
   "ports": [
     { "id": "usbIn", "type": "USB_A" },
     { "id": "usbOut", "type": "USB_A" }
-  ]
+  ],
+  "hideFromToolbar": true
 }
