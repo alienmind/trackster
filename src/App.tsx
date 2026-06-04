@@ -196,7 +196,7 @@ export default function App() {
             ) : activeMainView === 'soundtoys' ? (
               <SoundToysLayout />
             ) : (
-              <WIPPage deviceName={activeMainView === 's1' ? 'Roland S-1' : activeMainView === 'flow8' ? 'Flow 8' : activeMainView === 'ableton' ? 'Ableton Live' : activeMainView} />
+              <WIPPage deviceId={activeMainView} />
             )}
           </div>
 

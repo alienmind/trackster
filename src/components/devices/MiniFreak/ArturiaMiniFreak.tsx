@@ -227,7 +227,7 @@ export default function ArturiaMiniFreak() {
           <div className="space-y-2 px-2">
             {/* Control panel actions can be placed here in the future */}
           </div>
-          <DownloadsList devicePrefix="arturia-minifreak" />
+          <DownloadsList deviceId="minifreak" />
         </div>
       </ResponsiveDrawer>
 

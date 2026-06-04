@@ -4,7 +4,7 @@ import { Button, buttonVariants } from '../ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/tooltip';
 import { cn } from '@/lib/utils';
 
-export default function DownloadsList({ devicePrefix }: { devicePrefix: string }) {
+export default function DownloadsList({ deviceId }: { deviceId: string }) {
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const activeDoc = useUIStore((s) => s.activeDoc);
 
@@ -27,11 +27,12 @@ export default function DownloadsList({ devicePrefix }: { devicePrefix: string }
     const ext = extMatch?.[1]?.toLowerCase() || '';
     
     return {
+      path,
       filename,
       url: url as string,
       ext,
     };
-  }).filter(m => m.filename.toLowerCase().startsWith(devicePrefix.toLowerCase()))
+  }).filter(m => m.path.includes(`/devices/${deviceId}/downloads/`))
     .sort((a, b) => {
       
       const weightA = extWeight[a.ext] ?? 99;

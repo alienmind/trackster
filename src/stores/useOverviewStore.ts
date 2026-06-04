@@ -12,6 +12,8 @@ export interface PortDef {
 }
 
 export interface HardwareDeviceData {
+  id: string;
+  longName: string;
   brand: string;
   model: string;
   tagline: string;

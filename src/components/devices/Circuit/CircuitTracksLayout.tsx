@@ -115,7 +115,7 @@ export default function CircuitTracksLayout() {
             </div>
           </div>
           
-          <DownloadsList devicePrefix="circuit-tracks" />
+          <DownloadsList deviceId="circuit" />
         </ResponsiveDrawer>
 
         {/* Center Panel - Device */}
