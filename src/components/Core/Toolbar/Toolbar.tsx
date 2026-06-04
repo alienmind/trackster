@@ -22,12 +22,12 @@ export default function Toolbar() {
 
   const ALL_DEVICES: { id: string; label: string; requiresMount?: boolean }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'circuit', label: 'Circuit Tracks', requiresMount: true },
-    { id: 'grind', label: 'Behringer Grind' },
-    { id: 's1', label: 'Roland S-1' },
-    { id: 'minifreak', label: 'Arturia Minifreak' },
-    { id: 'flow8', label: 'Flow 8' },
-    { id: 'ableton', label: 'Ableton Live' },
+    { id: 'circuit', label: HARDWARE_LIBRARY['circuit']?.longName || 'Circuit Tracks', requiresMount: true },
+    { id: 'grind', label: HARDWARE_LIBRARY['grind']?.longName || 'Behringer Grind' },
+    { id: 's1', label: HARDWARE_LIBRARY['s1']?.longName || 'Roland S-1' },
+    { id: 'minifreak', label: HARDWARE_LIBRARY['minifreak']?.longName || 'Arturia Minifreak' },
+    { id: 'flow8', label: HARDWARE_LIBRARY['flow8']?.longName || 'Flow 8' },
+    { id: 'ableton', label: HARDWARE_LIBRARY['ableton']?.longName || 'Ableton Live' },
     { id: 'soundtoys', label: 'Sound Toys' },
   ];
 

@@ -341,7 +341,7 @@ export default function BehringerGrind() {
                 Sequencer and patch management for Behringer Grind will appear here.
               </div>
             </div>
-            <DownloadsList devicePrefix="behringer-grind" />
+            <DownloadsList deviceId="grind" />
           </div>
         </ResponsiveDrawer>
 

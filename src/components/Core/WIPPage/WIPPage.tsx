@@ -5,13 +5,11 @@ import DownloadsList from '../DownloadsList/DownloadsList';
 const deviceImages = import.meta.glob('../../../../devices/*/device.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
 
-export default function WIPPage({ deviceName }: { deviceName: string }) {
-  const getPrefix = (name: string) => {
-    if (name === 'Flow 8') return 'behringer-flow8';
-    if (name === 'Ableton Live') return 'ableton-live';
-    if (name === 'Roland S-1') return 'roland-s1';
-    return name.toLowerCase().replace(/\s+/g, '-');
-  };
+import { HARDWARE_LIBRARY } from '../../../devices';
+
+export default function WIPPage({ deviceId }: { deviceId: string }) {
+  const device = HARDWARE_LIBRARY[deviceId];
+  const longName = device?.longName || deviceId;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden">
@@ -22,11 +20,11 @@ export default function WIPPage({ deviceName }: { deviceName: string }) {
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">Actions</h3>
               <div className="text-xs text-neutral-400 p-2 border border-neutral-800 rounded bg-neutral-900/50">
-                Specific actions for {deviceName} will appear here.
+                Specific actions for {longName} will appear here.
               </div>
             </div>
           </div>
-          <DownloadsList devicePrefix={getPrefix(deviceName)} />
+          <DownloadsList deviceId={deviceId} />
         </ResponsiveDrawer>
 
         {/* Center Panel */}
@@ -35,18 +33,11 @@ export default function WIPPage({ deviceName }: { deviceName: string }) {
           
           <div className="max-w-md w-full text-center space-y-6 relative z-10 flex flex-col items-center">
             {(() => {
-              const deviceKey = (() => {
-                if (deviceName === 'Flow 8') return 'flow8';
-                if (deviceName === 'Ableton Live') return 'ableton';
-                if (deviceName === 'Roland S-1') return 's1';
-                if (deviceName === 'circuit') return 'circuittracks';
-                return deviceName.toLowerCase().replace(/[^a-z0-9]/g, '');
-              })();
-              const matchKey = Object.keys(deviceImages).find(key => key.includes(`/${deviceKey}/`));
+              const matchKey = Object.keys(deviceImages).find(key => key.includes(`/${deviceId}/`));
               if (matchKey && deviceImages[matchKey]) {
                 return (
                   <div className="mb-8">
-                    <img src={deviceImages[matchKey]} alt={deviceName} className="max-w-full max-h-64 object-contain drop-shadow-2xl filter brightness-110" />
+                    <img src={deviceImages[matchKey]} alt={longName} className="max-w-full max-h-64 object-contain drop-shadow-2xl filter brightness-110" />
                   </div>
                 );
               }
@@ -60,7 +51,7 @@ export default function WIPPage({ deviceName }: { deviceName: string }) {
             <div>
               <h1 className="text-3xl font-black tracking-tight mb-2">Work In Progress!</h1>
               <p className="text-neutral-400 text-lg">
-                The dedicated page for <strong className="text-white">{deviceName}</strong> is currently under construction.
+                The dedicated page for <strong className="text-white">{longName}</strong> is currently under construction.
               </p>
             </div>
 
