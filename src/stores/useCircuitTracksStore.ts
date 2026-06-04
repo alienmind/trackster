@@ -234,13 +234,11 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
               state.decodedBuffers.set(slotIndex, buffer);
             }
           } catch (err: any) {
-            import('./useUIStore').then(({ useUIStore }) => {
-              useUIStore.getState().addNotification({ 
-                message: err.name === 'NotFoundError' 
-                  ? 'File not found. The SD card may have been modified or re-mounted. Please click "Open Tracks" to reconnect.' 
-                  : 'Could not access file. Please check permissions.', 
-                type: 'error' 
-              });
+            useUIStore.getState().addNotification({ 
+              message: err.name === 'NotFoundError' 
+                ? 'File not found. The SD card may have been modified or re-mounted. Please click "Open Tracks" to reconnect.' 
+                : 'Could not access file. Please check permissions.', 
+              type: 'error' 
             });
             return;
           }
@@ -342,9 +340,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
                 }
               }
               
-              import('./useUIStore').then(({ useUIStore }) => {
-                 useUIStore.getState().openDuplicateModal(clusters);
-              });
+              useUIStore.getState().openDuplicateModal(clusters);
               resolve();
             }
           };
@@ -487,9 +483,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       }
     } catch (err) {
       logger.error('Could not find Tracks folder or read packs', err);
-      import('./useUIStore').then(({ useUIStore }) => {
-        useUIStore.getState().addNotification({ message: 'Could not find a top-level "Tracks" folder on this drive.', type: 'error' });
-      });
+      useUIStore.getState().addNotification({ message: 'Could not find a top-level "Tracks" folder on this drive.', type: 'error' });
     }
   },
   
@@ -504,11 +498,9 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       packHandle = await tracksHandle.getDirectoryHandle(packName);
     } catch (err: any) {
       logger.error('Error loading pack', packName, err);
-      import('./useUIStore').then(({ useUIStore }) => {
-        useUIStore.getState().addNotification({ 
-          message: err.name === 'NotFoundError' ? 'Pack not found or access lost. Please click "Mount SD Card" to restore access.' : 'Could not access pack. Please check permissions.', 
-          type: 'error' 
-        });
+      useUIStore.getState().addNotification({ 
+        message: err.name === 'NotFoundError' ? 'Pack not found or access lost. Please click "Mount SD Card" to restore access.' : 'Could not access pack. Please check permissions.', 
+        type: 'error' 
       });
       return;
     }
