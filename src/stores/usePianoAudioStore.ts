@@ -45,7 +45,7 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
       const analyser = useCircuitTracksStore.getState().analyser;
       
       const instrument = await Soundfont.instrument(ac, 'acoustic_grand_piano', {
-        nameToUrl: (name: string, _sf: string, format?: string) => `/soundfonts/${name}-${format || 'mp3'}.js`,
+        nameToUrl: (name: string, _sf: string, format?: string) => `${import.meta.env.BASE_URL}soundfonts/${name}-${format || 'mp3'}.js`,
         destination: analyser || ac.destination
       });
       

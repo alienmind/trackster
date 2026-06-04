@@ -31,7 +31,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       scope: process.env.VITE_BASE || '/',
-      includeAssets: ['favicon.svg', 'icons/*.png'],
+      includeAssets: ['favicon.svg'],
       manifest: {
         start_url: process.env.VITE_BASE || '/',
         name: 'Tracks(ter) - Circuit Tracks PCM Manager',
@@ -40,10 +40,6 @@ export default defineConfig({
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',
-        icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
-        ],
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5000000,
