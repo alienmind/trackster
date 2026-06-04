@@ -16,7 +16,6 @@ import {
 import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import ConfirmModal from './components/Core/ConfirmModal/ConfirmModal';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
-import BrowserWarning from './components/Core/BrowserWarning/BrowserWarning';
 import Toolbar from './components/Core/Toolbar/Toolbar';
 import DocumentViewer from './components/Core/DocumentViewer/DocumentViewer';
 import RightPane from './components/Core/RightPane/RightPane';
@@ -39,7 +38,6 @@ import ArturiaMiniFreak from './components/devices/MiniFreak/ArturiaMiniFreak';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
 
 export default function App() {
-  const isSupported = 'showDirectoryPicker' in window;
   const activePage = useUIStore((s) => s.activePage);
   const activeMainView = useUIStore((s) => s.activeMainView);
   const isDeviceMinimized = useUIStore((s) => s.isDeviceMinimized);
@@ -79,9 +77,6 @@ export default function App() {
     };
   }, []);
 
-  if (!isSupported) {
-    return <BrowserWarning />;
-  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
