@@ -1,3 +1,4 @@
+import { HARDWARE_LIBRARY } from '../../../devices';
 import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { Button } from '../../Core/ui/button';
@@ -19,7 +20,7 @@ export default function Toolbar() {
   const [infoModal, setInfoModal] = useState<{ isOpen: boolean, title: string, description: string }>({ isOpen: false, title: '', description: '' });
   const [newDeviceModalOpen, setNewDeviceModalOpen] = useState(false);
 
-  const DEVICES: { id: string; label: string; requiresMount?: boolean }[] = [
+  const ALL_DEVICES: { id: string; label: string; requiresMount?: boolean }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'circuit', label: 'Circuit Tracks', requiresMount: true },
     { id: 'grind', label: 'Behringer Grind' },
@@ -29,6 +30,12 @@ export default function Toolbar() {
     { id: 'ableton', label: 'Ableton Live' },
     { id: 'soundtoys', label: 'Sound Toys' },
   ];
+
+  const DEVICES = ALL_DEVICES.filter(device => {
+     if (['overview', 'soundtoys'].includes(device.id)) return true;
+     const bp = HARDWARE_LIBRARY[device.id];
+     return !(bp && bp.hideFromToolbar);
+  });
   
 
   return (
