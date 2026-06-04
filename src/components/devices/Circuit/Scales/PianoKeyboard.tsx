@@ -27,6 +27,7 @@ function PianoKey({
 }) {
   const [isPressed, setIsPressed] = useState(false);
   const { playNote, stopNote } = usePianoAudioStore();
+  const isPlaying = usePianoAudioStore(s => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i));
 
   const handlePress = (e: React.PointerEvent) => {
     if (!isAllowed) return;
@@ -60,8 +61,8 @@ function PianoKey({
           width: `${whiteKeyWidth}px`, 
           zIndex: 1,
           transformOrigin: 'top center',
-          transform: (isPressed && isAllowed) || usePianoAudioStore(s => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i)) ? 'scaleY(0.97)' : 'scaleY(1)',
-          backgroundColor: (isPressed && isAllowed) || usePianoAudioStore(s => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i)) ? '#fbcfe8' : undefined
+          transform: (isPressed && isAllowed) || isPlaying ? 'scaleY(0.97)' : 'scaleY(1)',
+          backgroundColor: (isPressed && isAllowed) || isPlaying ? '#fbcfe8' : undefined
         }}
       >
         <span className={`text-[10px] font-bold select-none ${isActiveRoot ? 'text-pink-600' : 'text-neutral-500'}`}>
@@ -87,8 +88,8 @@ function PianoKey({
           left: `${leftPos}px`, 
           zIndex: 2,
           transformOrigin: 'top center',
-          transform: (isPressed && isAllowed) || usePianoAudioStore(s => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i)) ? 'scaleY(0.95)' : 'scaleY(1)',
-          backgroundColor: (isPressed && isAllowed) || usePianoAudioStore(s => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i)) ? '#db2777' : undefined
+          transform: (isPressed && isAllowed) || isPlaying ? 'scaleY(0.95)' : 'scaleY(1)',
+          backgroundColor: (isPressed && isAllowed) || isPlaying ? '#db2777' : undefined
         }}
       >
          <span className={`text-[8px] font-bold select-none ${isActiveRoot ? 'text-pink-300' : 'text-neutral-400'}`}>
