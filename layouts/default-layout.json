@@ -110,7 +110,7 @@
         "y": 150
       },
       "sourcePort": "audioOut",
-      "targetPort": "audioIn",
+      "targetPort": "audioIn3",
       "midPoint": {
         "x": 2502.5340748440053,
         "y": 470.51250797937223
@@ -130,8 +130,8 @@
         "x": 0,
         "y": 100
       },
-      "sourcePort": "audioOut",
-      "targetPort": "audioIn",
+      "sourcePort": "audioOutL",
+      "targetPort": "audioIn5",
       "midPoint": {
         "x": 1764.4812221557506,
         "y": 143.09737006573997
@@ -141,7 +141,7 @@
       "id": "c_flow_usb",
       "source": "n_flow8",
       "target": "n_daw",
-      "type": "midi_usb",
+      "type": "audio_usb",
       "label": "USB Type-B to Type-A",
       "startOffset": {
         "x": 300,

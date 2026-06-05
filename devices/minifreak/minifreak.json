@@ -5,13 +5,48 @@
   "model": "MiniFreak Stellar",
   "tagline": "SYNTH",
   "width": 300,
-  "theme": { "border": "border-t-zinc-500", "header": "bg-zinc-950", "title": "text-zinc-300", "badge": "bg-zinc-800 text-zinc-400" },
+  "theme": {
+    "border": "border-t-zinc-500",
+    "header": "bg-zinc-950",
+    "title": "text-zinc-300",
+    "badge": "bg-zinc-800 text-zinc-400"
+  },
   "ports": [
-    { "id": "audioOutL", "type": "TS" },
-    { "id": "audioOutR", "type": "TS" },
-    { "id": "midiIn", "type": "MIDI_5PIN" },
-    { "id": "midiOut", "type": "MIDI_5PIN" },
-    { "id": "midiThru", "type": "MIDI_5PIN" },
-    { "id": "usbA", "type": "USB_A" }
+    {
+      "id": "audioOutL",
+      "type": "TS",
+      "direction": "out",
+      "label": "Audio Out L"
+    },
+    {
+      "id": "audioOutR",
+      "type": "TS",
+      "direction": "out",
+      "label": "Audio Out R"
+    },
+    {
+      "id": "midiIn",
+      "type": "MIDI_5PIN",
+      "direction": "in",
+      "label": "MIDI In"
+    },
+    {
+      "id": "midiOut",
+      "type": "MIDI_5PIN",
+      "direction": "out",
+      "label": "MIDI Out"
+    },
+    {
+      "id": "midiThru",
+      "type": "MIDI_5PIN",
+      "direction": "out",
+      "label": "MIDI Thru"
+    },
+    {
+      "id": "usbA",
+      "type": "USB_A",
+      "direction": "in_out",
+      "label": "USB-A"
+    }
   ]
 }

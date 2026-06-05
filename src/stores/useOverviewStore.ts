@@ -6,9 +6,15 @@ export type NodeType = 'circuit' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw
 
 export type AudioPortType = 'XLR' | 'TRS' | 'TR' | 'MINIJACK' | 'MIDI_5PIN' | 'USB_A' | 'USB_B' | 'USB_C' | 'POWER';
 
+export type PortDirection = 'in' | 'out' | 'in_out';
+
 export interface PortDef {
   id: string;
   type: AudioPortType;
+  /** Whether this physical port emits ('out') or receives ('in') signal. */
+  direction: PortDirection;
+  /** Optional human-friendly label for sidebar lists. Falls back to a humanised id. */
+  label?: string;
 }
 
 export interface HardwareDeviceData {

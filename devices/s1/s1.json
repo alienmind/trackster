@@ -5,14 +5,54 @@
   "model": "S1 Aira Compact",
   "tagline": "SYNTH",
   "width": 240,
-  "theme": { "border": "border-t-emerald-500", "header": "bg-emerald-950", "title": "text-emerald-400", "badge": "bg-emerald-900 text-emerald-200" },
+  "theme": {
+    "border": "border-t-emerald-500",
+    "header": "bg-emerald-950",
+    "title": "text-emerald-400",
+    "badge": "bg-emerald-900 text-emerald-200"
+  },
   "ports": [
-    { "id": "audioOut", "type": "MINIJACK_TRS" },
-    { "id": "audioIn", "type": "MINIJACK_TRS" },
-    { "id": "syncIn", "type": "MINIJACK_TS" },
-    { "id": "syncOut", "type": "MINIJACK_TS" },
-    { "id": "midiIn", "type": "MINIJACK_TRS" },
-    { "id": "midiOut", "type": "MINIJACK_TRS" },
-    { "id": "usbC", "type": "USB_C" }
+    {
+      "id": "audioOut",
+      "type": "MINIJACK_TRS",
+      "direction": "out",
+      "label": "Audio Out"
+    },
+    {
+      "id": "audioIn",
+      "type": "MINIJACK_TRS",
+      "direction": "in",
+      "label": "Audio In"
+    },
+    {
+      "id": "syncIn",
+      "type": "MINIJACK_TS",
+      "direction": "in",
+      "label": "Sync In"
+    },
+    {
+      "id": "syncOut",
+      "type": "MINIJACK_TS",
+      "direction": "out",
+      "label": "Sync Out"
+    },
+    {
+      "id": "midiIn",
+      "type": "MINIJACK_TRS",
+      "direction": "in",
+      "label": "MIDI In"
+    },
+    {
+      "id": "midiOut",
+      "type": "MINIJACK_TRS",
+      "direction": "out",
+      "label": "MIDI Out"
+    },
+    {
+      "id": "usbC",
+      "type": "USB_C",
+      "direction": "in_out",
+      "label": "USB-C"
+    }
   ]
 }

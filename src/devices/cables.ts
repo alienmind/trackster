@@ -6,6 +6,8 @@ export const CABLE_OPTIONS = [
   { value: 'audio_minijack_to_dual_trs', label: 'Minijack to Dual TRS' },
   { value: 'audio_trs_to_xlr', label: 'TRS to XLR' },
   { value: 'audio_xlr_to_xlr', label: 'XLR to XLR' },
+  { value: 'audio_usb', label: 'Audio USB' },
+  { value: 'audio_usb_c', label: 'Audio USB-C' },
   { value: 'midi_din', label: 'MIDI DIN 5-Pin' },
   { value: 'midi_din_to_trs', label: 'MIDI DIN to TRS' },
   { value: 'midi_usb', label: 'MIDI USB' },
@@ -13,18 +15,53 @@ export const CABLE_OPTIONS = [
   { value: 'power_cable', label: 'Power Cable' },
 ];
 
-export const CABLE_COLORS: Record<string, string> = {
-  audio_ts: "#f97316",
-  audio_trs: "#06b6d4",
-  audio_jack_to_minijack: "#a855f7",
-  audio_minijack_to_dual_trs: "#f472b6",
-  audio_trs_to_xlr: "#2dd4bf",
-  audio_xlr_to_xlr: "#fb7185",
-  midi_din_to_trs: "#34d399",
-  midi_din: "#10b981",
-  midi_usb_c: "#60a5fa",
-  midi_usb: "#3b82f6",
-  power_cable: "#4ade80",
-};
+// Cables are visually grouped into a handful of meta-categories. Each category
+// has a single colour so the canvas legend stays compact and uncluttered.
+// Add new categories here and CABLE_COLORS will route automatically.
+export type CableCategoryId = 'audio' | 'midi' | 'usb' | 'power';
 
-export const DEFAULT_CABLE_COLOR = "#666666";
+export interface CableCategory {
+  id: CableCategoryId;
+  label: string;
+  color: string;
+  // Whether to display this category in the on-canvas legend. Power cables
+  // are intentionally hidden to keep the legend focused on signal paths.
+  legend: boolean;
+}
+
+export const CABLE_CATEGORIES: CableCategory[] = [
+  { id: 'audio', label: 'Audio',        color: '#06b6d4', legend: true  }, // cyan
+  { id: 'midi',  label: 'MIDI',         color: '#10b981', legend: true  }, // emerald
+  { id: 'usb',   label: 'USB (audio)',  color: '#3b82f6', legend: true  }, // blue
+  { id: 'power', label: 'Power',        color: '#4ade80', legend: false }, // green
+];
+
+const CATEGORY_BY_ID: Record<CableCategoryId, CableCategory> =
+  Object.fromEntries(CABLE_CATEGORIES.map(c => [c.id, c])) as Record<CableCategoryId, CableCategory>;
+
+/**
+ * Classify a raw cable type string into one of the meta-categories.
+ * Order matters: tests USB before MIDI/audio so `audio_usb_c` is "usb",
+ * and `midi_usb` is also "usb" (it's a USB cable regardless of the protocol).
+ */
+export function categoryFor(type?: string): CableCategoryId {
+  if (!type) return 'audio';
+  if (type.startsWith('power')) return 'power';
+  if (type.includes('usb')) return 'usb';
+  if (type.startsWith('midi')) return 'midi';
+  return 'audio';
+}
+
+/**
+ * Per-type colour map. Every supported cable type resolves to its category
+ * colour, so cables painted on the canvas use the same handful of hues as
+ * the legend. Kept as a Record<string,string> for backwards compatibility
+ * with the existing `CABLE_COLORS[type]` consumers.
+ */
+export const CABLE_COLORS: Record<string, string> = Object.fromEntries(
+  CABLE_OPTIONS
+    .filter(o => o.value !== 'default')
+    .map(o => [o.value, CATEGORY_BY_ID[categoryFor(o.value)].color])
+);
+
+export const DEFAULT_CABLE_COLOR = '#666666';

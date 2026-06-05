@@ -5,15 +5,55 @@
   "model": "Circuit Tracks",
   "tagline": "GROOVEBOX",
   "width": 280,
-  "theme": { "border": "border-t-purple-500", "header": "bg-purple-950", "title": "text-purple-400", "badge": "bg-purple-900 text-purple-200" },
+  "theme": {
+    "border": "border-t-purple-500",
+    "header": "bg-purple-950",
+    "title": "text-purple-400",
+    "badge": "bg-purple-900 text-purple-200"
+  },
   "ports": [
-    { "id": "audioIn1", "type": "TS" },
-    { "id": "audioIn2", "type": "TS" },
-    { "id": "audioOut", "type": "TRS" },
-    { "id": "phonesOut", "type": "MINIJACK_TRS" },
-    { "id": "midiIn", "type": "MIDI_5PIN" },
-    { "id": "midiOut", "type": "MIDI_5PIN" },
-    { "id": "midiThru", "type": "MIDI_5PIN" }
+    {
+      "id": "audioIn1",
+      "type": "TS",
+      "direction": "in",
+      "label": "Audio In 1"
+    },
+    {
+      "id": "audioIn2",
+      "type": "TS",
+      "direction": "in",
+      "label": "Audio In 2"
+    },
+    {
+      "id": "audioOut",
+      "type": "TRS",
+      "direction": "out",
+      "label": "Audio Out"
+    },
+    {
+      "id": "phonesOut",
+      "type": "MINIJACK_TRS",
+      "direction": "out",
+      "label": "Headphones"
+    },
+    {
+      "id": "midiIn",
+      "type": "MIDI_5PIN",
+      "direction": "in",
+      "label": "MIDI In"
+    },
+    {
+      "id": "midiOut",
+      "type": "MIDI_5PIN",
+      "direction": "out",
+      "label": "MIDI Out"
+    },
+    {
+      "id": "midiThru",
+      "type": "MIDI_5PIN",
+      "direction": "out",
+      "label": "MIDI Thru"
+    }
   ],
   "requiresMount": true
 }

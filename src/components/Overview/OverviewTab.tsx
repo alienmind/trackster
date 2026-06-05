@@ -14,7 +14,7 @@ import {
   bestSide, getRoutingGridPoint, roundedPathFromPoints, 
   Point, MAX_CABLES_PER_SIDE
 } from './routing';
-import { CABLE_COLORS, CABLE_OPTIONS, DEFAULT_CABLE_COLOR } from '../../devices/cables';
+import { CABLE_CATEGORIES, CABLE_COLORS, DEFAULT_CABLE_COLOR } from '../../devices/cables';
 import NewDeviceModal from '../Core/NewDeviceModal/NewDeviceModal';
 import PromptModal from '../Core/PromptModal/PromptModal';
 import ConfirmModal from '../Core/ConfirmModal/ConfirmModal';
@@ -84,6 +84,22 @@ export default function OverviewTab() {
     clearLayout
   } = useOverviewStore();
   const [newDeviceOpen, setNewDeviceOpen] = useState(false);
+  // === Cable legend lives in a grid cell, just like any device ===
+  type LegendCell = { gridX: number; gridY: number; collapsed: boolean };
+  const [legendCell, setLegendCell] = useState<LegendCell>(() => {
+    try {
+      const raw = localStorage.getItem('alienmind_legend_cell');
+      if (raw) {
+        const parsed = JSON.parse(raw) as LegendCell;
+        if (typeof parsed?.gridX === 'number' && typeof parsed?.gridY === 'number') return parsed;
+      }
+    } catch {}
+    return { gridX: 0, gridY: 0, collapsed: false };
+  });
+  const persistLegendCell = (cell: LegendCell) => {
+    setLegendCell(cell);
+    try { localStorage.setItem('alienmind_legend_cell', JSON.stringify(cell)); } catch {}
+  };
   // Profile/layout modal state
   const [newProfileOpen, setNewProfileOpen] = useState(false);
   const [saveLayoutOpen, setSaveLayoutOpen] = useState(false);
@@ -204,7 +220,7 @@ export default function OverviewTab() {
   }, [containerSize, totalGridW, totalGridH, sidebarOffset]);
 
   const availW = Math.max(1, containerSize.width - sidebarOffset);
-  const panX = (availW - totalGridW * zoom) / 2; // drawer is on the right; grid takes left+centre
+  const panX = (availW - totalGridW * zoom) / 2;
   const panY = (containerSize.height - totalGridH * zoom) / 2;
 
   // Handle discrete zooming via Ctrl+Scroll
@@ -506,6 +522,33 @@ export default function OverviewTab() {
 
       const cell = pointerToCell(ev.clientX, ev.clientY);
       const targetId = cell ? findNodeAtCell(cell.gx, cell.gy) : null;
+
+      // -- Legend drag --------------------------------------------------
+      if (ds.id === '__LEGEND__') {
+        if (cell) {
+          // If a device is in the target cell, swap it into the legend's old cell.
+          const oldX = legendCell.gridX, oldY = legendCell.gridY;
+          if (targetId) {
+            setNodes(prev => {
+              const moved = prev[targetId];
+              if (!moved) return prev;
+              return { ...prev, [targetId]: { ...moved, gridX: oldX, gridY: oldY } };
+            });
+          }
+          persistLegendCell({ ...legendCell, gridX: cell.gx, gridY: cell.gy });
+        }
+        setDraggedNodeId(null);
+        setDragHoverNodeId(null);
+        return;
+      }
+
+      // -- Device drag --------------------------------------------------
+      // If the device would land on the legend's cell, push the legend to the device's old cell.
+      const draggedNode = nodes[ds.id];
+      if (cell && draggedNode && legendCell.gridX === cell.gx && legendCell.gridY === cell.gy) {
+        persistLegendCell({ ...legendCell, gridX: draggedNode.gridX, gridY: draggedNode.gridY });
+      }
+
       if (targetId && targetId !== ds.id) {
         setNodes((prev) => {
           const newNodes = { ...prev };
@@ -772,6 +815,54 @@ export default function OverviewTab() {
             })}
           </div>
 
+          {/* Cable legend — occupies one grid cell, drag to move */}
+          {(() => {
+            // Clamp legend cell into the visible grid, in case grid shrank.
+            const gx = Math.min(legendCell.gridX, effectiveGridSize - 1);
+            const gy = Math.min(legendCell.gridY, effectiveGridSize - 1);
+            const isLegendDragged = draggedNodeId === '__LEGEND__';
+            return (
+              <div
+                className={`absolute select-none z-20 ${isLegendDragged ? 'opacity-30 scale-[0.97] pointer-events-none' : ''}`}
+                onPointerDown={(e) => handlePointerDown(e as React.PointerEvent<HTMLDivElement>, '__LEGEND__')}
+                style={{
+                  left: MARGIN + gx * (CELL_W + MARGIN),
+                  top:  MARGIN + gy * (CELL_H + MARGIN),
+                  width: CELL_W,
+                  height: legendCell.collapsed ? 44 : CELL_H,
+                  transition: 'left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease',
+                }}
+              >
+                <div className="w-full h-full bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-xl flex flex-col cursor-grab active:cursor-grabbing">
+                  <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-neutral-800/50">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">Cable Colors</div>
+                    <button
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); persistLegendCell({ ...legendCell, collapsed: !legendCell.collapsed }); }}
+                      title={legendCell.collapsed ? 'Expand legend' : 'Collapse legend'}
+                      className="text-neutral-500 hover:text-cyan-400 transition pointer-events-auto"
+                    >
+                      {legendCell.collapsed ? <Icons.ChevronDown size={14} /> : <Icons.ChevronUp size={14} />}
+                    </button>
+                  </div>
+                  {!legendCell.collapsed && (
+                    <div className="flex-1 overflow-auto px-3 py-2">
+                      <div className="flex flex-col gap-1.5 text-[12px]">
+                        {CABLE_CATEGORIES.filter(cat => cat.legend).map(cat => (
+                          <div key={cat.id} className="flex items-center gap-2 text-neutral-300">
+                            <div className="w-6 h-1.5 rounded" style={{ background: cat.color }} />
+                            <span className="truncate">{cat.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Floating drag ghost — follows the cursor */}
           {draggedNodeId && ghostPos && (() => {
             const node = nodes[draggedNodeId];
@@ -798,11 +889,18 @@ export default function OverviewTab() {
 
         {/* Empty state */}
         {nodeCount === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-neutral-500">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center text-neutral-500 pointer-events-auto">
               <Icons.LayoutGrid size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium">No devices on the grid</p>
-              <p className="text-sm mt-1">Add devices from the sidebar to get started</p>
+              <p className="text-lg font-medium mb-4">No devices on the grid</p>
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-neutral-900/90 backdrop-blur border border-neutral-700/60 hover:bg-neutral-800"
+                onClick={() => setNewDeviceOpen(true)}
+              >
+                <Icons.Plus size={16} className="mr-2" /> New Device
+              </Button>
             </div>
           </div>
         )}
@@ -841,18 +939,6 @@ export default function OverviewTab() {
           >+</button>
         </div>
 
-        {/* Cable legend — bottom-left */}
-        <div className="absolute bottom-4 left-4 z-40 bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-lg p-3 pointer-events-auto max-w-[220px]">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Cable Colors</div>
-          <div className="flex flex-col gap-1 text-[10px]">
-            {CABLE_OPTIONS.filter(o => o.value !== 'default').map(opt => (
-              <div key={opt.value} className="flex items-center gap-2 text-neutral-300">
-                <div className="w-4 h-1 rounded" style={{ background: CABLE_COLORS[opt.value] || DEFAULT_CABLE_COLOR }} />
-                <span className="truncate">{opt.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* New Device modal */}

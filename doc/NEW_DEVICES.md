@@ -21,11 +21,32 @@ Under the hood, every device in Trackster is defined by a `HardwareBlueprint` ob
 ### Cable & Port Types
 
 Trackster routes cables between device ports. These connections are styled and color-coded based on the connection standard defined in `src/devices/cables.ts`. The standard list of cables includes:
-- **Audio**: `audio_ts` (Mono), `audio_trs` (Stereo), `audio_jack_to_minijack`, `audio_minijack_to_dual_trs`, `audio_trs_to_xlr`, `audio_xlr_to_xlr`
+- **Audio (analog)**: `audio_ts` (Mono), `audio_trs` (Stereo), `audio_jack_to_minijack`, `audio_minijack_to_dual_trs`, `audio_trs_to_xlr`, `audio_xlr_to_xlr`
+- **Audio (digital over USB)**: `audio_usb`, `audio_usb_c`
 - **MIDI**: `midi_din` (5-pin), `midi_din_to_trs`, `midi_usb`, `midi_usb_c`
 - **Power**: `power_cable`
 
 *Note: The actual ports listed in the device blueprint (e.g., `TS`, `TRS`, `MINIJACK`, `XLR_MALE`, `USB_C`) restrict which cables can logically connect to them.*
+
+## Port Directions (in / out / in_out)
+
+Every port must declare a `direction` so the Overview can show clean Inputs / Outputs / General groupings and route cables correctly:
+
+- `"out"`: port emits signal (audio out, MIDI out, headphone out, sync out, ...)
+- `"in"`:  port receives signal (audio in, MIDI in, sync in, ...)
+- `"in_out"`: bidirectional. Use this for USB / USB-C / network ports where data flows both ways. These render under a "General" group in the properties panel.
+
+An optional `"label"` field provides a friendlier display name; if omitted, the port's `id` is humanised automatically (`audioOutL` -> `Audio Out L`).
+
+```json
+{
+  "ports": [
+    { "id": "audioOut",  "type": "TRS",      "direction": "out", "label": "Audio Out" },
+    { "id": "midiIn",    "type": "MIDI_5PIN","direction": "in",  "label": "MIDI In"   },
+    { "id": "usbC",      "type": "USB_C",    "direction": "in_out", "label": "USB-C"  }
+  ]
+}
+```
 
 ## Sourcing Images (Frictionless Paste)
 
@@ -59,10 +80,12 @@ Copy and paste the following prompt into your favorite LLM, and **attach a pictu
 >   },
 >   "ports": [
 >     // Map out the physical ports visible on the device.
->     // ID should conventionally contain "In" or "Out" (e.g. "audioIn", "midiOut") so they are auto-placed on the left/right.
->     // Type must be one of the standard port types: TS, TRS, MINIJACK_TS, MINIJACK_TRS, XLR_MALE, XLR_FEMALE, SPEAKON, BANANA, RCA, MIDI_5PIN, SPDIF_OPTICAL, SPDIF_COAXIAL, USB_A, USB_B, USB_C, POWER.
->     { "id": "audioOut", "type": "TRS" },
->     { "id": "midiIn", "type": "MIDI_5PIN" }
+>     // - `id`:        a short camelCase identifier (e.g. "audioOut", "midiIn", "usbC"). It is also used as the asset key.
+>     // - `type`:      one of the standard port types: TS, TRS, MINIJACK_TS, MINIJACK_TRS, XLR_MALE, XLR_FEMALE, SPEAKON, BANANA, RCA, MIDI_5PIN, SPDIF_OPTICAL, SPDIF_COAXIAL, USB_A, USB_B, USB_C, POWER.
+>     // - `direction`: REQUIRED. One of "out" (emits), "in" (receives), or "in_out" (bidirectional, e.g. USB).
+>     // - `label`:     optional human-friendly display name shown in the properties panel.
+>     { "id": "audioOut", "type": "TRS",      "direction": "out", "label": "Audio Out" },
+>     { "id": "midiIn",   "type": "MIDI_5PIN","direction": "in",  "label": "MIDI In"   }
 >   ],
 >   "svgRender": "<svg viewBox=\"0 0 300 200\" xmlns=\"http://www.w3.org/2000/svg\">...</svg>",
 >   "imageUrl": "" // Optional: URL to an image (PNG/JPG/WEBP/GIF) (used if svgRender is empty)

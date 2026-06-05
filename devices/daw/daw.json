@@ -14,11 +14,15 @@
   "ports": [
     {
       "id": "usbIn",
-      "type": "USB_A"
+      "type": "USB_A",
+      "direction": "in_out",
+      "label": "USB In/Out"
     },
     {
       "id": "usbOut",
-      "type": "USB_A"
+      "type": "USB_A",
+      "direction": "in_out",
+      "label": "USB In/Out"
     }
   ]
 }

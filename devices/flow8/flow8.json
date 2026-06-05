@@ -5,16 +5,66 @@
   "model": "Behringer Flow 8",
   "tagline": "MIXER",
   "width": 320,
-  "theme": { "border": "border-t-yellow-500", "header": "bg-yellow-950", "title": "text-yellow-400", "badge": "bg-yellow-900 text-yellow-200" },
+  "theme": {
+    "border": "border-t-yellow-500",
+    "header": "bg-yellow-950",
+    "title": "text-yellow-400",
+    "badge": "bg-yellow-900 text-yellow-200"
+  },
   "ports": [
-    { "id": "usbIn", "type": "USB_B" },
-    { "id": "usbOut", "type": "USB_B" },
-    { "id": "audioIn3", "type": "TRS" },
-    { "id": "audioIn4", "type": "TRS" },
-    { "id": "audioIn5", "type": "TS" },
-    { "id": "audioIn6", "type": "TS" },
-    { "id": "audioIn7", "type": "TS" },
-    { "id": "audioIn8", "type": "TS" },
-    { "id": "audioOut", "type": "XLR_MALE" }
+    {
+      "id": "usbIn",
+      "type": "USB_B",
+      "direction": "in_out",
+      "label": "USB In/Out"
+    },
+    {
+      "id": "usbOut",
+      "type": "USB_B",
+      "direction": "in_out",
+      "label": "USB In/Out"
+    },
+    {
+      "id": "audioIn3",
+      "type": "TRS",
+      "direction": "in",
+      "label": "Audio In 3"
+    },
+    {
+      "id": "audioIn4",
+      "type": "TRS",
+      "direction": "in",
+      "label": "Audio In 4"
+    },
+    {
+      "id": "audioIn5",
+      "type": "TS",
+      "direction": "in",
+      "label": "Audio In 5"
+    },
+    {
+      "id": "audioIn6",
+      "type": "TS",
+      "direction": "in",
+      "label": "Audio In 6"
+    },
+    {
+      "id": "audioIn7",
+      "type": "TS",
+      "direction": "in",
+      "label": "Audio In 7"
+    },
+    {
+      "id": "audioIn8",
+      "type": "TS",
+      "direction": "in",
+      "label": "Audio In 8"
+    },
+    {
+      "id": "audioOut",
+      "type": "XLR_MALE",
+      "direction": "out",
+      "label": "Audio Out"
+    }
   ]
 }
