@@ -11,11 +11,14 @@ interface UIState {
   notifications: Notification[];
 
   isLeftPaneCollapsed: boolean;
-  isRightPaneCollapsed: boolean;
+  isUtilityPaneCollapsed: boolean;
   selectedFile: SampleFile | null;
   activeDoc: { url: string; type: 'pdf' | 'md' } | null;
-  rightPaneWidth: number;
+  utilityPaneWidth: number;
   isDeviceMinimized: boolean;
+
+  activeDocSection: string | null;
+  hoveredDocSection: string | null;
 
   isDuplicateModalOpen: boolean;
   duplicateClusters: SampleFile[][];
@@ -40,12 +43,15 @@ interface UIState {
   addNotification: (notification: Omit<Notification, 'id'>) => void;
   dismissNotification: (id: string) => void;
   toggleLeftPane: () => void;
-  toggleRightPane: () => void;
-  setRightPaneCollapsed: (collapsed: boolean) => void;
+  toggleUtilityPane: () => void;
+  setUtilityPaneCollapsed: (collapsed: boolean) => void;
   setSelectedFile: (file: SampleFile | null) => void;
   setActiveDoc: (doc: { url: string; type: 'pdf' | 'md' } | null) => void;
-  setRightPaneWidth: (width: number) => void;
+  setUtilityPaneWidth: (width: number) => void;
   setDeviceMinimized: (minimized: boolean) => void;
+
+  setActiveDocSection: (sectionId: string | null) => void;
+  setHoveredDocSection: (sectionId: string | null) => void;
 
   openDuplicateModal: (clusters: SampleFile[][]) => void;
   closeDuplicateModal: () => void;
@@ -67,11 +73,14 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isCommitDialogOpen: false,
   notifications: [],
   isLeftPaneCollapsed: false,
-  isRightPaneCollapsed: true,
+  isUtilityPaneCollapsed: true,
   selectedFile: null,
   activeDoc: null,
-  rightPaneWidth: 400,
+  utilityPaneWidth: 400,
   isDeviceMinimized: false,
+
+  activeDocSection: null,
+  hoveredDocSection: null,
 
   isDuplicateModalOpen: false,
   duplicateClusters: [],
@@ -86,13 +95,13 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   deferredPrompt: null,
 
   setActiveMainView: (view) => set((state) => {
-    let rightPaneCollapsed = state.isRightPaneCollapsed;
+    let rightPaneCollapsed = state.isUtilityPaneCollapsed;
     if (view === 'circuit') {
       rightPaneCollapsed = false; // Always open for circuit tracks
     } else if (!state.activeDoc) {
       rightPaneCollapsed = true; // Collapse for other views if no doc is open
     }
-    return { activeMainView: view, activeDoc: null, isRightPaneCollapsed: rightPaneCollapsed };
+    return { activeMainView: view, activeDoc: null, isUtilityPaneCollapsed: rightPaneCollapsed };
   }),
   setActivePage: (page) => {
     set({ activePage: page });
@@ -149,11 +158,11 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   },
 
   toggleLeftPane: () => set((state) => ({ isLeftPaneCollapsed: !state.isLeftPaneCollapsed })),
-  toggleRightPane: () => set((state) => ({ isRightPaneCollapsed: !state.isRightPaneCollapsed })),
-  setRightPaneCollapsed: (collapsed) => set({ isRightPaneCollapsed: collapsed }),
+  toggleUtilityPane: () => set((state) => ({ isUtilityPaneCollapsed: !state.isUtilityPaneCollapsed })),
+  setUtilityPaneCollapsed: (collapsed) => set({ isUtilityPaneCollapsed: collapsed }),
   setSelectedFile: (file) => set({ selectedFile: file }),
   setActiveDoc: (doc) => set((state) => {
-    let newWidth = state.rightPaneWidth;
+    let newWidth = state.utilityPaneWidth;
     if (doc && typeof window !== 'undefined') {
       const halfWidth = window.innerWidth * 0.5;
       if (newWidth < halfWidth) {
@@ -168,13 +177,17 @@ const storeCreator: StateCreator<UIState> = (set) => ({
     
     return { 
       activeDoc: doc, 
-      isRightPaneCollapsed: doc ? false : shouldCollapse, 
+      activeDocSection: null,
+      isUtilityPaneCollapsed: doc ? false : shouldCollapse, 
       isDeviceMinimized: false, 
-      rightPaneWidth: newWidth 
+      utilityPaneWidth: newWidth 
     };
   }),
-  setRightPaneWidth: (width) => set({ rightPaneWidth: width }),
+  setUtilityPaneWidth: (width) => set({ utilityPaneWidth: width }),
   setDeviceMinimized: (minimized) => set({ isDeviceMinimized: minimized }),
+
+  setActiveDocSection: (sectionId) => set({ activeDocSection: sectionId }),
+  setHoveredDocSection: (sectionId) => set({ hoveredDocSection: sectionId }),
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
   closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] }),
@@ -196,8 +209,8 @@ export const useUIStore = create<UIState>()(
         activePage: state.activePage,
         activeMainView: state.activeMainView,
         isLeftPaneCollapsed: state.isLeftPaneCollapsed,
-        isRightPaneCollapsed: state.isRightPaneCollapsed,
-        rightPaneWidth: state.rightPaneWidth
+        isUtilityPaneCollapsed: state.isUtilityPaneCollapsed,
+        utilityPaneWidth: state.utilityPaneWidth
       })
     }
   )
