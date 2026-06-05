@@ -1,6 +1,52 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { OverviewNode } from '../../stores/useOverviewStore';
 import { HARDWARE_LIBRARY } from '../../devices';
+
+// Fixed intrinsic size for visual()-rendered devices. We render the visual at
+// these dimensions, then scale it down with a CSS transform to fit the cell.
+const VIRTUAL_W = 320;
+const VIRTUAL_H = 220;
+
+function ScaledVisual({ children }: { children: React.ReactNode }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const parent = el.parentElement as HTMLElement;
+    const fit = () => {
+      const r = parent.getBoundingClientRect();
+      const PAD = 8;
+      const availW = Math.max(20, r.width - PAD * 2);
+      const availH = Math.max(20, r.height - PAD * 2);
+      const s = Math.min(availW / VIRTUAL_W, availH / VIRTUAL_H);
+      setScale(Math.max(0.05, s));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={wrapRef}
+      style={{
+        width: VIRTUAL_W,
+        height: VIRTUAL_H,
+        transform: `scale(${scale})`,
+        transformOrigin: 'center center',
+        flexShrink: 0,
+      }}
+      className="flex items-center justify-center"
+    >
+      <div style={{ width: VIRTUAL_W, height: VIRTUAL_H }} className="flex items-center justify-center">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 const deviceImages = import.meta.glob('../../../devices/*/device.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
@@ -14,8 +60,10 @@ interface GridNodeProps {
 export default function GridNode({ node, isSelected, onSelect, onNavigate }: GridNodeProps) {
   const blueprint = HARDWARE_LIBRARY[node.type];
   
-  // Find the matching device.png image
-  const imageKey = Object.keys(deviceImages).find(k => k.includes(`/${node.type}/`));
+  // Find the matching device.png image. Use the blueprint's optional assetFolder
+  // override when the on-disk folder name differs from the node type (e.g. 'circuit' -> 'circuittracks').
+  const assetFolder = blueprint?.assetFolder || node.type;
+  const imageKey = Object.keys(deviceImages).find(k => k.includes(`/${assetFolder}/`));
   const imageUrl = imageKey ? deviceImages[imageKey] : undefined;
 
   // Some devices have a visual() React component instead of a device.png
@@ -25,7 +73,7 @@ export default function GridNode({ node, isSelected, onSelect, onNavigate }: Gri
     <div 
       className={`relative w-full h-full flex flex-col rounded-xl overflow-hidden transition-all
         ${isSelected 
-          ? 'border-2 border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.25)] scale-[1.02] z-10' 
+          ? 'border-2 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.55)] scale-[1.04] z-10 ring-2 ring-cyan-400/40 ring-offset-2 ring-offset-neutral-950' 
           : 'border border-neutral-700/60 hover:border-neutral-500/80 hover:shadow-lg'
         }
         bg-neutral-900`}
@@ -60,13 +108,7 @@ export default function GridNode({ node, isSelected, onSelect, onNavigate }: Gri
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors z-10 pointer-events-none" />
         
         {hasVisual ? (
-          <div className="w-full h-full relative flex items-center justify-center">
-             <div className="absolute inset-0 flex items-center justify-center" style={{ transform: 'scale(0.7)', transformOrigin: 'center' }}>
-               <div className="w-[140%] shrink-0 flex items-center justify-center">
-                 {blueprint!.visual!()}
-               </div>
-             </div>
-          </div>
+          <ScaledVisual>{blueprint!.visual!()}</ScaledVisual>
         ) : imageUrl ? (
           <img 
             src={imageUrl} 

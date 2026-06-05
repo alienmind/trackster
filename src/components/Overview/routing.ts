@@ -242,3 +242,30 @@ export function roundedPathFromPoints(points: Point[], radius: number = 10): str
 
   return d;
 }
+
+// === Capacity constraints (OVERVIEW.md §4) ===
+export const MAX_CABLES_PER_SIDE = 4;
+export const MAX_CONNECTIONS_PER_DEVICE = 16;
+
+/**
+ * Like getEdgeAnchor but distributes multiple cables equidistantly along a side.
+ * `index` is the 0-based position, `total` is the count of cables on that side.
+ */
+export function getDistributedEdgeAnchor(
+  gridX: number, gridY: number,
+  side: 'left' | 'right' | 'top' | 'bottom',
+  index: number, total: number,
+  cellW: number, cellH: number, margin: number
+): Point {
+  const cellLeft = margin + gridX * (cellW + margin);
+  const cellTop = margin + gridY * (cellH + margin);
+
+  const fraction = (index + 1) / (total + 1);
+
+  switch (side) {
+    case 'left':   return { x: cellLeft,          y: cellTop + cellH * fraction };
+    case 'right':  return { x: cellLeft + cellW,   y: cellTop + cellH * fraction };
+    case 'top':    return { x: cellLeft + cellW * fraction, y: cellTop };
+    case 'bottom': return { x: cellLeft + cellW * fraction, y: cellTop + cellH };
+  }
+}

@@ -13,7 +13,7 @@ import { FunctionButton } from '../../Core/HardwareUI/FunctionButton';
 import { FunctionPad } from '../../Core/HardwareUI/FunctionPad';
 import { DownArrow, UpArrow, RecordIcon, PlayIcon } from '../../Core/HardwareUI/Icons';
 import ScaleFit from '../../Core/ScaleFit/ScaleFit';
-import circuitGuideUrl from "../../../../doc/circuit/circuit-tracks-guide.md?url";
+import circuitGuideUrl from "../../../../doc/circuittracks/circuit-tracks-guide.md?url";
 
 export default function CircuitTracksDevice() {
   const deviceMode = useCircuitTracksStore((s) => s.deviceMode);
@@ -28,9 +28,13 @@ export default function CircuitTracksDevice() {
   const selectedPadIndex = useUIStore((s) => s.selectedPadIndex);
   const selectPad = useUIStore((s) => s.selectPad);
   const setSelectedFile = useUIStore((s) => s.setSelectedFile);
-  const { setActiveDocSection, activeDoc, setActiveDoc } = useUIStore();
+  const { setActiveDocSection, activeDoc, setActiveDoc, helpMode } = useUIStore();
 
   const handleSectionClick = (sectionId: string) => {
+    // Inline help / section highlighting only fires when the user has opted
+    // into help mode via the floating "?" toggle. Otherwise controls keep
+    // their normal behaviour without popping the documentation drawer.
+    if (!helpMode) return;
     setActiveDocSection(sectionId);
     if (!activeDoc || activeDoc.url !== circuitGuideUrl) {
       setActiveDoc({ url: circuitGuideUrl, type: 'md' });
@@ -136,7 +140,7 @@ export default function CircuitTracksDevice() {
             <FunctionButton 
               label="Scales" 
               isActive={true} 
-              onClick={() => { setDeviceMode(deviceMode === 'scales' ? 'samples' : 'scales'); handleSectionClick('251-scales'); }}
+              onClick={() => { if (!helpMode) setDeviceMode(deviceMode === 'scales' ? 'samples' : 'scales'); handleSectionClick('251-scales'); }}
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="251-scales"
             />
@@ -147,7 +151,7 @@ export default function CircuitTracksDevice() {
               topLabel="Tap" 
               label={"Tempo\nSwing"} 
               isActive={deviceMode === 'tempo'}
-              onClick={() => { setDeviceMode(deviceMode === 'tempo' ? 'samples' : 'tempo'); handleSectionClick('263-tempo-swing'); }}
+              onClick={() => { if (!helpMode) setDeviceMode(deviceMode === 'tempo' ? 'samples' : 'tempo'); handleSectionClick('263-tempo-swing'); }}
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="263-tempo-swing"
             />
@@ -155,7 +159,7 @@ export default function CircuitTracksDevice() {
               topLabel="Click" 
               label="Clear" 
               isActive={true} 
-              onClick={() => { clearActivePack(); handleSectionClick('264-clear'); }} 
+              onClick={() => { if (!helpMode) clearActivePack(); handleSectionClick('264-clear'); }} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="264-clear"
             />
@@ -163,7 +167,7 @@ export default function CircuitTracksDevice() {
               topLabel="Mutate" 
               label="Duplicate" 
               isActive={true} 
-              onClick={() => { duplicateActivePack(); handleSectionClick('265-duplicate'); }} 
+              onClick={() => { if (!helpMode) duplicateActivePack(); handleSectionClick('265-duplicate'); }} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="265-duplicate"
             />
@@ -172,7 +176,7 @@ export default function CircuitTracksDevice() {
               topLabel="Packs" 
               label="Projects" 
               isActive={true} 
-              onClick={() => { setDeviceMode(deviceMode === 'packs' ? 'samples' : 'packs'); handleSectionClick('267-projects'); }} 
+              onClick={() => { if (!helpMode) setDeviceMode(deviceMode === 'packs' ? 'samples' : 'packs'); handleSectionClick('267-projects'); }} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="267-projects"
             />

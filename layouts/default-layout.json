@@ -51,9 +51,9 @@
       "zIndex": 33,
       "isExpanded": false
     },
-    "n_ableton": {
-      "id": "n_ableton",
-      "type": "ableton",
+    "n_daw": {
+      "id": "n_daw",
+      "type": "daw",
       "x": 3253.9074125444085,
       "y": 310.5278484270192,
       "zIndex": 40,
@@ -140,7 +140,7 @@
     "c_flow_usb": {
       "id": "c_flow_usb",
       "source": "n_flow8",
-      "target": "n_ableton",
+      "target": "n_daw",
       "type": "midi_usb",
       "label": "USB Type-B to Type-A",
       "startOffset": {

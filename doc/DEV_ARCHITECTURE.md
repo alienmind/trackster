@@ -121,7 +121,7 @@ We enforce a strict semantic color coding for UI buttons (`src/components/Core/u
 ## 8. How to Add a New Device
 1.  **Device Definition**: Create a JSON definition outlining the device's metadata and its inputs/outputs to be used in the routing canvas. Store this JSON inside `devices/[deviceId]/[deviceId].json`. Provide a transparent top-down image as `device.png` in the same directory.
     
-    Here is an empty skeleton of the device JSON definition. For complete examples, look at `devices/minifreak/minifreak.json` or `devices/circuit/circuit.json`:
+    Here is an empty skeleton of the device JSON definition. For complete examples, look at `devices/minifreak/minifreak.json` or `devices/circuittracks/circuit.json`:
     
     ```json
     {

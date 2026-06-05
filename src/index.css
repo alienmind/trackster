@@ -144,3 +144,20 @@ body {
     @apply font-sans;
   }
 }
+/* Overview drag — suppress text selection and image dragging while in progress */
+body.overview-dragging,
+body.overview-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: grabbing !important;
+}
+body.overview-dragging img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
+}
+.grid-node-container,
+.grid-node-container * {
+  -webkit-user-drag: none;
+  user-drag: none;
+}

@@ -1,9 +1,9 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 import { Laptop } from 'lucide-react';
 
-import data from '../../devices/ableton/ableton.json';
+import data from '../../devices/daw/daw.json';
 
-export const ableton: HardwareBlueprint = {
+export const daw: HardwareBlueprint = {
   ...(data as unknown as HardwareBlueprint),
 visual: () => (
     <div className="w-full flex flex-col items-center justify-center py-6 pointer-events-none bg-neutral-900 rounded shadow-inner border border-neutral-800 gap-3">

@@ -46,6 +46,7 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
   const [showPreview, setShowPreview] = useState(true);
   const [parsedConfig, setParsedConfig] = useState<any>(null);
   const addNode = useOverviewStore((s) => s.addNode);
+  const findNextFreeCell = useOverviewStore((s) => s.findNextFreeCell);
 
   // Parse config for model name
   useEffect(() => {
@@ -127,13 +128,12 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
 
   const handleAddExisting = (deviceType: string) => {
     const id = `n_${deviceType}_${Math.random().toString(36).substring(2, 6)}`;
-    
-    // Determine screen center roughly (would be better to use viewport pan/zoom offsets, but simple for now)
+    const { gridX, gridY } = findNextFreeCell();
     addNode(id, {
       id,
       type: deviceType,
-      gridX: 0,
-      gridY: 0,
+      gridX,
+      gridY,
       zIndex: 100,
       isExpanded: true,
     });
