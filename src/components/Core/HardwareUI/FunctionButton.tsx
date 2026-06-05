@@ -15,7 +15,8 @@ interface FunctionButtonProps {
 }
 
 export const FunctionButton = ({ label, topLabel, bottomLabel, icon, labelColor, className, isActive = false, onClick, sectionId }: FunctionButtonProps) => {
-  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
+  const { hoveredDocSection, setHoveredDocSection, helpMode } = useUIStore();
+  const interactive = helpMode && !!sectionId;
   const handleClick = () => {
     if (onClick) onClick();
   };
@@ -24,10 +25,10 @@ export const FunctionButton = ({ label, topLabel, bottomLabel, icon, labelColor,
     <div 
       className={cn(
         "flex flex-col items-center justify-center w-full relative rounded-lg p-1 transition-all duration-300",
-        hoveredDocSection === sectionId && sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
+        interactive && hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
       )}
-      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
-      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+      onPointerEnter={() => interactive && setHoveredDocSection(sectionId!)}
+      onPointerLeave={() => interactive && setHoveredDocSection(null)}
     >
       <div className="h-5 flex items-end justify-center pb-1 w-full">
         {topLabel && <span className="text-[9px] text-gray-400 font-medium tracking-wide text-center leading-none">{topLabel}</span>}

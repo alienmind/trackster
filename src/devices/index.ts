@@ -3,7 +3,7 @@ import { grind } from './grind';
 import { s1 } from './s1';
 import { circuit } from './circuit';
 import { flow8 } from './flow8';
-import { ableton } from './ableton';
+import { daw } from './daw';
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
 export const HARDWARE_LIBRARY: Record<string, HardwareBlueprint> = {
@@ -12,5 +12,5 @@ export const HARDWARE_LIBRARY: Record<string, HardwareBlueprint> = {
   s1,
   minifreak,
   flow8,
-  ableton
+  daw
 };

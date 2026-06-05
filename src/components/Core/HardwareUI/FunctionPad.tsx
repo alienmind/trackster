@@ -15,7 +15,8 @@ interface FunctionPadProps {
 }
 
 export const FunctionPad = ({ label, subLabel, icon, labelColor, subLabelColor, isActive = false, onClick, className = '', sectionId }: FunctionPadProps) => {
-  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
+  const { hoveredDocSection, setHoveredDocSection, helpMode } = useUIStore();
+  const interactive = helpMode && !!sectionId;
   const handleClick = () => {
     if (onClick) onClick();
   };
@@ -24,10 +25,10 @@ export const FunctionPad = ({ label, subLabel, icon, labelColor, subLabelColor, 
     <div
       className={cn(
         "relative rounded-lg p-1 transition-all duration-300 w-full aspect-square",
-        hoveredDocSection === sectionId && sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
+        interactive && hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
       )}
-      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
-      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+      onPointerEnter={() => interactive && setHoveredDocSection(sectionId!)}
+      onPointerLeave={() => interactive && setHoveredDocSection(null)}
     >
       <button
         onClick={handleClick}

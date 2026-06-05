@@ -14,6 +14,7 @@ import {
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible';
 import { useUIStore } from '../../../stores/useUIStore';
 import { HARDWARE_LIBRARY } from '../../../devices';
+import { useOverviewStore } from '../../../stores/useOverviewStore';
 import Logo from '../Logo';
 import * as Icons from 'lucide-react';
 import pkg from '../../../../package.json';
@@ -21,34 +22,27 @@ import { ThemeToggle } from '../ThemeToggle';
 import { Button } from '../ui/button';
 import { del } from 'idb-keyval';
 import ConfirmModal from '../ConfirmModal/ConfirmModal';
-import NewDeviceModal from '../NewDeviceModal/NewDeviceModal';
 import { useState } from 'react';
 
 export function AppSidebar() {
   const { activeMainView, setActiveMainView, sidebarSectionStates, setSidebarSectionState, isOscilloscopeOpen, setOscilloscopeOpen } = useUIStore();
 
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, description: React.ReactNode, onConfirm: () => void, destructive?: boolean }>({ isOpen: false, title: '', description: '', onConfirm: () => {} });
-  const [newDeviceModalOpen, setNewDeviceModalOpen] = useState(false);
 
-  const hardwareDevices = Object.values(HARDWARE_LIBRARY)
-    .filter(device => !device.hideFromToolbar)
-    .map(device => ({
-      id: device.id,
-      label: device.longName,
-      requiresMount: device.requiresMount
-    }));
+  // Devices in the navbar reflect the CURRENT profile (overview store nodes),
+  // not the whole hardware library. Overview and Sound Toys are always present.
+  const overviewNodes = useOverviewStore(state => state.nodes);
+  const activeDeviceTypes = Array.from(new Set(Object.values(overviewNodes).map(n => n.type)));
+  const hardwareDevices = activeDeviceTypes
+    .map(type => HARDWARE_LIBRARY[type])
+    .filter((bp): bp is NonNullable<typeof bp> => !!bp)
+    .map(bp => ({ id: bp.id, label: bp.longName, requiresMount: bp.requiresMount }));
 
-  const ALL_DEVICES = [
+  const DEVICES = [
     { id: 'overview', label: 'Overview', icon: Icons.Activity },
     ...hardwareDevices.map(d => ({ ...d, icon: Icons.Cpu })),
     { id: 'soundtoys', label: 'Sound Toys', icon: Icons.AudioWaveform },
   ];
-
-  const DEVICES = ALL_DEVICES.filter(device => {
-     if (['overview', 'soundtoys'].includes(device.id)) return true;
-     const bp = HARDWARE_LIBRARY[device.id];
-     return !(bp && bp.hideFromToolbar);
-  });
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -87,12 +81,6 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={() => setNewDeviceModalOpen(true)} tooltip="Add New Device">
-                      <Icons.Plus className="w-4 h-4" />
-                      <span>Add New Device</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -184,10 +172,6 @@ export function AppSidebar() {
         destructive={confirmModal.destructive}
         onConfirm={confirmModal.onConfirm} 
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
-      />
-      <NewDeviceModal
-        isOpen={newDeviceModalOpen}
-        onClose={() => setNewDeviceModalOpen(false)}
       />
     </Sidebar>
   );

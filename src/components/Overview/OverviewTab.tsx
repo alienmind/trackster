@@ -10,11 +10,15 @@ import { useUIStore } from '../../stores/useUIStore';
 import GridNode from './GridNode';
 import OverviewSidebar from './OverviewSidebar';
 import { 
-  findPath, getPhysicalCoordinate, getEdgeAnchor, 
+  findPath, getPhysicalCoordinate, getDistributedEdgeAnchor, 
   bestSide, getRoutingGridPoint, roundedPathFromPoints, 
-  Point
+  Point, MAX_CABLES_PER_SIDE
 } from './routing';
-import { CABLE_COLORS, DEFAULT_CABLE_COLOR } from '../../devices/cables';
+import { CABLE_COLORS, CABLE_OPTIONS, DEFAULT_CABLE_COLOR } from '../../devices/cables';
+import NewDeviceModal from '../Core/NewDeviceModal/NewDeviceModal';
+import { HARDWARE_LIBRARY } from '../../devices';
+import PromptModal from '../Core/PromptModal/PromptModal';
+import ConfirmModal from '../Core/ConfirmModal/ConfirmModal';
 
 const CELL_W = 280;
 const CELL_H = 220;
@@ -74,8 +78,18 @@ export default function OverviewTab() {
   const { 
     nodes, connections, gridSize, setGridSize, 
     selectedNodeId, setSelectedNodeId,
-    setNodes, setConnections
+    selectedConnectionId, setSelectedConnectionId, setCableDotNumbers,
+    setNodes,
+    presetLayouts, loadPresetLayouts, applyLayout,
+    customLayouts, saveCustomLayout, removeCustomLayout, loadCustomLayouts,
+    clearLayout
   } = useOverviewStore();
+  const [newDeviceOpen, setNewDeviceOpen] = useState(false);
+  // Profile/layout modal state
+  const [newProfileOpen, setNewProfileOpen] = useState(false);
+  const [saveLayoutOpen, setSaveLayoutOpen] = useState(false);
+  const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null);
+  const [clearGridOpen, setClearGridOpen] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const { setActiveMainView, sidebarSectionStates, setSidebarSectionState } = useUIStore();
@@ -115,38 +129,26 @@ export default function OverviewTab() {
     return Object.values(modules).map((mod: any) => mod.default || mod);
   }, []);
 
+  // Register built-in presets (e.g. "AlienMind Setup") but DO NOT auto-apply.
+  // Default state is empty; user picks a preset or adds devices from the catalog.
   useEffect(() => {
-    if (Object.keys(nodes).length > 0) return;
+    const alienMindPreset = hardcodedLayouts.map((layout: any) => ({
+      id: layout.id ?? `preset_${layout.name ?? 'unnamed'}`,
+      name: 'AlienMind',
+      nodes: migrateNodesToGrid(layout.nodes ?? {}),
+      connections: migrateConnections(layout.connections ?? {}),
+    }));
+    loadPresetLayouts([
+      { id: 'preset_default_empty', name: 'Default (empty)', nodes: {}, connections: {} },
+      ...alienMindPreset,
+    ]);
 
-    const savedNodes = localStorage.getItem('alienmind_nodes_v5');
-    const savedConns = localStorage.getItem('alienmind_connections_v5');
-
-    if (savedNodes && savedConns) {
-      try {
-        setNodes(() => migrateNodesToGrid(JSON.parse(savedNodes)));
-        setConnections(() => migrateConnections(JSON.parse(savedConns)));
-        return;
-      } catch (e) {
-        console.error("Failed to load saved layout", e);
-      }
-    }
-
-    const oldNodes = localStorage.getItem('alienmind_nodes_v4');
-    const oldConns = localStorage.getItem('alienmind_connections_v4');
-    if (oldNodes && oldConns) {
-      try {
-        setNodes(() => migrateNodesToGrid(JSON.parse(oldNodes)));
-        setConnections(() => migrateConnections(JSON.parse(oldConns)));
-        return;
-      } catch (e) {
-        console.error("Failed to load old layout", e);
-      }
-    }
-
-    if (hardcodedLayouts.length > 0) {
-      const layout = hardcodedLayouts[0];
-      setNodes(() => migrateNodesToGrid(layout.nodes));
-      setConnections(() => migrateConnections(layout.connections));
+    // Restore user's saved custom layouts (do NOT auto-apply any).
+    try {
+      const raw = localStorage.getItem('alienmind_custom_layouts_v5');
+      if (raw) loadCustomLayouts(JSON.parse(raw));
+    } catch (e) {
+      console.error("Failed to load custom layouts", e);
     }
   }, [hardcodedLayouts]);
 
@@ -171,15 +173,22 @@ export default function OverviewTab() {
 
   const totalGridW = effectiveGridSize * CELL_W + (effectiveGridSize + 1) * MARGIN;
   const totalGridH = effectiveGridSize * CELL_H + (effectiveGridSize + 1) * MARGIN;
-  
+
+  // Reserve space for the properties drawer (320px = w-80) on the RIGHT
+  // so the grid never sits behind it.
+  const SIDEBAR_W = 320;
+  const sidebarOffset = selectedNodeId ? SIDEBAR_W : 0;
+
   const zoom = useMemo(() => {
     if (containerSize.width === 0 || containerSize.height === 0) return 1;
-    const zoomX = containerSize.width / totalGridW;
+    const availW = Math.max(1, containerSize.width - sidebarOffset);
+    const zoomX = availW / totalGridW;
     const zoomY = containerSize.height / totalGridH;
     return Math.min(zoomX, zoomY);
-  }, [containerSize, totalGridW, totalGridH]);
+  }, [containerSize, totalGridW, totalGridH, sidebarOffset]);
 
-  const panX = (containerSize.width - totalGridW * zoom) / 2;
+  const availW = Math.max(1, containerSize.width - sidebarOffset);
+  const panX = (availW - totalGridW * zoom) / 2; // drawer is on the right; grid takes left+centre
   const panY = (containerSize.height - totalGridH * zoom) / 2;
 
   // Handle discrete zooming via Ctrl+Scroll
@@ -202,163 +211,465 @@ export default function OverviewTab() {
     return () => container.removeEventListener('wheel', handleWheel);
   }, [effectiveGridSize, minGridSize, setGridSize]);
 
-  // === CABLE ROUTING ===
-  const paths = useMemo(() => {
-    const computed: { id: string; d: string; color: string }[] = [];
-    
-    Object.values(connections).forEach((conn) => {
-      const source = previewNodes[conn.source];
-      const target = previewNodes[conn.target];
-      if (!source || !target) return;
-      // Skip if either device is outside the visible grid
-      if (source.gridX >= effectiveGridSize || source.gridY >= effectiveGridSize) return;
-      if (target.gridX >= effectiveGridSize || target.gridY >= effectiveGridSize) return;
+  // === CABLE ROUTING (orthogonal — only 90deg turns, parallel-lane offsetting) ===
+  const { paths, dots, connDotMap } = useMemo(() => {
+    type Side = 'left' | 'right' | 'top' | 'bottom';
+    interface CableEndpoint { connId: string; deviceId: string; role: 'source' | 'target'; side: Side }
 
-      // Determine best sides based on relative position
-      const { sourceSide, targetSide } = bestSide(source.gridX, source.gridY, target.gridX, target.gridY);
+    const connList = Object.values(connections);
+    const endpoints: CableEndpoint[] = [];
 
-      // Get routing grid points (in the margin lanes)
-      const startRP = getRoutingGridPoint(source.gridX, source.gridY, sourceSide);
-      const endRP = getRoutingGridPoint(target.gridX, target.gridY, targetSide);
+    for (const conn of connList) {
+      const src = previewNodes[conn.source];
+      const tgt = previewNodes[conn.target];
+      if (!src || !tgt) continue;
+      if (src.gridX >= effectiveGridSize || src.gridY >= effectiveGridSize) continue;
+      if (tgt.gridX >= effectiveGridSize || tgt.gridY >= effectiveGridSize) continue;
+      const { sourceSide, targetSide } = bestSide(src.gridX, src.gridY, tgt.gridX, tgt.gridY);
+      endpoints.push({ connId: conn.id, deviceId: conn.source, role: 'source', side: sourceSide });
+      endpoints.push({ connId: conn.id, deviceId: conn.target, role: 'target', side: targetSide });
+    }
 
-      // Find path through margin lanes
+    // Group + redistribute overflow
+    const sideGroups = new Map<string, CableEndpoint[]>();
+    for (const ep of endpoints) {
+      const key = `${ep.deviceId}-${ep.side}`;
+      if (!sideGroups.has(key)) sideGroups.set(key, []);
+      sideGroups.get(key)!.push(ep);
+    }
+    const SIDES: Side[] = ['right', 'bottom', 'left', 'top'];
+    for (const [, group] of sideGroups) {
+      if (group.length <= MAX_CABLES_PER_SIDE) continue;
+      const deviceId = group[0]!.deviceId;
+      const overflow = group.splice(MAX_CABLES_PER_SIDE);
+      for (const ep of overflow) {
+        let placed = false;
+        for (const alt of SIDES) {
+          if (alt === ep.side) continue;
+          const altKey = `${deviceId}-${alt}`;
+          const altG = sideGroups.get(altKey);
+          if (!altG || altG.length < MAX_CABLES_PER_SIDE) {
+            ep.side = alt;
+            if (!sideGroups.has(altKey)) sideGroups.set(altKey, []);
+            sideGroups.get(altKey)!.push(ep);
+            placed = true; break;
+          }
+        }
+        if (!placed) group.push(ep);
+      }
+    }
+    const anchorInfo = new Map<string, { side: Side; index: number; total: number }>();
+    for (const [, group] of sideGroups) {
+      group.forEach((ep, idx) => {
+        anchorInfo.set(`${ep.connId}-${ep.role}`, { side: ep.side, index: idx, total: group.length });
+      });
+    }
+
+    // First pass — compute grid paths and tally usage of each lane segment
+    interface CableData {
+      conn: typeof connList[number];
+      anchorStart: Point;
+      anchorEnd: Point;
+      pathGrid: { rx: number; ry: number }[];
+      routePoints: Point[];
+      color: string;
+    }
+    const cables: CableData[] = [];
+    const segmentTally = new Map<string, string[]>();
+    const segKey = (a: { rx: number; ry: number }, b: { rx: number; ry: number }) => {
+      const k1 = `${a.rx},${a.ry}`;
+      const k2 = `${b.rx},${b.ry}`;
+      return k1 < k2 ? `${k1}|${k2}` : `${k2}|${k1}`;
+    };
+
+    for (const conn of connList) {
+      const src = previewNodes[conn.source];
+      const tgt = previewNodes[conn.target];
+      if (!src || !tgt) continue;
+      if (src.gridX >= effectiveGridSize || src.gridY >= effectiveGridSize) continue;
+      if (tgt.gridX >= effectiveGridSize || tgt.gridY >= effectiveGridSize) continue;
+      const sa = anchorInfo.get(`${conn.id}-source`);
+      const ta = anchorInfo.get(`${conn.id}-target`);
+      if (!sa || !ta) continue;
+      const anchorStart = getDistributedEdgeAnchor(src.gridX, src.gridY, sa.side, sa.index, sa.total, CELL_W, CELL_H, MARGIN);
+      const anchorEnd   = getDistributedEdgeAnchor(tgt.gridX, tgt.gridY, ta.side, ta.index, ta.total, CELL_W, CELL_H, MARGIN);
+      const startRP = getRoutingGridPoint(src.gridX, src.gridY, sa.side);
+      const endRP   = getRoutingGridPoint(tgt.gridX, tgt.gridY, ta.side);
       const pathGrid = findPath(startRP, endRP, effectiveGridSize, effectiveGridSize);
-      if (!pathGrid || pathGrid.length === 0) return;
-
-      // Build physical points: 
-      // Start with the edge anchor on the source device
-      const anchorStart = getEdgeAnchor(source.gridX, source.gridY, sourceSide, CELL_W, CELL_H, MARGIN);
-      const anchorEnd = getEdgeAnchor(target.gridX, target.gridY, targetSide, CELL_W, CELL_H, MARGIN);
-      
-      // Convert routing grid path to physical coordinates
+      if (!pathGrid || pathGrid.length === 0) continue;
+      for (let i = 0; i < pathGrid.length - 1; i++) {
+        const k = segKey(pathGrid[i]!, pathGrid[i + 1]!);
+        if (!segmentTally.has(k)) segmentTally.set(k, []);
+        const arr = segmentTally.get(k)!;
+        if (!arr.includes(conn.id)) arr.push(conn.id);
+      }
       const routePoints = pathGrid.map(p => getPhysicalCoordinate(p.rx, p.ry, CELL_W, CELL_H, MARGIN));
-      
-      // Full path: anchor -> route -> anchor
-      const fullPoints: Point[] = [anchorStart, ...routePoints, anchorEnd];
-      
-      const d = roundedPathFromPoints(fullPoints, 12);
-      
-      // Match cable color by type (longest match first since keys are ordered by specificity)
       let color = DEFAULT_CABLE_COLOR;
       if (conn.type) {
         for (const [key, val] of Object.entries(CABLE_COLORS)) {
-          if (conn.type.includes(key)) {
-            color = val;
-            break;
-          }
+          if (conn.type.includes(key)) { color = val; break; }
+        }
+      }
+      cables.push({ conn, anchorStart, anchorEnd, pathGrid, routePoints, color });
+    }
+
+    // Second pass — apply ORTHOGONAL parallel-lane offset.
+    // For each route segment (always horizontal OR vertical because the routing grid is axis-aligned),
+    // shift the two endpoints along the perpendicular axis. Each point may get up to one X-offset
+    // and one Y-offset, taken from its adjacent horizontal & vertical segments respectively.
+    const LANE_SPACING = 7;
+    const computedPaths: { id: string; d: string; color: string }[] = [];
+    // Numbered dot registry — every unique anchor position gets a stable index.
+    // The number is shown on-screen inside each dot and emitted in the diagnostic log.
+    const dotMap = new Map<string, { num: number; x: number; y: number; color: string }>();
+    const dotNumberFor = (px: number, py: number, color: string): number => {
+      const key = `${Math.round(px)},${Math.round(py)}`;
+      const existing = dotMap.get(key);
+      if (existing) return existing.num;
+      const num = dotMap.size + 1; // 1-based, unique per render
+      dotMap.set(key, { num, x: px, y: py, color });
+      return num;
+    };
+    const connDotMap: Record<string, { from: number; to: number }> = {};
+    const cableLog: Array<{
+      cableId: string;
+      from: number; to: number;
+      src: string; tgt: string;
+      srcCell: string; tgtCell: string;
+      srcSide: string; tgtSide: string;
+      anchorStart: string; anchorEnd: string;
+      pathStart: string; pathEnd: string;
+      pathPts: number;
+      type: string; color: string;
+    }> = [];
+
+    for (const cable of cables) {
+      const n = cable.pathGrid.length;
+      const pts = cable.routePoints.map(p => ({ ...p }));
+      const xShifted = new Array(n).fill(false);
+      const yShifted = new Array(n).fill(false);
+      for (let i = 0; i < n - 1; i++) {
+        const a = cable.pathGrid[i]!;
+        const b = cable.pathGrid[i + 1]!;
+        const lane = segmentTally.get(segKey(a, b));
+        if (!lane || lane.length < 2) continue;
+        const idx = lane.indexOf(cable.conn.id);
+        if (idx < 0) continue;
+        const offset = (idx - (lane.length - 1) / 2) * LANE_SPACING;
+        const horizontal = a.ry === b.ry;
+        if (horizontal) {
+          // Shift Y of both endpoints
+          if (!yShifted[i])     { pts[i]!.y     += offset; yShifted[i] = true; }
+          if (!yShifted[i + 1]) { pts[i + 1]!.y += offset; yShifted[i + 1] = true; }
+        } else {
+          // Vertical → shift X
+          if (!xShifted[i])     { pts[i]!.x     += offset; xShifted[i] = true; }
+          if (!xShifted[i + 1]) { pts[i + 1]!.x += offset; xShifted[i + 1] = true; }
         }
       }
 
-      computed.push({ id: conn.id, d, color });
-    });
-    
-    return computed;
+      // Stitch anchor → first routePoint → ... → last routePoint → anchor.
+      // To guarantee strict orthogonality at both ends, snap the first/last
+      // routePoint to align with the anchor on the axis perpendicular to the
+      // device side. e.g. if exiting "right", first routePoint.y must equal anchorStart.y.
+      const sa = anchorInfo.get(`${cable.conn.id}-source`)!;
+      const ta = anchorInfo.get(`${cable.conn.id}-target`)!;
+      if (pts.length > 0) {
+        const first = pts[0]!;
+        if (sa.side === 'left' || sa.side === 'right') first.y = cable.anchorStart.y;
+        else first.x = cable.anchorStart.x;
+        const last = pts[pts.length - 1]!;
+        if (ta.side === 'left' || ta.side === 'right') last.y = cable.anchorEnd.y;
+        else last.x = cable.anchorEnd.x;
+      }
+
+      const full: Point[] = [cable.anchorStart, ...pts, cable.anchorEnd];
+      // Insert intermediate corner points wherever two consecutive points
+      // differ in BOTH x AND y (would otherwise create a diagonal segment).
+      const orthogonal: Point[] = [full[0]!];
+      for (let i = 1; i < full.length; i++) {
+        const prev = orthogonal[orthogonal.length - 1]!;
+        const next = full[i]!;
+        if (prev.x !== next.x && prev.y !== next.y) {
+          // Choose corner: continue along the dominant axis of the previous segment
+          // For first/last we use the entry/exit side to decide; otherwise pick horizontal corner.
+          let corner: Point;
+          if (i === 1) {
+            // From anchor: continue along the anchor's perpendicular axis first
+            if (sa.side === 'left' || sa.side === 'right') corner = { x: next.x, y: prev.y };
+            else corner = { x: prev.x, y: next.y };
+          } else if (i === full.length - 1) {
+            if (ta.side === 'left' || ta.side === 'right') corner = { x: prev.x, y: next.y };
+            else corner = { x: next.x, y: prev.y };
+          } else {
+            corner = { x: next.x, y: prev.y };
+          }
+          orthogonal.push(corner);
+        }
+        orthogonal.push(next);
+      }
+
+      const d = roundedPathFromPoints(orthogonal, 8);
+      computedPaths.push({ id: cable.conn.id, d, color: cable.color });
+      const numA = dotNumberFor(cable.anchorStart.x, cable.anchorStart.y, cable.color);
+      const numB = dotNumberFor(cable.anchorEnd.x,   cable.anchorEnd.y,   cable.color);
+      connDotMap[cable.conn.id] = { from: numA, to: numB };
+
+      const srcNode = previewNodes[cable.conn.source];
+      const tgtNode = previewNodes[cable.conn.target];
+      const srcBp = HARDWARE_LIBRARY[srcNode?.type ?? ''];
+      const tgtBp = HARDWARE_LIBRARY[tgtNode?.type ?? ''];
+      const pathFirst = orthogonal[0]!;
+      const pathLast  = orthogonal[orthogonal.length - 1]!;
+      cableLog.push({
+        cableId: cable.conn.id,
+        from: numA,
+        to: numB,
+        src: srcBp?.model || srcNode?.type || cable.conn.source,
+        tgt: tgtBp?.model || tgtNode?.type || cable.conn.target,
+        srcCell: srcNode ? `(${srcNode.gridX},${srcNode.gridY})` : '?',
+        tgtCell: tgtNode ? `(${tgtNode.gridX},${tgtNode.gridY})` : '?',
+        srcSide: sa.side,
+        tgtSide: ta.side,
+        anchorStart: `(${cable.anchorStart.x.toFixed(1)},${cable.anchorStart.y.toFixed(1)})`,
+        anchorEnd:   `(${cable.anchorEnd.x.toFixed(1)},${cable.anchorEnd.y.toFixed(1)})`,
+        pathStart: `(${pathFirst.x.toFixed(1)},${pathFirst.y.toFixed(1)})`,
+        pathEnd:   `(${pathLast.x.toFixed(1)},${pathLast.y.toFixed(1)})`,
+        pathPts: orthogonal.length,
+        type: cable.conn.type || 'default',
+        color: cable.color,
+      });
+    }
+
+    // === DIAGNOSTIC LOG — paste back when reporting cable issues ===
+    if (cableLog.length > 0) {
+      // Group header
+      // eslint-disable-next-line no-console
+      console.groupCollapsed(`[Overview] Cables redrawn (${cableLog.length})`);
+      cableLog.forEach(c => {
+        const startMatches = c.anchorStart === c.pathStart;
+        const endMatches   = c.anchorEnd   === c.pathEnd;
+        const flag = (startMatches && endMatches) ? '✓' : '⚠';
+        // eslint-disable-next-line no-console
+        console.log(
+          `${flag} #${c.from} → #${c.to}  ${c.src}${c.srcCell}/${c.srcSide} => ${c.tgt}${c.tgtCell}/${c.tgtSide}  [${c.type}]`,
+          `%c ${c.color} `,
+          `background:${c.color};color:#000;padding:0 6px;border-radius:3px;`,
+          `\n   anchorStart=${c.anchorStart} pathStart=${c.pathStart}${startMatches ? '' : '  ← MISMATCH'}` +
+          `\n   anchorEnd  =${c.anchorEnd  } pathEnd  =${c.pathEnd  }${endMatches   ? '' : '  ← MISMATCH'}` +
+          `\n   pathPts=${c.pathPts}  cableId=${c.cableId}`
+        );
+      });
+      // eslint-disable-next-line no-console
+      console.groupEnd();
+    }
+
+    return { paths: computedPaths, dots: Array.from(dotMap.values()), connDotMap };
   }, [previewNodes, connections, effectiveGridSize]);
+
+  // Publish dot numbering so the properties sidebar can show legends.
+  useEffect(() => {
+    setCableDotNumbers(connDotMap);
+  }, [connDotMap, setCableDotNumbers]);
 
   // === INTERACTION ===
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    if ((e.target as Element).closest('.grid-node-container')) return;
+    const t = e.target as Element;
+    if (t.closest('.grid-node-container')) return;
+    if (t.closest('.overview-cable')) return;       // cable click handles itself
+    if (t.closest('.overview-floating-ui')) return; // toolbar/legend/zoom
     setSelectedNodeId(null);
-  }, [setSelectedNodeId]);
+    setSelectedConnectionId(null);
+  }, [setSelectedNodeId, setSelectedConnectionId]);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedNodeId(id);
-    setDragHoverNodeId(null);
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  // ---- Pointer-events drag (document-level listeners → reliable inside transformed canvas) ----
+  const dragStateRef = useRef<{
+    id: string; startX: number; startY: number; moved: boolean; pointerId: number;
+  } | null>(null);
+  const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
 
-  const handleDragOver = (e: React.DragEvent, id: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (draggedNodeId && id !== draggedNodeId && id !== dragHoverNodeId) {
-      setDragHoverNodeId(id);
+  // Convert client coords → grid cell under pointer (accounts for zoom/pan)
+  const pointerToCell = useCallback((clientX: number, clientY: number) => {
+    const container = containerRef.current;
+    if (!container) return null;
+    const rect = container.getBoundingClientRect();
+    const localX = (clientX - rect.left - panX) / zoom;
+    const localY = (clientY - rect.top  - panY) / zoom;
+    const strideX = CELL_W + MARGIN;
+    const strideY = CELL_H + MARGIN;
+    const gx = Math.floor((localX - MARGIN / 2) / strideX);
+    const gy = Math.floor((localY - MARGIN / 2) / strideY);
+    if (gx < 0 || gy < 0 || gx >= effectiveGridSize || gy >= effectiveGridSize) return null;
+    return { gx, gy };
+  }, [panX, panY, zoom, effectiveGridSize]);
+
+  const findNodeAtCell = useCallback((gx: number, gy: number): string | null => {
+    for (const n of Object.values(nodes)) {
+      if (n.gridX === gx && n.gridY === gy) return n.id;
     }
-  };
+    return null;
+  }, [nodes]);
 
-  const handleDragLeave = () => {
-    // Optional: we can clear dragHoverNodeId here if needed, but keeping it 
-    // prevents flickering when moving between tightly packed cells.
-  };
+  // Attach move/up to the document while a drag is in progress so we keep
+  // receiving updates regardless of which element is under the cursor.
+  useEffect(() => {
+    const onMove = (ev: PointerEvent) => {
+      const ds = dragStateRef.current;
+      if (!ds) return;
+      if (!ds.moved) {
+        const dx = Math.abs(ev.clientX - ds.startX);
+        const dy = Math.abs(ev.clientY - ds.startY);
+        if (dx < 6 && dy < 6) return;
+        ds.moved = true;
+        setDraggedNodeId(ds.id);
+        document.body.classList.add('overview-dragging');
+      }
+      // Update ghost position (in container-local pixels)
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        setGhostPos({ x: ev.clientX - rect.left, y: ev.clientY - rect.top });
+      }
+      const cell = pointerToCell(ev.clientX, ev.clientY);
+      if (!cell) { setDragHoverNodeId(null); return; }
+      const overId = findNodeAtCell(cell.gx, cell.gy);
+      if (overId && overId !== ds.id) {
+        if (overId !== dragHoverNodeId) setDragHoverNodeId(overId);
+      } else {
+        if (dragHoverNodeId) setDragHoverNodeId(null);
+      }
+    };
 
-  const handleDragEnd = () => {
-    setDraggedNodeId(null);
-    setDragHoverNodeId(null);
-  };
+    const onUp = (ev: PointerEvent) => {
+      const ds = dragStateRef.current;
+      dragStateRef.current = null;
+      document.body.classList.remove('overview-dragging');
+      setGhostPos(null);
+      if (!ds || !ds.moved) { setDraggedNodeId(null); setDragHoverNodeId(null); return; }
 
-  const handleDrop = (e: React.DragEvent, targetNodeId: string) => {
-    e.preventDefault();
-    if (!draggedNodeId || draggedNodeId === targetNodeId) {
-      handleDragEnd();
-      return;
-    }
+      const cell = pointerToCell(ev.clientX, ev.clientY);
+      const targetId = cell ? findNodeAtCell(cell.gx, cell.gy) : null;
+      if (targetId && targetId !== ds.id) {
+        setNodes((prev) => {
+          const newNodes = { ...prev };
+          const dragged = newNodes[ds.id];
+          const target  = newNodes[targetId];
+          if (!dragged || !target) return prev;
+          const tx = dragged.gridX, ty = dragged.gridY;
+          newNodes[ds.id]    = { ...dragged, gridX: target.gridX, gridY: target.gridY };
+          newNodes[targetId] = { ...target,  gridX: tx,           gridY: ty };
+          return newNodes;
+        });
+      } else if (cell) {
+        setNodes((prev) => {
+          const dragged = prev[ds.id];
+          if (!dragged) return prev;
+          return { ...prev, [ds.id]: { ...dragged, gridX: cell.gx, gridY: cell.gy } };
+        });
+      }
+      setDraggedNodeId(null);
+      setDragHoverNodeId(null);
+    };
 
-    setNodes((prev) => {
-      const newNodes = { ...prev };
-      const draggedNode = newNodes[draggedNodeId];
-      const targetNode = newNodes[targetNodeId];
-      
-      if (!draggedNode || !targetNode) return prev;
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+    };
+  }, [pointerToCell, findNodeAtCell, dragHoverNodeId, setNodes]);
 
-      const dragged = { ...draggedNode };
-      const target = { ...targetNode };
-
-      // Swap coordinates
-      const tempX = dragged.gridX;
-      const tempY = dragged.gridY;
-      dragged.gridX = target.gridX;
-      dragged.gridY = target.gridY;
-      target.gridX = tempX;
-      target.gridY = tempY;
-
-      newNodes[draggedNodeId] = dragged;
-      newNodes[targetNodeId] = target;
-      return newNodes;
-    });
-    handleDragEnd();
+  const handlePointerDown = (e: React.PointerEvent, id: string) => {
+    if (e.button !== 0) return;
+    dragStateRef.current = {
+      id, startX: e.clientX, startY: e.clientY, moved: false, pointerId: e.pointerId
+    };
   };
 
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-neutral-950 overflow-hidden relative font-sans text-white">
       
-      {/* Sidebar Integrations */}
+      {/* Sidebar Integrations — Profiles */}
       <SidebarContextPortal>
         <Collapsible 
-          open={sidebarSectionStates['overview-grid'] ?? true}
-          onOpenChange={(isOpen) => setSidebarSectionState('overview-grid', isOpen)}
+          open={sidebarSectionStates['overview-profiles'] ?? true}
+          onOpenChange={(isOpen) => setSidebarSectionState('overview-profiles', isOpen)}
           className="group/collapsible"
         >
           <SidebarGroup>
             <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-              Grid Settings
+              Profiles
               <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <div className="flex flex-col gap-2 px-2 mt-2">
-                  <div className="flex justify-between items-center text-xs text-neutral-400 px-1">
-                    <span>Grid Size</span>
-                    <span className="font-bold text-white">{effectiveGridSize}×{effectiveGridSize}</span>
+                  {/* Built-in presets */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1">Built-in</span>
+                    {presetLayouts.length === 0 && (
+                      <p className="text-[10px] text-neutral-600 px-1 italic">No presets available.</p>
+                    )}
+                    {presetLayouts.map(p => (
+                      <div key={p.id} className="flex items-center gap-1 group/row">
+                        <Button variant="ghost" className="flex-1 justify-start text-xs h-8"
+                          onClick={() => applyLayout(p.nodes, p.connections)}
+                          title={`Apply "${p.name}"`}>
+                          <Icons.Sparkles size={14} className="mr-2 text-cyan-400" /> {p.name}
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="secondary" className="flex-1" 
-                      disabled={effectiveGridSize <= minGridSize}
-                      onClick={() => setGridSize(Math.max(minGridSize, effectiveGridSize - 1))}
-                    >
-                      <Icons.ZoomIn size={16} className="mr-1" /> Zoom In
+
+                  <div className="h-px bg-neutral-800 my-1" />
+
+                  {/* Custom profiles */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1">My Profiles</span>
+                    {customLayouts.length === 0 && (
+                      <p className="text-[10px] text-neutral-600 px-1 italic">No saved profiles. Save the current layout below.</p>
+                    )}
+                    {customLayouts.map(p => (
+                      <div key={p.id} className="flex items-center gap-1 group/row">
+                        <Button variant="ghost" className="flex-1 justify-start text-xs h-8"
+                          onClick={() => applyLayout(p.nodes, p.connections)}
+                          title={`Apply "${p.name}"`}>
+                          <Icons.LayoutGrid size={14} className="mr-2 text-neutral-400" /> {p.name}
+                        </Button>
+                        <button
+                          className="opacity-0 group-hover/row:opacity-100 transition-opacity text-neutral-500 hover:text-red-500 p-1"
+                          onClick={() => setDeleteProfileId(p.id)}
+                          title="Delete profile"
+                        >
+                          <Icons.Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="h-px bg-neutral-800 my-1" />
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-1">
+                    <Button variant="secondary" className="justify-start text-xs h-8"
+                      onClick={() => setNewProfileOpen(true)}
+                      title="Start a new empty profile">
+                      <Icons.FilePlus size={14} className="mr-2" /> New Profile
                     </Button>
-                    <Button 
-                      variant="secondary" className="flex-1" 
-                      disabled={effectiveGridSize >= 10}
-                      onClick={() => setGridSize(Math.min(10, effectiveGridSize + 1))}
-                    >
-                      <Icons.ZoomOut size={16} className="mr-1" /> Zoom Out
+                    <Button variant="secondary" className="justify-start text-xs h-8"
+                      onClick={() => setSaveLayoutOpen(true)}
+                      disabled={nodeCount === 0}
+                      title={nodeCount === 0 ? 'Add devices first' : 'Save current layout'}>
+                      <Icons.Save size={14} className="mr-2" /> Save Current
+                    </Button>
+                    <Button variant="ghost" className="justify-start text-xs h-8 text-neutral-400 hover:text-red-400"
+                      onClick={() => setClearGridOpen(true)}
+                      disabled={nodeCount === 0}>
+                      <Icons.Eraser size={14} className="mr-2" /> Clear Grid
                     </Button>
                   </div>
-                  <p className="text-[10px] text-neutral-500 px-1">
-                    Ctrl+Scroll to zoom. {nodeCount} device{nodeCount !== 1 ? 's' : ''} on grid.
-                    {effectiveGridSize <= minGridSize && <span className="text-amber-500 ml-1">(min size for {nodeCount} devices)</span>}
-                  </p>
                 </div>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -393,7 +704,7 @@ export default function OverviewTab() {
             transition: 'transform 0.3s ease-out'
           }}
         >
-          {/* SVG Routing Layer */}
+          {/* SVG Routing Layer — cables only (z-0, behind devices) */}
           <svg 
             className="absolute inset-0 pointer-events-none z-0" 
             width={totalGridW} 
@@ -405,18 +716,71 @@ export default function OverviewTab() {
                 <feComposite in="SourceGraphic" in2="blur" operator="over"/>
               </filter>
             </defs>
-            {paths.map(path => (
-              <path 
-                key={path.id} 
-                d={path.d} 
-                fill="none" 
-                stroke={path.color} 
-                strokeWidth={3} 
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                filter="url(#cableGlow)"
-                opacity={0.85}
-              />
+            {paths.map(path => {
+              const isSel = selectedConnectionId === path.id;
+              return (
+                <g key={path.id} className="overview-cable" style={{ pointerEvents: 'auto' }}>
+                  {/* Invisible thick hit-area for easier clicking */}
+                  <path
+                    d={path.d}
+                    fill="none"
+                    stroke="transparent"
+                    strokeWidth={18}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const conn = connections[path.id];
+                      setSelectedConnectionId(path.id);
+                      if (conn) setSelectedNodeId(conn.source);
+                    }}
+                  />
+                  <path
+                    d={path.d}
+                    fill="none"
+                    stroke={path.color}
+                    strokeWidth={isSel ? 5 : 3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#cableGlow)"
+                    opacity={isSel ? 1 : 0.85}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Top SVG layer — numbered connector dots, always above device bodies (z-30) */}
+          <svg
+            className="absolute inset-0 pointer-events-none z-30"
+            width={totalGridW}
+            height={totalGridH}
+          >
+            {dots.map((dot) => (
+              <g key={`dot-${dot.num}`}>
+                {/* Smaller halo so adjacent-device cables remain visible between dots */}
+                <circle cx={dot.x} cy={dot.y} r={7.5} fill="rgba(0,0,0,0.6)" />
+                <circle
+                  cx={dot.x}
+                  cy={dot.y}
+                  r={6}
+                  fill={dot.color}
+                  stroke="#ffffff"
+                  strokeWidth={1}
+                />
+                <text
+                  x={dot.x}
+                  y={dot.y}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize={7.5}
+                  fontWeight={700}
+                  fill="#000"
+                  style={{ paintOrder: 'stroke', stroke: '#fff', strokeWidth: 1.5 }}
+                >
+                  {dot.num}
+                </text>
+              </g>
             ))}
           </svg>
 
@@ -431,12 +795,11 @@ export default function OverviewTab() {
               return (
                 <div 
                   key={node.id} 
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, node.id)}
-                  onDragEnd={handleDragEnd}
-                  className={`grid-node-container absolute 
-                    ${isDragged ? 'opacity-0 scale-95 z-20 pointer-events-none' : ''}
+                  onPointerDown={(e) => handlePointerDown(e, node.id)}
+                  className={`grid-node-container absolute select-none 
+                    ${isDragged ? 'opacity-30 scale-[0.97] z-20 pointer-events-none ring-2 ring-cyan-400/40' : ''}
                     ${isHovered ? 'opacity-80 scale-[1.02] ring-2 ring-cyan-500/50' : ''}
+                    ${draggedNodeId && !isDragged && !isHovered ? 'opacity-50 saturate-50' : ''}
                   `}
                   style={{ 
                     left: MARGIN + node.gridX * (CELL_W + MARGIN), 
@@ -449,7 +812,7 @@ export default function OverviewTab() {
                   <GridNode 
                     node={node} 
                     isSelected={selectedNodeId === node.id}
-                    onSelect={() => setSelectedNodeId(node.id)}
+                    onSelect={() => setSelectedNodeId(selectedNodeId === node.id ? null : node.id)}
                     onNavigate={() => setActiveMainView(node.type as any)}
                   />
                 </div>
@@ -457,29 +820,28 @@ export default function OverviewTab() {
             })}
           </div>
 
-          {/* Stable Drop Zones Layer (Active only during drag) */}
-          {draggedNodeId && (
-            <div className="absolute inset-0 z-30">
-              {Object.values(nodes).map(node => {
-                if (node.gridX >= effectiveGridSize || node.gridY >= effectiveGridSize) return null;
-                return (
-                  <div 
-                    key={`dropzone-${node.id}`}
-                    onDragOver={(e) => handleDragOver(e, node.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, node.id)}
-                    className="absolute"
-                    style={{ 
-                      left: MARGIN + node.gridX * (CELL_W + MARGIN), 
-                      top: MARGIN + node.gridY * (CELL_H + MARGIN),
-                      width: CELL_W,
-                      height: CELL_H,
-                    }}
-                  />
-                );
-              })}
-            </div>
-          )}
+          {/* Floating drag ghost — follows the cursor */}
+          {draggedNodeId && ghostPos && (() => {
+            const node = nodes[draggedNodeId];
+            if (!node) return null;
+            return (
+              <div
+                className="absolute pointer-events-none z-40 grid-node-container"
+                style={{
+                  // ghost is positioned in screen-space (un-transformed) inside the canvas container
+                  left: 0, top: 0,
+                  width: CELL_W,
+                  height: CELL_H,
+                  transform: `translate(${(ghostPos.x - (CELL_W * zoom) / 2 - panX) / zoom}px, ${(ghostPos.y - (CELL_H * zoom) / 2 - panY) / zoom}px)`,
+                  opacity: 0.85,
+                  filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5))'
+                }}
+              >
+                <GridNode node={node} isSelected={false} onSelect={() => {}} onNavigate={() => {}} />
+              </div>
+            );
+          })()}
+
         </div>
 
         {/* Empty state */}
@@ -494,8 +856,117 @@ export default function OverviewTab() {
         )}
       </div>
 
-      {/* Properties Sidebar (Overlay) */}
-      <div className={`absolute left-0 top-0 h-full transition-transform duration-300 z-50 ${selectedNodeId ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* In-grid floating UI (toolbar, zoom, legend) */}
+      <div className="overview-floating-ui">
+        {/* Top toolbar — New Device + Layouts */}
+        <div className="absolute top-4 right-4 z-40 flex gap-2 pointer-events-auto">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="bg-neutral-900/90 backdrop-blur border border-neutral-700/60 hover:bg-neutral-800"
+            onClick={() => setNewDeviceOpen(true)}
+          >
+            <Icons.Plus size={14} className="mr-1" /> New Device
+          </Button>
+        </div>
+
+        {/* Zoom controls — bottom-right */}
+        <div className="absolute bottom-4 right-4 z-40 flex items-center gap-1 bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-lg p-1 pointer-events-auto">
+          <button
+            className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded text-neutral-300 hover:text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={effectiveGridSize >= 10}
+            onClick={() => setGridSize(Math.min(10, effectiveGridSize + 1))}
+            title="Zoom out (larger grid)"
+          >−</button>
+          <span className="text-[10px] font-mono w-12 text-center text-neutral-300 select-none">
+            {effectiveGridSize}×{effectiveGridSize}
+          </span>
+          <button
+            className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded text-neutral-300 hover:text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={effectiveGridSize <= minGridSize}
+            onClick={() => setGridSize(Math.max(minGridSize, effectiveGridSize - 1))}
+            title="Zoom in (smaller grid)"
+          >+</button>
+        </div>
+
+        {/* Cable legend — bottom-left */}
+        <div className="absolute bottom-4 left-4 z-40 bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-lg p-3 pointer-events-auto max-w-[220px]">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-2">Cable Colors</div>
+          <div className="flex flex-col gap-1 text-[10px]">
+            {CABLE_OPTIONS.filter(o => o.value !== 'default').map(opt => (
+              <div key={opt.value} className="flex items-center gap-2 text-neutral-300">
+                <div className="w-4 h-1 rounded" style={{ background: CABLE_COLORS[opt.value] || DEFAULT_CABLE_COLOR }} />
+                <span className="truncate">{opt.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* New Device modal */}
+      <NewDeviceModal isOpen={newDeviceOpen} onClose={() => setNewDeviceOpen(false)} />
+
+      {/* Profile / layout modals */}
+      <PromptModal
+        isOpen={newProfileOpen}
+        title="New Profile"
+        description="This will clear the current grid and start a fresh profile."
+        placeholder="Profile name"
+        confirmText="Create"
+        onCancel={() => setNewProfileOpen(false)}
+        onConfirm={(name) => {
+          setNewProfileOpen(false);
+          clearLayout();
+          // Save after clearLayout state propagates
+          setTimeout(() => saveCustomLayout(name), 0);
+        }}
+      />
+      <PromptModal
+        isOpen={saveLayoutOpen}
+        title="Save Profile"
+        description="Save the current grid as a named profile."
+        placeholder="Profile name"
+        confirmText="Save"
+        onCancel={() => setSaveLayoutOpen(false)}
+        onConfirm={(name) => {
+          setSaveLayoutOpen(false);
+          saveCustomLayout(name);
+        }}
+      />
+      <ConfirmModal
+        isOpen={deleteProfileId !== null}
+        title="Delete Profile"
+        description={
+          <span>
+            Delete profile{' '}
+            <span className="font-semibold">
+              "{customLayouts.find(l => l.id === deleteProfileId)?.name ?? ''}"
+            </span>
+            ? This cannot be undone.
+          </span>
+        }
+        confirmText="Delete"
+        destructive
+        onCancel={() => setDeleteProfileId(null)}
+        onConfirm={() => {
+          if (deleteProfileId) removeCustomLayout(deleteProfileId);
+          setDeleteProfileId(null);
+        }}
+      />
+      <ConfirmModal
+        isOpen={clearGridOpen}
+        title="Clear Grid"
+        description="Remove all devices and connections from the current grid?"
+        confirmText="Clear"
+        destructive
+        onCancel={() => setClearGridOpen(false)}
+        onConfirm={() => { setClearGridOpen(false); clearLayout(); }}
+      />
+
+      {/* Properties Sidebar (Overlay) — anchored to the RIGHT */}
+      <div
+        className={`absolute right-0 top-0 h-full w-80 transition-transform duration-300 ease-out z-50 ${selectedNodeId ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}
+      >
         <OverviewSidebar onClose={() => setSelectedNodeId(null)} />
       </div>
 
