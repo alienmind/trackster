@@ -16,7 +16,6 @@ import {
 } from './routing';
 import { CABLE_COLORS, CABLE_OPTIONS, DEFAULT_CABLE_COLOR } from '../../devices/cables';
 import NewDeviceModal from '../Core/NewDeviceModal/NewDeviceModal';
-import { HARDWARE_LIBRARY } from '../../devices';
 import PromptModal from '../Core/PromptModal/PromptModal';
 import ConfirmModal from '../Core/ConfirmModal/ConfirmModal';
 
@@ -348,17 +347,6 @@ export default function OverviewTab() {
       return num;
     };
     const connDotMap: Record<string, { from: number; to: number }> = {};
-    const cableLog: Array<{
-      cableId: string;
-      from: number; to: number;
-      src: string; tgt: string;
-      srcCell: string; tgtCell: string;
-      srcSide: string; tgtSide: string;
-      anchorStart: string; anchorEnd: string;
-      pathStart: string; pathEnd: string;
-      pathPts: number;
-      type: string; color: string;
-    }> = [];
 
     for (const cable of cables) {
       const n = cable.pathGrid.length;
@@ -431,54 +419,6 @@ export default function OverviewTab() {
       const numA = dotNumberFor(cable.anchorStart.x, cable.anchorStart.y, cable.color);
       const numB = dotNumberFor(cable.anchorEnd.x,   cable.anchorEnd.y,   cable.color);
       connDotMap[cable.conn.id] = { from: numA, to: numB };
-
-      const srcNode = previewNodes[cable.conn.source];
-      const tgtNode = previewNodes[cable.conn.target];
-      const srcBp = HARDWARE_LIBRARY[srcNode?.type ?? ''];
-      const tgtBp = HARDWARE_LIBRARY[tgtNode?.type ?? ''];
-      const pathFirst = orthogonal[0]!;
-      const pathLast  = orthogonal[orthogonal.length - 1]!;
-      cableLog.push({
-        cableId: cable.conn.id,
-        from: numA,
-        to: numB,
-        src: srcBp?.model || srcNode?.type || cable.conn.source,
-        tgt: tgtBp?.model || tgtNode?.type || cable.conn.target,
-        srcCell: srcNode ? `(${srcNode.gridX},${srcNode.gridY})` : '?',
-        tgtCell: tgtNode ? `(${tgtNode.gridX},${tgtNode.gridY})` : '?',
-        srcSide: sa.side,
-        tgtSide: ta.side,
-        anchorStart: `(${cable.anchorStart.x.toFixed(1)},${cable.anchorStart.y.toFixed(1)})`,
-        anchorEnd:   `(${cable.anchorEnd.x.toFixed(1)},${cable.anchorEnd.y.toFixed(1)})`,
-        pathStart: `(${pathFirst.x.toFixed(1)},${pathFirst.y.toFixed(1)})`,
-        pathEnd:   `(${pathLast.x.toFixed(1)},${pathLast.y.toFixed(1)})`,
-        pathPts: orthogonal.length,
-        type: cable.conn.type || 'default',
-        color: cable.color,
-      });
-    }
-
-    // === DIAGNOSTIC LOG — paste back when reporting cable issues ===
-    if (cableLog.length > 0) {
-      // Group header
-      // eslint-disable-next-line no-console
-      console.groupCollapsed(`[Overview] Cables redrawn (${cableLog.length})`);
-      cableLog.forEach(c => {
-        const startMatches = c.anchorStart === c.pathStart;
-        const endMatches   = c.anchorEnd   === c.pathEnd;
-        const flag = (startMatches && endMatches) ? '✓' : '⚠';
-        // eslint-disable-next-line no-console
-        console.log(
-          `${flag} #${c.from} → #${c.to}  ${c.src}${c.srcCell}/${c.srcSide} => ${c.tgt}${c.tgtCell}/${c.tgtSide}  [${c.type}]`,
-          `%c ${c.color} `,
-          `background:${c.color};color:#000;padding:0 6px;border-radius:3px;`,
-          `\n   anchorStart=${c.anchorStart} pathStart=${c.pathStart}${startMatches ? '' : '  ← MISMATCH'}` +
-          `\n   anchorEnd  =${c.anchorEnd  } pathEnd  =${c.pathEnd  }${endMatches   ? '' : '  ← MISMATCH'}` +
-          `\n   pathPts=${c.pathPts}  cableId=${c.cableId}`
-        );
-      });
-      // eslint-disable-next-line no-console
-      console.groupEnd();
     }
 
     return { paths: computedPaths, dots: Array.from(dotMap.values()), connDotMap };
