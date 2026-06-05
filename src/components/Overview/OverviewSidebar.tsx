@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useOverviewStore, OverviewConnection, PortDef } from '../../stores/useOverviewStore';
+import { useOverviewStore, OverviewConnection, PortDef, MidiTrackDef } from '../../stores/useOverviewStore';
 import { HARDWARE_LIBRARY } from '../../devices';
 import { CABLE_COLORS, CABLE_OPTIONS, DEFAULT_CABLE_COLOR } from '../../devices/cables';
 import { Button } from '../Core/ui/button';
@@ -20,8 +20,9 @@ function humanisePortId(id: string): string {
 
 export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
   const {
-    selectedNodeId, nodes, connections, setConnections, removeNode,
+    selectedNodeId, nodes, connections, setConnections, setNodes, removeNode,
     selectedConnectionId, setSelectedConnectionId, cableDotNumbers,
+    routingMode,
   } = useOverviewStore();
   const [activeNodeId, setActiveNodeId] = useState(selectedNodeId);
   const [addOpen, setAddOpen] = useState(false);
@@ -343,7 +344,146 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
           </div>
         </section>
 
-        {/* Ports & Connectivity grouped by port direction */}
+        {/* MIDI channel routing (logical mode) */}
+        {routingMode === 'logical' && (
+          <section>
+            <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">MIDI Channel Routing</h3>
+            {(() => {
+              const isMidi = !!blueprint?.midiCapable;
+              if (!isMidi) {
+                return <p className="text-[11px] text-neutral-600 italic">This device has no MIDI ports.</p>;
+              }
+              // Resolve the device's declared MIDI tracks; fall back to a single 'Main' in_out track.
+              const declaredTracks: MidiTrackDef[] = (blueprint?.midiTracks ?? [{ id: 'main', label: 'Main', direction: 'in_out' }]) as MidiTrackDef[];
+
+              // Expand each track into one or two "slots" by direction.
+              type Slot = { trackId: string; trackLabel: string; dir: 'in' | 'out' };
+              const slots: Slot[] = [];
+              for (const t of declaredTracks) {
+                if (t.direction === 'in' || t.direction === 'in_out') {
+                  slots.push({ trackId: t.id, trackLabel: t.label, dir: 'in' });
+                }
+                if (t.direction === 'out' || t.direction === 'in_out') {
+                  slots.push({ trackId: t.id, trackLabel: t.label, dir: 'out' });
+                }
+              }
+
+              // Sort: all INs first (emerald), all OUTs second (cyan).
+              slots.sort((a, b) => (a.dir === b.dir ? 0 : a.dir === 'in' ? -1 : 1));
+
+              const getCh = (trackId: string, dir: 'in' | 'out'): number | '*' | null => {
+                const entry = node?.midiTrackChannels?.[trackId];
+                if (!entry) return null;
+                return (dir === 'in' ? entry.in : entry.out) ?? null;
+              };
+
+              const setCh = (trackId: string, dir: 'in' | 'out', value: number | '*' | null) => {
+                if (!displayNodeId) return;
+                setNodes(prev => {
+                  const n = prev[displayNodeId];
+                  if (!n) return prev;
+                  const map = { ...(n.midiTrackChannels ?? {}) };
+                  const existing = { ...(map[trackId] ?? {}) };
+                  if (value == null) {
+                    delete (existing as any)[dir];
+                  } else {
+                    (existing as any)[dir] = value;
+                  }
+                  if (existing.in == null && existing.out == null) {
+                    delete map[trackId];
+                  } else {
+                    map[trackId] = existing;
+                  }
+                  return { ...prev, [displayNodeId]: { ...n, midiTrackChannels: map } };
+                });
+              };
+
+              // Peer scan: who is listening / broadcasting on a given channel?
+              const peerNodes = Object.values(nodes).filter(n => n.id !== displayNodeId);
+              const matches = (myCh: number | '*' | null, theirCh: number | '*' | null | undefined) => {
+                if (myCh == null || theirCh == null) return false;
+                return myCh === '*' || theirCh === '*' || myCh === theirCh;
+              };
+              // Collect every (peer device, peer trackLabel, peer channel) pair in a given direction.
+              const peerSlots = (dir: 'in' | 'out') => {
+                const out: Array<{ peerId: string; trackLabel: string; ch: number | '*' | null }> = [];
+                for (const p of peerNodes) {
+                  const bp = HARDWARE_LIBRARY[p.type];
+                  const tracks: MidiTrackDef[] = (bp?.midiTracks ?? [{ id: 'main', label: 'Main', direction: 'in_out' }]) as MidiTrackDef[];
+                  for (const t of tracks) {
+                    const compatible = (dir === 'in' && (t.direction === 'in' || t.direction === 'in_out')) ||
+                                       (dir === 'out' && (t.direction === 'out' || t.direction === 'in_out'));
+                    if (!compatible) continue;
+                    const ch = (p.midiTrackChannels?.[t.id]?.[dir]) ?? null;
+                    if (ch == null) continue;
+                    out.push({ peerId: p.id, trackLabel: t.label, ch });
+                  }
+                }
+                return out;
+              };
+              const allPeerIns  = peerSlots('in');
+              const allPeerOuts = peerSlots('out');
+
+              const ChannelSelect = ({ value, onChange, placeholder }: { value: number | '*' | null | undefined; onChange: (v: number | '*' | null) => void; placeholder: string }) => (
+                <select
+                  className="bg-neutral-900 border border-neutral-700 rounded text-xs p-1 text-white w-full"
+                  value={value == null ? '' : (value === '*' ? '*' : String(value))}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '') onChange(null);
+                    else if (v === '*') onChange('*');
+                    else onChange(parseInt(v, 10));
+                  }}
+                >
+                  <option value="">{placeholder}</option>
+                  <option value="*">* (Omni - all channels)</option>
+                  {Array.from({ length: 16 }, (_, i) => i + 1).map(ch => (
+                    <option key={ch} value={ch}>Channel {ch}</option>
+                  ))}
+                </select>
+              );
+
+              return (
+                <div className="flex flex-col gap-3">
+                  {slots.map(slot => {
+                    const myCh = getCh(slot.trackId, slot.dir);
+                    // For my OUT slot - which peer INs catch it? For my IN slot - which peer OUTs broadcast to me?
+                    const partners = (slot.dir === 'out' ? allPeerIns : allPeerOuts).filter(p => matches(myCh, p.ch));
+                    const isOut = slot.dir === 'out';
+                    return (
+                      <div key={`${slot.trackId}-${slot.dir}`} className="flex flex-col gap-1">
+                        <div className={`flex items-center gap-1 text-[11px] font-medium ${isOut ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                          {isOut
+                            ? <Icons.ArrowRightFromLine size={12} />
+                            : <Icons.ArrowRightToLine size={12} />}
+                          <span>{slot.trackLabel} <span className="text-neutral-500">({isOut ? 'OUT' : 'IN'})</span></span>
+                        </div>
+                        <ChannelSelect
+                          value={myCh}
+                          onChange={(v) => setCh(slot.trackId, slot.dir, v)}
+                          placeholder="- None -"
+                        />
+                        {myCh != null && (
+                          myCh === '*'
+                            ? <p className="text-[10px] text-cyan-400">{isOut ? 'Omni broadcaster - reaches every listener (wires not rendered)' : 'Omni listener - reacts to every broadcaster (wires not rendered)'}</p>
+                            : partners.length > 0
+                              ? <p className="text-[10px] text-green-500">
+                                  {isOut ? 'Sending to: ' : 'Receiving from: '}
+                                  {partners.map(p => `${HARDWARE_LIBRARY[nodes[p.peerId]?.type ?? '']?.model ?? p.peerId} (${p.trackLabel})`).join(', ')}
+                                </p>
+                              : <p className="text-[10px] text-amber-500">{isOut ? 'No device listening on Ch ' : 'No device broadcasting on Ch '}{myCh}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </section>
+        )}
+
+        {/* Ports & Connectivity grouped by port direction (physical mode only) */}
+        {routingMode === 'physical' && (
         <section>
           <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Ports & Cabling</h3>
           {allPorts.length === 0 ? (
@@ -383,6 +523,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
             </div>
           )}
         </section>
+        )}
       </div>
 
       <div className="p-3 border-t border-neutral-800">

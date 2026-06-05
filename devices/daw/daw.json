@@ -13,16 +13,18 @@
   },
   "ports": [
     {
-      "id": "usbIn",
+      "id": "usb",
       "type": "USB_A",
       "direction": "in_out",
       "label": "USB In/Out"
-    },
+    }
+  ],
+  "midiCapable": true,
+  "midiTracks": [
     {
-      "id": "usbOut",
-      "type": "USB_A",
-      "direction": "in_out",
-      "label": "USB In/Out"
+      "id": "main",
+      "label": "Main",
+      "direction": "in_out"
     }
   ]
 }

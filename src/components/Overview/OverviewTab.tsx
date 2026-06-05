@@ -16,6 +16,7 @@ import {
 } from './routing';
 import { CABLE_CATEGORIES, CABLE_COLORS, DEFAULT_CABLE_COLOR } from '../../devices/cables';
 import NewDeviceModal from '../Core/NewDeviceModal/NewDeviceModal';
+import { HARDWARE_LIBRARY } from '../../devices';
 import PromptModal from '../Core/PromptModal/PromptModal';
 import ConfirmModal from '../Core/ConfirmModal/ConfirmModal';
 
@@ -79,6 +80,7 @@ export default function OverviewTab() {
     selectedNodeId, setSelectedNodeId,
     selectedConnectionId, setSelectedConnectionId, setCableDotNumbers,
     setNodes,
+    routingMode, setRoutingMode,
     presetLayouts, loadPresetLayouts, applyLayout,
     customLayouts, saveCustomLayout, removeCustomLayout, loadCustomLayouts,
     clearLayout
@@ -248,7 +250,75 @@ export default function OverviewTab() {
     type Side = 'left' | 'right' | 'top' | 'bottom';
     interface CableEndpoint { connId: string; deviceId: string; role: 'source' | 'target'; side: Side }
 
-    const connList = Object.values(connections);
+    // In LOGICAL mode the connections array is ignored; instead synthesise
+    // edges from devices that share a MIDI channel. Omni ('*') devices both
+    // listen to everything and broadcast to everything; we deliberately do NOT
+    // render those wires (would explode the canvas).
+    type ConnLike = { id: string; source: string; target: string; type: string };
+
+    // Helper - collect the (trackId, out-channel) pairs that a device broadcasts on.
+    // Falls back to the legacy logicalOutChannel field when no midiTracks are defined.
+    const broadcastChannels = (node: OverviewNode): Array<{ trackId: string; ch: number | '*' }> => {
+      const bp = HARDWARE_LIBRARY[node.type];
+      const tracks = bp?.midiTracks ?? [];
+      const out: Array<{ trackId: string; ch: number | '*' }> = [];
+      if (tracks.length > 0) {
+        for (const t of tracks) {
+          if (t.direction === 'in') continue;
+          const ch = node.midiTrackChannels?.[t.id]?.out;
+          if (ch != null) out.push({ trackId: t.id, ch });
+        }
+      } else if (node.logicalOutChannel != null) {
+        out.push({ trackId: 'default', ch: node.logicalOutChannel });
+      }
+      return out;
+    };
+    // Helper - collect the (trackId, in-channel) pairs that a device listens on.
+    const listenChannels = (node: OverviewNode): Array<{ trackId: string; ch: number | '*' }> => {
+      const bp = HARDWARE_LIBRARY[node.type];
+      const tracks = bp?.midiTracks ?? [];
+      const out: Array<{ trackId: string; ch: number | '*' }> = [];
+      if (tracks.length > 0) {
+        for (const t of tracks) {
+          if (t.direction === 'out') continue;
+          const ch = node.midiTrackChannels?.[t.id]?.in;
+          if (ch != null) out.push({ trackId: t.id, ch });
+        }
+      } else if (node.logicalInChannel != null) {
+        out.push({ trackId: 'default', ch: node.logicalInChannel });
+      }
+      return out;
+    };
+
+    const connList: ConnLike[] = routingMode === 'logical'
+      ? (() => {
+          const list: ConnLike[] = [];
+          const arr = Object.values(previewNodes);
+          for (const a of arr) {
+            const aOuts = broadcastChannels(a);
+            if (aOuts.length === 0) continue;
+            for (const b of arr) {
+              if (a.id === b.id) continue;
+              const bIns = listenChannels(b);
+              if (bIns.length === 0) continue;
+              for (const ao of aOuts) {
+                if (ao.ch === '*') continue; // omni broadcasters - don't render
+                for (const bi of bIns) {
+                  if (bi.ch === '*') continue; // omni listeners - don't render
+                  if (ao.ch !== bi.ch) continue;
+                  list.push({
+                    id: `logical_${a.id}.${ao.trackId}_to_${b.id}.${bi.trackId}_ch${ao.ch}`,
+                    source: a.id,
+                    target: b.id,
+                    type: `logical_ch${ao.ch}`,
+                  });
+                }
+              }
+            }
+          }
+          return list;
+        })()
+      : (Object.values(connections) as ConnLike[]);
     const endpoints: CableEndpoint[] = [];
 
     for (const conn of connList) {
@@ -438,7 +508,7 @@ export default function OverviewTab() {
     }
 
     return { paths: computedPaths, dots: Array.from(dotMap.values()), connDotMap };
-  }, [previewNodes, connections, effectiveGridSize]);
+  }, [previewNodes, connections, effectiveGridSize, routingMode]);
 
   // Publish dot numbering so the properties sidebar can show legends.
   useEffect(() => {
@@ -729,9 +799,15 @@ export default function OverviewTab() {
                 style={{ cursor: 'pointer', pointerEvents: 'auto' }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  // Logical cables are synthetic; just select the source device.
                   const conn = connections[path.id];
-                  setSelectedConnectionId(path.id);
-                  if (conn) setSelectedNodeId(conn.source);
+                  if (conn) {
+                    setSelectedConnectionId(path.id);
+                    setSelectedNodeId(conn.source);
+                  } else if (path.id.startsWith('logical_')) {
+                    const m = path.id.match(/^logical_(.+?)_to_/);
+                    if (m && m[1]) setSelectedNodeId(m[1]);
+                  }
                 }}
               />
             ))}
@@ -747,6 +823,7 @@ export default function OverviewTab() {
                   strokeWidth={isSel ? 5 : 3.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  strokeDasharray={path.id.startsWith('logical_') ? '6 5' : undefined}
                   opacity={1}
                 />
               );
@@ -823,17 +900,22 @@ export default function OverviewTab() {
             const isLegendDragged = draggedNodeId === '__LEGEND__';
             return (
               <div
-                className={`absolute select-none z-20 ${isLegendDragged ? 'opacity-30 scale-[0.97] pointer-events-none' : ''}`}
+                className={`absolute select-none z-20 flex items-center justify-center ${isLegendDragged ? 'opacity-30 scale-[0.97] pointer-events-none' : ''}`}
                 onPointerDown={(e) => handlePointerDown(e as React.PointerEvent<HTMLDivElement>, '__LEGEND__')}
                 style={{
+                  // Occupy the cell footprint (so it claims a grid slot for drag/swap)
                   left: MARGIN + gx * (CELL_W + MARGIN),
                   top:  MARGIN + gy * (CELL_H + MARGIN),
                   width: CELL_W,
-                  height: legendCell.collapsed ? 44 : CELL_H,
+                  height: CELL_H,
                   transition: 'left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease',
                 }}
               >
-                <div className="w-full h-full bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-xl flex flex-col cursor-grab active:cursor-grabbing">
+                {/* Visible card is much smaller than the cell - 3-row legend fits comfortably in ~180x140 */}
+                <div
+                  className="bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-xl flex flex-col cursor-grab active:cursor-grabbing shadow-lg"
+                  style={{ width: 180, height: legendCell.collapsed ? 40 : 'auto' }}
+                >
                   <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-neutral-800/50">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">Cable Colors</div>
                     <button
@@ -908,8 +990,25 @@ export default function OverviewTab() {
 
       {/* In-grid floating UI (toolbar, zoom, legend) */}
       <div className="overview-floating-ui">
-        {/* Top toolbar — New Device + Layouts */}
-        <div className="absolute top-4 right-4 z-40 flex gap-2 pointer-events-auto">
+        {/* Top toolbar - routing mode toggle + New Device */}
+        <div className="absolute top-4 right-4 z-40 flex gap-2 items-center pointer-events-auto">
+          {/* Physical vs Logical mode toggle */}
+          <div className="flex bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-md p-0.5 select-none">
+            <button
+              onClick={() => setRoutingMode('physical')}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'physical' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'}`}
+              title="Physical cable routing"
+            >
+              Physical
+            </button>
+            <button
+              onClick={() => setRoutingMode('logical')}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'logical' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'}`}
+              title="Logical MIDI routing"
+            >
+              Logical
+            </button>
+          </div>
           <Button
             size="sm"
             variant="secondary"

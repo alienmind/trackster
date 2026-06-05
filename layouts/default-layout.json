@@ -152,7 +152,7 @@
         "y": 50
       },
       "sourcePort": "usbOut",
-      "targetPort": "usbIn",
+      "targetPort": "usb",
       "midPoint": {
         "x": 3136.5587064560223,
         "y": 423.42605001854884

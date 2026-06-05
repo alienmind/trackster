@@ -18,6 +18,8 @@ interface NewDeviceModalProps {
 }
 
 const DEFAULT_JSON = `{
+  "id": "my_device",
+  "longName": "My New Device",
   "brand": "Manufacturer",
   "model": "Device Name",
   "tagline": "SHORT DESCRIPTION",
@@ -28,10 +30,15 @@ const DEFAULT_JSON = `{
     "title": "text-white",
     "badge": "bg-neutral-800 text-neutral-400"
   },
+  "midiCapable": true,
+  "midiTracks": [
+    { "id": "main", "label": "Main", "direction": "in_out" }
+  ],
   "ports": [
-    { "id": "audioOut", "title": "Audio Out", "color": "#06b6d4", "side": "right", "offset": 50 },
-    { "id": "midiIn", "title": "MIDI In", "color": "#10b981", "side": "left", "offset": 100 },
-    { "id": "midiOut", "title": "MIDI Out", "color": "#3b82f6", "side": "right", "offset": 100 }
+    { "id": "audioOut", "type": "TRS",      "direction": "out",    "label": "Audio Out" },
+    { "id": "midiIn",   "type": "MIDI_5PIN","direction": "in",     "label": "MIDI In"   },
+    { "id": "midiOut",  "type": "MIDI_5PIN","direction": "out",    "label": "MIDI Out"  },
+    { "id": "usb",      "type": "USB_C",    "direction": "in_out", "label": "USB-C"     }
   ],
   "svgRender": "<svg viewBox=\\"0 0 300 200\\" xmlns=\\"http://www.w3.org/2000/svg\\"><!-- LLM generated SVG goes here --></svg>",
   "imageUrl": ""

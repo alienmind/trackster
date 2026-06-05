@@ -14,6 +14,12 @@ const SOUND_TOYS_LINKS = [
     ]
   },
   {
+    category: 'Trackers',
+    links: [
+      { name: 'BassoonTracker', url: 'https://www.stef.be/bassoontracker/', icon: Icons.AudioLines },
+    ]
+  },
+  {
     category: 'Dittytoy (Code Synths)',
     links: [
       { name: 'Dirty Toy - DT303', url: 'https://dittytoy.net/ditty/0029103012#gate=0.58,tune=-16,pattern=1,waveform=0,cutoff=0.26228,resonance=0.67026,envmod=0.12628,decay=0.78197,overdrive=0.7334,echo=0.44684', icon: Icons.Disc3 },

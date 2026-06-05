@@ -48,5 +48,13 @@
       "direction": "in_out",
       "label": "USB-A"
     }
+  ],
+  "midiCapable": true,
+  "midiTracks": [
+    {
+      "id": "main",
+      "label": "Main",
+      "direction": "in_out"
+    }
   ]
 }

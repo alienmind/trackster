@@ -55,5 +55,33 @@
       "label": "MIDI Thru"
     }
   ],
-  "requiresMount": true
+  "requiresMount": true,
+  "midiCapable": true,
+  "midiTracks": [
+    {
+      "id": "synth1",
+      "label": "Synth 1",
+      "direction": "in_out"
+    },
+    {
+      "id": "synth2",
+      "label": "Synth 2",
+      "direction": "in_out"
+    },
+    {
+      "id": "midi1",
+      "label": "MIDI 1",
+      "direction": "out"
+    },
+    {
+      "id": "midi2",
+      "label": "MIDI 2",
+      "direction": "out"
+    },
+    {
+      "id": "drums",
+      "label": "Drums",
+      "direction": "in_out"
+    }
+  ]
 }

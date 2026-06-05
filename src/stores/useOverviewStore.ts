@@ -17,6 +17,19 @@ export interface PortDef {
   label?: string;
 }
 
+/**
+ * A single LOGICAL MIDI track exposed by a device. A device can have any number
+ * of tracks (e.g. Circuit Tracks has Synth1, Synth2, MIDI1, MIDI2, Drums). Each
+ * track has its own direction and ends up with its own pair of channel pickers
+ * in the logical-routing properties pane.
+ */
+export interface MidiTrackDef {
+  id: string;
+  label: string;
+  /** 'in' = receive only, 'out' = send only, 'in_out' = bidirectional */
+  direction: PortDirection;
+}
+
 export interface HardwareDeviceData {
   id: string;
   longName: string;
@@ -35,6 +48,11 @@ export interface HardwareDeviceData {
   requiresMount?: boolean;
   /** Optional override for the folder under /devices/* that holds device.png and assets. Defaults to the blueprint id. */
   assetFolder?: string;
+  /** Whether this device can send/receive MIDI (over any transport: DIN, USB, etc.). Drives the logical-routing UI. */
+  midiCapable?: boolean;
+  /** Optional list of named logical MIDI tracks. When omitted, the device is
+   *  treated as having a single anonymous track named 'default'. */
+  midiTracks?: MidiTrackDef[];
 }
 
 export interface HardwareBlueprint extends HardwareDeviceData {
@@ -51,8 +69,11 @@ export interface OverviewNode {
   isExpanded?: boolean;
   isHardwareExpanded?: boolean;
   overview?: string;
-  logicalInChannel?: number | null;
-  logicalOutChannel?: number | null;
+  logicalInChannel?: number | '*' | null;
+  logicalOutChannel?: number | '*' | null;
+  /** Per-track MIDI channel assignments, keyed by track id.
+   *  Each entry may have an in-channel, out-channel, or both. */
+  midiTrackChannels?: Record<string, { in?: number | '*' | null; out?: number | '*' | null }>;
   circuitLogicalOuts?: { synth1?: number | null, synth2?: number | null, midi1?: number | null, midi2?: number | null };
 }
 

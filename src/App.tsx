@@ -33,6 +33,40 @@ import { HARDWARE_LIBRARY } from './devices';
 // Floating hamburger button that opens the sidebar on mobile/tablet,
 // and toggles the icon-collapsed sidebar on desktop. Hides itself when the
 // mobile sheet sidebar is already open so it never overlaps the menu.
+// Reserves the documentation drawer's width on the main view so the device
+// layout doesn't sit behind it, and auto-collapses the desktop sidebar to
+// claw back even more space. Lives inside SidebarProvider so it can use
+// useSidebar(). When the doc closes, the sidebar stays collapsed; users can
+// reopen it via the floating hamburger.
+function DocAwareLayoutEffects() {
+  const activeDoc = useUIStore((s) => s.activeDoc);
+  const { state, setOpen, isMobile } = useSidebar();
+
+  // Auto-collapse the desktop sidebar when a doc opens.
+  React.useEffect(() => {
+    if (activeDoc && !isMobile && state === 'expanded') {
+      setOpen(false);
+    }
+  }, [activeDoc, isMobile, state, setOpen]);
+
+  return null;
+}
+
+function DocAwareMainView({ children }: { children: React.ReactNode }) {
+  const activeDoc = useUIStore((s) => s.activeDoc);
+  // Drawer is `min(800px, 90vw)` per DocumentationDrawer.tsx. Mirror that here.
+  // We use marginRight (not paddingRight) so existing flex/overflow children layout naturally.
+  const drawerWidth = activeDoc ? 'min(800px, 90vw)' : '0px';
+  return (
+    <div
+      className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
+      style={{ marginRight: drawerWidth }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function FloatingMenuButton() {
   const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
   // Hide while the mobile sheet is open (the sheet has its own close button)
@@ -167,8 +201,9 @@ export default function App() {
           <AppSidebar />
           <FloatingMenuButton />
           <div className="flex flex-1 overflow-hidden min-h-0 relative z-0">
-            {/* Main View Container */}
-            <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
+            {/* Main View Container - reserves doc-drawer width when a doc is open */}
+            <DocAwareLayoutEffects />
+            <DocAwareMainView>
               <OscilloscopeDrawer />
               {activeMainView === 'overview' ? (
                 <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
@@ -181,7 +216,7 @@ export default function App() {
               ) : (
                 <WIPPage deviceId={activeMainView} />
               )}
-            </div>
+            </DocAwareMainView>
 
             <DocumentationDrawer />
           </div>

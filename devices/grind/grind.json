@@ -30,5 +30,13 @@
       "direction": "out",
       "label": "MIDI Out"
     }
+  ],
+  "midiCapable": true,
+  "midiTracks": [
+    {
+      "id": "main",
+      "label": "Main",
+      "direction": "in_out"
+    }
   ]
 }
