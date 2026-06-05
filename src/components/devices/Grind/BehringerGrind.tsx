@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import ScaleFit from '../../Core/ui/ScaleFit';
-import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
-import DownloadsList from '../../Core/DownloadsList/DownloadsList';
+import ScaleFit from '../../Core/ScaleFit/ScaleFit';
+import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
+import GrindSidebarContext from './GrindSidebarContext';
 
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
@@ -330,19 +330,9 @@ export default function BehringerGrind() {
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden">
       <div className="flex flex-1 min-h-0">
-        
-        {/* Left Panel */}
-        <ResponsiveDrawer className="bg-card border-r border-border">
-          <div className="mt-2 px-1 space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2">Actions</h3>
-              <div className="text-xs text-neutral-400 p-2 border border-neutral-800 rounded bg-neutral-900/50">
-                Sequencer and patch management for Behringer Grind will appear here.
-              </div>
-            </div>
-            <DownloadsList deviceId="grind" />
-          </div>
-        </ResponsiveDrawer>
+        <SidebarContextPortal>
+          <GrindSidebarContext />
+        </SidebarContextPortal>
 
         {/* Center Panel */}
         <div className="flex-1 min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
