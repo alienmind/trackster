@@ -132,8 +132,8 @@ export default function NewDeviceModal({ isOpen, onClose }: NewDeviceModalProps)
     addNode(id, {
       id,
       type: deviceType,
-      x: window.innerWidth / 2 - 150, // rough center based on typical device width
-      y: window.innerHeight / 2 - 100,
+      gridX: 0,
+      gridY: 0,
       zIndex: 100,
       isExpanded: true,
     });
