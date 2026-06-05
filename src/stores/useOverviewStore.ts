@@ -26,6 +26,7 @@ export interface HardwareDeviceData {
   };
   ports: PortDef[];
   hideFromToolbar?: boolean;
+  requiresMount?: boolean;
 }
 
 export interface HardwareBlueprint extends HardwareDeviceData {

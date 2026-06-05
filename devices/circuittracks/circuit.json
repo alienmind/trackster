@@ -14,5 +14,6 @@
     { "id": "midiIn", "type": "MIDI_5PIN" },
     { "id": "midiOut", "type": "MIDI_5PIN" },
     { "id": "midiThru", "type": "MIDI_5PIN" }
-  ]
+  ],
+  "requiresMount": true
 }
