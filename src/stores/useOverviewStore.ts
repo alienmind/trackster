@@ -95,8 +95,12 @@ interface OverviewState {
   removeCustomLayout: (id: string) => void;
   loadCustomLayouts: (layouts: any[]) => void;
   loadPresetLayouts: (layouts: { id: string; name: string; nodes: Record<string, OverviewNode>; connections: Record<string, OverviewConnection> }[]) => void;
-  applyLayout: (nodes: Record<string, OverviewNode>, connections: Record<string, OverviewConnection>) => void;
+  /** Apply a layout AND mark it as the active profile (persisted). */
+  applyLayout: (nodes: Record<string, OverviewNode>, connections: Record<string, OverviewConnection>, profileId?: string | null) => void;
   clearLayout: () => void;
+  /** Id of the profile that is currently loaded (built-in or custom). Persisted in localStorage. */
+  activeProfileId: string | null;
+  setActiveProfileId: (id: string | null) => void;
 }
 
 export const useOverviewStore = create<OverviewState>((set, get) => ({
@@ -109,14 +113,34 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
   selectedNodeId: null,
   selectedConnectionId: null,
   cableDotNumbers: {},
+  activeProfileId: null,
 
   setGridSize: (size) => set({ gridSize: size }),
+  setActiveProfileId: (id) => {
+    set({ activeProfileId: id });
+    try {
+      if (id === null) localStorage.removeItem('alienmind_active_profile');
+      else localStorage.setItem('alienmind_active_profile', id);
+    } catch {}
+  },
   setSelectedNodeId: (id) => set({ selectedNodeId: id, selectedConnectionId: null }),
   setSelectedConnectionId: (id) => set({ selectedConnectionId: id }),
   setCableDotNumbers: (m) => set({ cableDotNumbers: m }),
   loadPresetLayouts: (layouts) => set({ presetLayouts: layouts }),
-  applyLayout: (nodes, connections) => set({ nodes, connections, selectedNodeId: null, selectedConnectionId: null }),
-  clearLayout: () => set({ nodes: {}, connections: {}, selectedNodeId: null, selectedConnectionId: null }),
+  applyLayout: (nodes, connections, profileId) => {
+    set({ nodes, connections, selectedNodeId: null, selectedConnectionId: null });
+    if (profileId !== undefined) {
+      set({ activeProfileId: profileId });
+      try {
+        if (profileId === null) localStorage.removeItem('alienmind_active_profile');
+        else localStorage.setItem('alienmind_active_profile', profileId);
+      } catch {}
+    }
+  },
+  clearLayout: () => {
+    set({ nodes: {}, connections: {}, selectedNodeId: null, selectedConnectionId: null, activeProfileId: null });
+    try { localStorage.removeItem('alienmind_active_profile'); } catch {}
+  },
   setRoutingMode: (mode) => set({ routingMode: mode }),
   setNodes: (updater) => set((state) => ({ nodes: updater(state.nodes) })),
   setConnections: (updater) => set((state) => ({ connections: updater(state.connections) })),
@@ -183,16 +207,22 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
     const id = `custom_${Date.now()}`;
     const newLayout = { id, name, nodes, connections };
     const updated = [...customLayouts, newLayout];
-    set({ customLayouts: updated });
+    set({ customLayouts: updated, activeProfileId: id });
     localStorage.setItem('alienmind_custom_layouts_v5', JSON.stringify(updated));
+    try { localStorage.setItem('alienmind_active_profile', id); } catch {}
     useUIStore.getState().addNotification({ type: 'success', message: `Layout "${name}" saved!` });
   },
   
   removeCustomLayout: (id: string) => {
-    const { customLayouts } = get();
+    const { customLayouts, activeProfileId } = get();
     const updated = customLayouts.filter(l => l.id !== id);
-    set({ customLayouts: updated });
+    const stateUpdate: Partial<OverviewState> = { customLayouts: updated };
+    if (activeProfileId === id) stateUpdate.activeProfileId = null;
+    set(stateUpdate);
     localStorage.setItem('alienmind_custom_layouts_v5', JSON.stringify(updated));
+    if (activeProfileId === id) {
+      try { localStorage.removeItem('alienmind_active_profile'); } catch {}
+    }
     useUIStore.getState().addNotification({ type: 'success', message: 'Layout deleted.' });
   }
 }));

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
-import { useOverviewStore, OverviewNode } from '../../stores/useOverviewStore';
+import { useOverviewStore, OverviewNode, OverviewConnection } from '../../stores/useOverviewStore';
 import { SidebarContextPortal } from '../Core/AppSidebar/SidebarContextPortal';
 import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '../Core/ui/sidebar';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../Core/ui/collapsible';
@@ -138,17 +138,34 @@ export default function OverviewTab() {
       nodes: migrateNodesToGrid(layout.nodes ?? {}),
       connections: migrateConnections(layout.connections ?? {}),
     }));
-    loadPresetLayouts([
-      { id: 'preset_default_empty', name: 'Default (empty)', nodes: {}, connections: {} },
+    const presets = [
+      { id: 'preset_default_empty', name: 'Default (empty)', nodes: {} as Record<string, OverviewNode>, connections: {} as Record<string, OverviewConnection> },
       ...alienMindPreset,
-    ]);
+    ];
+    loadPresetLayouts(presets);
 
     // Restore user's saved custom layouts (do NOT auto-apply any).
+    let custom: typeof presets = [];
     try {
       const raw = localStorage.getItem('alienmind_custom_layouts_v5');
-      if (raw) loadCustomLayouts(JSON.parse(raw));
+      if (raw) {
+        custom = JSON.parse(raw);
+        loadCustomLayouts(custom);
+      }
     } catch (e) {
       console.error("Failed to load custom layouts", e);
+    }
+
+    // Restore the last active profile (if any). Only on first boot (nodes empty).
+    if (Object.keys(nodes).length > 0) return;
+    try {
+      const activeId = localStorage.getItem('alienmind_active_profile');
+      if (!activeId) return;
+      const all = [...presets, ...custom];
+      const match = all.find(p => p.id === activeId);
+      if (match) applyLayout(match.nodes, match.connections, match.id);
+    } catch (e) {
+      console.error("Failed to restore active profile", e);
     }
   }, [hardcodedLayouts]);
 
@@ -615,7 +632,7 @@ export default function OverviewTab() {
                     {presetLayouts.map(p => (
                       <div key={p.id} className="flex items-center gap-1 group/row">
                         <Button variant="ghost" className="flex-1 justify-start text-xs h-8"
-                          onClick={() => applyLayout(p.nodes, p.connections)}
+                          onClick={() => applyLayout(p.nodes, p.connections, p.id)}
                           title={`Apply "${p.name}"`}>
                           <Icons.Sparkles size={14} className="mr-2 text-cyan-400" /> {p.name}
                         </Button>
@@ -634,7 +651,7 @@ export default function OverviewTab() {
                     {customLayouts.map(p => (
                       <div key={p.id} className="flex items-center gap-1 group/row">
                         <Button variant="ghost" className="flex-1 justify-start text-xs h-8"
-                          onClick={() => applyLayout(p.nodes, p.connections)}
+                          onClick={() => applyLayout(p.nodes, p.connections, p.id)}
                           title={`Apply "${p.name}"`}>
                           <Icons.LayoutGrid size={14} className="mr-2 text-neutral-400" /> {p.name}
                         </Button>
@@ -704,61 +721,56 @@ export default function OverviewTab() {
             transition: 'transform 0.3s ease-out'
           }}
         >
-          {/* SVG Routing Layer — cables only (z-0, behind devices) */}
-          <svg 
-            className="absolute inset-0 pointer-events-none z-0" 
-            width={totalGridW} 
-            height={totalGridH}
-          >
-            <defs>
-              <filter id="cableGlow">
-                <feGaussianBlur stdDeviation="2" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-              </filter>
-            </defs>
-            {paths.map(path => {
-              const isSel = selectedConnectionId === path.id;
-              return (
-                <g key={path.id} className="overview-cable" style={{ pointerEvents: 'auto' }}>
-                  {/* Invisible thick hit-area for easier clicking */}
-                  <path
-                    d={path.d}
-                    fill="none"
-                    stroke="transparent"
-                    strokeWidth={18}
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const conn = connections[path.id];
-                      setSelectedConnectionId(path.id);
-                      if (conn) setSelectedNodeId(conn.source);
-                    }}
-                  />
-                  <path
-                    d={path.d}
-                    fill="none"
-                    stroke={path.color}
-                    strokeWidth={isSel ? 5 : 3}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    filter="url(#cableGlow)"
-                    opacity={isSel ? 1 : 0.85}
-                    style={{ pointerEvents: 'none' }}
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Top SVG layer — numbered connector dots, always above device bodies (z-30) */}
+          {/* Single overlay SVG (z-30, above device divs at z-10).
+              Paint order is deterministic inside an SVG (document order):
+                1) cable hit-areas (invisible)
+                2) cable strokes
+                3) dots + numbers (on top)
+              This guarantees short straight cables between adjacent devices
+              are always visible — no z-index stacking ambiguity, no blur. */}
           <svg
-            className="absolute inset-0 pointer-events-none z-30"
+            className="absolute inset-0 z-30"
+            style={{ pointerEvents: 'none' }}
             width={totalGridW}
             height={totalGridH}
           >
+            {/* Cable hit-areas (re-enable pointer events just for these) */}
+            {paths.map(path => (
+              <path
+                key={`hit-${path.id}`}
+                className="overview-cable"
+                d={path.d}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={18}
+                style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const conn = connections[path.id];
+                  setSelectedConnectionId(path.id);
+                  if (conn) setSelectedNodeId(conn.source);
+                }}
+              />
+            ))}
+            {/* Visible cable strokes */}
+            {paths.map(path => {
+              const isSel = selectedConnectionId === path.id;
+              return (
+                <path
+                  key={`cable-${path.id}`}
+                  d={path.d}
+                  fill="none"
+                  stroke={path.color}
+                  strokeWidth={isSel ? 5 : 3.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={1}
+                />
+              );
+            })}
+            {/* Numbered connector dots — drawn last so they sit on top */}
             {dots.map((dot) => (
               <g key={`dot-${dot.num}`}>
-                {/* Smaller halo so adjacent-device cables remain visible between dots */}
                 <circle cx={dot.x} cy={dot.y} r={7.5} fill="rgba(0,0,0,0.6)" />
                 <circle
                   cx={dot.x}
