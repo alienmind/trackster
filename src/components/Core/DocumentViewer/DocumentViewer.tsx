@@ -4,13 +4,11 @@ import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import rehypeRaw from 'rehype-raw';
 import { useUIStore } from '../../../stores/useUIStore';
-import { useGrindStore } from '../../../stores/useGrindStore';
 import { Button } from '../ui/button';
 import * as Icons from 'lucide-react';
 
 export default function DocumentViewer() {
-  const { activeDoc, setActiveDoc } = useUIStore();
-  const activeDocSection = useGrindStore(s => s.activeDocSection);
+  const { activeDoc, setActiveDoc, activeDocSection } = useUIStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [mdContent, setMdContent] = useState<string>('');
 

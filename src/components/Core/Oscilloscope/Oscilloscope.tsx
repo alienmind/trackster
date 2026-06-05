@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
+import { useAudioStore } from '../../../stores/useAudioStore';
 
 export default function Oscilloscope() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
   
-  const analyser = useCircuitTracksStore((s) => s.analyser);
+  const analyser = useAudioStore((s) => s.analyser);
 
   useEffect(() => {
     if (!analyser || !canvasRef.current) return;

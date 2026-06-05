@@ -1,31 +1,65 @@
 import * as Icons from 'lucide-react';
-import ResponsiveDrawer from '../ui/ResponsiveDrawer';
 import DownloadsList from '../DownloadsList/DownloadsList';
+import { SidebarContextPortal } from '../AppSidebar/SidebarContextPortal';
+import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '../ui/sidebar';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible';
 
 const deviceImages = import.meta.glob('../../../../devices/*/device.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
 
 import { HARDWARE_LIBRARY } from '../../../devices';
+import { useUIStore } from '../../../stores/useUIStore';
 
 export default function WIPPage({ deviceId }: { deviceId: string }) {
   const device = HARDWARE_LIBRARY[deviceId];
   const longName = device?.longName || deviceId;
+  const { sidebarSectionStates, setSidebarSectionState } = useUIStore();
 
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden">
       <div className="flex flex-1 min-h-0">
-        {/* Left Panel */}
-        <ResponsiveDrawer className="bg-card border-r border-border">
-          <div className="mt-2 px-1 space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2">Actions</h3>
-              <div className="text-xs text-neutral-400 p-2 border border-neutral-800 rounded bg-neutral-900/50">
-                Specific actions for {longName} will appear here.
-              </div>
-            </div>
-          </div>
-          <DownloadsList deviceId={deviceId} />
-        </ResponsiveDrawer>
+        <SidebarContextPortal>
+          <Collapsible 
+            open={sidebarSectionStates[`${deviceId}-wip-actions`] ?? true}
+            onOpenChange={(isOpen) => setSidebarSectionState(`${deviceId}-wip-actions`, isOpen)}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
+                {longName} Actions
+                <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <div className="px-2 mt-2">
+                    <div className="text-xs text-neutral-400 p-2 border border-neutral-800 rounded bg-neutral-900/50">
+                      Specific actions for {longName} will appear here.
+                    </div>
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+          <Collapsible 
+            open={sidebarSectionStates[`${deviceId}-wip-resources`] ?? true}
+            onOpenChange={(isOpen) => setSidebarSectionState(`${deviceId}-wip-resources`, isOpen)}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
+                Resources
+                <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <div className="mt-4 px-2">
+                    <DownloadsList deviceId={deviceId} />
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        </SidebarContextPortal>
 
         {/* Center Panel */}
         <div className="flex-1 min-h-0 h-full w-full bg-[#111] flex flex-col items-center justify-center p-8 text-center relative">

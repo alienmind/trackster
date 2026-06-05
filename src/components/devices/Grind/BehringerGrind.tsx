@@ -1,12 +1,11 @@
 import React, { useState, useRef } from 'react';
-import ScaleFit from '../../Core/ui/ScaleFit';
-import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
-import DownloadsList from '../../Core/DownloadsList/DownloadsList';
+import ScaleFit from '../../Core/ScaleFit/ScaleFit';
+import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
+import GrindSidebarContext from './GrindSidebarContext';
 
-import { useGrindStore } from '../../../stores/useGrindStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
-import grindGuideUrl from '../../../../devices/grind/downloads/behringer-grind-guide.md?url';
+import grindGuideUrl from "../../../../doc/grind/behringer-grind-guide.md?url";
 
 // --- ICONS & SVGS ---
 
@@ -39,7 +38,7 @@ const MidiPort = () => (
 // Analog style knob with metallic cap
 const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, onInteract }: any) => {
   const [rotation, setRotation] = useState(0); // -135 to 135 degrees
-  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
+  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
   const isDragging = useRef(false);
   const startY = useRef(0);
 
@@ -123,7 +122,7 @@ const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, onI
 
 // 3.5mm Patch Jack
 const PatchJack = ({ label, sectionId, onInteract }: any) => {
-  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
+  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
   
   return (
     <div 
@@ -146,7 +145,7 @@ const PatchJack = ({ label, sectionId, onInteract }: any) => {
 // Metal Toggle Switch
 const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, sectionId, onInteract }: any) => {
   const [pos, setPos] = useState(0); // -1 (bottom), 0 (middle), 1 (top)
-  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
+  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
 
   const toggle = () => {
     if (threeWay) {
@@ -190,7 +189,7 @@ const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, sectionI
 // Small Sequencer Function Button
 const FuncButton = ({ label, subLabel, isDark = true, sectionId, onInteract }: any) => {
   const [active, setActive] = useState(false);
-  const { hoveredDocSection, setHoveredDocSection } = useGrindStore();
+  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
   
   return (
     <div 
@@ -289,7 +288,7 @@ export default function BehringerGrind() {
   // State for Bank (0: Red, 1: Green, 2: Yellow) and Model Grid position (0-9)
   const [bank, setBank] = useState(0); 
   const [model, setModel] = useState(0);
-  const { setActiveDocSection, hoveredDocSection, setHoveredDocSection } = useGrindStore();
+  const { setActiveDocSection, hoveredDocSection, setHoveredDocSection } = useUIStore();
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const activeDoc = useUIStore((s) => s.activeDoc);
 
@@ -331,19 +330,9 @@ export default function BehringerGrind() {
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden">
       <div className="flex flex-1 min-h-0">
-        
-        {/* Left Panel */}
-        <ResponsiveDrawer className="bg-card border-r border-border">
-          <div className="mt-2 px-1 space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2">Actions</h3>
-              <div className="text-xs text-neutral-400 p-2 border border-neutral-800 rounded bg-neutral-900/50">
-                Sequencer and patch management for Behringer Grind will appear here.
-              </div>
-            </div>
-            <DownloadsList deviceId="grind" />
-          </div>
-        </ResponsiveDrawer>
+        <SidebarContextPortal>
+          <GrindSidebarContext />
+        </SidebarContextPortal>
 
         {/* Center Panel */}
         <div className="flex-1 min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">

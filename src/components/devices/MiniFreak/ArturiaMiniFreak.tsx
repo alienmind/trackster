@@ -1,6 +1,6 @@
-import ScaleFit from '../../Core/ui/ScaleFit';
-import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
-import { Knob } from '../../Core/HardwareUI/Knob';
+import ScaleFit from '../../Core/ScaleFit/ScaleFit';
+import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
+import MiniFreakSidebarContext from './MiniFreakSidebarContext';
 import { 
   SpaceGraphics, 
   WhiteBtn, 
@@ -9,7 +9,31 @@ import {
   TouchStrips, 
   Keyboard 
 } from './MiniFreakControls';
-import DownloadsList from '../../Core/DownloadsList/DownloadsList';
+import { Knob } from '../../Core/HardwareUI/Knob';
+import { useUIStore } from '../../../stores/useUIStore';
+import { cn } from '../../../lib/utils';
+import minifreakGuideUrl from '../../../../doc/minifreak/minifreak-guide.md?url';
+
+const DocLink = ({ sectionId, children, className }: { sectionId: string, children: React.ReactNode, className?: string }) => {
+  const { hoveredDocSection, setHoveredDocSection, setActiveDocSection, activeDoc, setActiveDoc } = useUIStore();
+  const isActive = hoveredDocSection === sectionId;
+  const handleClick = () => {
+     setActiveDocSection(sectionId);
+     if (!activeDoc || activeDoc.url !== minifreakGuideUrl) {
+       setActiveDoc({ url: minifreakGuideUrl, type: 'md' });
+     }
+  };
+  return (
+    <div 
+      className={cn("relative transition-all duration-300 rounded-lg", isActive ? "ring-2 ring-cyan-500 shadow-[0_0_15px_cyan] bg-cyan-900/10" : "", className)}
+      onPointerEnter={() => setHoveredDocSection(sectionId)}
+      onPointerLeave={() => setHoveredDocSection(null)}
+      onClick={handleClick}
+    >
+      {children}
+    </div>
+  );
+};
 
 export default function ArturiaMiniFreak() {
   const deviceContent = (
@@ -23,11 +47,11 @@ export default function ArturiaMiniFreak() {
         
         {/* COLUMN 1: Matrix / Performance */}
         <div className="flex flex-col justify-between gap-6">
-           <div className="h-[90px] flex items-center gap-4">
+           <DocLink sectionId="1-mod-matrix" className="h-[90px] flex items-center gap-4 p-2 -m-2">
               <ModMatrix />
               <Knob label="Amount" size={38} variant="black" />
-           </div>
-           <div className="h-[90px] flex items-end pb-1 gap-2.5">
+           </DocLink>
+           <DocLink sectionId="2-performance" className="h-[90px] flex items-end pb-1 gap-2.5 p-2 -m-2">
               <WhiteBtn label="Shift" isShift />
               <div className="flex gap-2.5 relative">
                 <WhiteBtn label="-" />
@@ -40,32 +64,32 @@ export default function ArturiaMiniFreak() {
               <WhiteBtn label="Hold/Rest" />
               <WhiteBtn label="Chord" subLabel="Scales" hasLed ledActive />
               <div className="ml-1"><Knob label="Glide" size={38} variant="black" /></div>
-           </div>
+           </DocLink>
         </div>
 
         {/* COLUMN 2: Osc / LFO */}
         <div className="flex flex-col justify-between gap-6">
-           <div className="h-[90px] flex items-center gap-3">
+           <DocLink sectionId="3-osc" className="h-[90px] flex items-center gap-3 p-2 -m-2">
               <Selector title="Oscillators" labels={['1', '2']} activeIdx={0} />
               <Knob label="Tune / Oct" subLabel=" " size={38} variant="black" />
-           </div>
-           <div className="h-[90px] flex items-end pb-1 gap-3">
+           </DocLink>
+           <DocLink sectionId="3-osc" className="h-[90px] flex items-end pb-1 gap-3 p-2 -m-2">
               <Selector title="LFO" titleColor="text-cyan-500" labels={['1', '2']} activeIdx={0} titlePosition="bottom" />
               <Knob label="Rate / Trig" subLabel=" " size={38} variant="black" />
               <Knob label="Wave / Load" subLabel=" " size={38} variant="black" />
-           </div>
+           </DocLink>
         </div>
 
         {/* COLUMN 3: Orange Knobs / Display */}
         <div className="flex flex-col justify-between gap-6 relative">
-           <div className="h-[90px] flex items-center gap-4 z-10">
+           <DocLink sectionId="4-display" className="h-[90px] flex items-center gap-4 z-10 p-2 -m-2">
               <Knob variant="orange" label="Type" size={38} />
               <Knob variant="orange" label="Wave" size={38} />
               <Knob variant="orange" label="Timbre" size={38} />
               <Knob variant="orange" label="Shape" size={38} />
               <Knob label="Volume" size={38} variant="black" />
-           </div>
-           <div className="h-[90px] flex items-end pb-1 z-10">
+           </DocLink>
+           <DocLink sectionId="4-display" className="h-[90px] flex items-end pb-1 z-10 p-2 -m-2">
               
               {/* Screen Component */}
               <div className="flex items-center bg-[#050505] border-2 border-[#1a1a1a] rounded p-2 shadow-[inset_0_0_15px_rgba(0,0,0,1)] w-72">
@@ -94,49 +118,49 @@ export default function ArturiaMiniFreak() {
                 </div>
               </div>
 
-           </div>
+           </DocLink>
         </div>
 
         {/* COLUMN 4: Filter / CycEnv */}
         <div className="flex flex-col justify-between gap-6">
-           <div className="h-[90px] flex items-center gap-3">
+           <DocLink sectionId="5-filter" className="h-[90px] flex items-center gap-3 p-2 -m-2">
               <Selector title="Filter" labels={['LP', 'BP', 'HP']} activeIdx={0} />
               <Knob label="Cutoff" size={38} variant="black" />
               <Knob label="Resonance" size={38} variant="black" />
               <Knob label="Env / Vel" subLabel=" " size={38} variant="black" />
-           </div>
-           <div className="h-[90px] flex items-end pb-1 gap-3">
+           </DocLink>
+           <DocLink sectionId="6-cycenv" className="h-[90px] flex items-end pb-1 gap-3 p-2 -m-2">
               <Selector title="CycEnv" labels={['Env', 'Run', 'LFO']} activeIdx={0} />
               <Knob label="Rise / Shape" subLabel=" " size={38} variant="black" />
               <Knob label="Fall / Shape" subLabel=" " size={38} variant="black" />
               <Knob label="Hold / Sustain" subLabel=" " size={38} variant="black" />
-           </div>
+           </DocLink>
         </div>
 
         {/* COLUMN 5: Effects / Envelope (The 10-knob block) */}
         <div className="flex flex-col justify-between gap-6">
-           <div className="h-[90px] flex items-center gap-3">
+           <DocLink sectionId="7-effects" className="h-[90px] flex items-center gap-3 p-2 -m-2">
               <Selector title="Effects" labels={['FX 1', 'FX 2', 'FX 3']} activeIdx={0} />
               <Knob label="Type / Sub" size={38} variant="black" />
               <Knob label="Time" size={38} variant="black" />
               <Knob label="Intensity" size={38} variant="black" />
               <Knob label="Amount" size={38} variant="black" />
               <Knob label="Master" size={38} variant="black" />
-           </div>
-           <div className="h-[90px] flex items-end pb-1 gap-3">
+           </DocLink>
+           <DocLink sectionId="8-envelope" className="h-[90px] flex items-end pb-1 gap-3 p-2 -m-2">
               <Selector title="Envelope" labels={['Amp', 'Mod']} activeIdx={0} />
               <Knob label="Attack" size={38} variant="black" />
               <Knob label="Decay" size={38} variant="black" />
               <Knob label="Sustain" size={38} variant="black" />
               <Knob label="Release" size={38} variant="black" />
               <Knob label="Tempo / Swing" subLabel=" " size={38} variant="black" />
-           </div>
+           </DocLink>
         </div>
 
       </div>
 
       {/* --- MIDDLE STRIP: Arp/Seq Line --- */}
-      <div className="flex items-center justify-between px-6 py-2 border-y-2 border-[#111] bg-[#1a1b1e] relative z-10 shadow-md">
+      <DocLink sectionId="9-arp-seq" className="flex items-center justify-between px-6 py-2 border-y-2 border-[#111] bg-[#1a1b1e] relative z-10 shadow-md">
         
         <div className="flex gap-4 items-center mr-8">
           <span className="text-[9px] font-bold text-gray-400 tracking-widest border-r border-[#333] pr-4 leading-[10px]">
@@ -188,25 +212,25 @@ export default function ArturiaMiniFreak() {
              <span className="block text-[5px] tracking-[0.4em] font-normal text-gray-500 -mt-1">ALGORITHMIC SYNTHESIZER</span>
            </div>
         </div>
-      </div>
+      </DocLink>
 
       {/* --- BOTTOM PANEL: Touch Strips & Keyboard --- */}
       <div className="flex bg-[#1d1f24] relative z-10 pr-6">
         
         {/* Left Performance Controls */}
-        <div className="w-64 p-6 flex items-start gap-6 border-r border-[#111]">
+        <DocLink sectionId="10-touch-strips" className="w-64 p-6 flex items-start gap-6 border-r border-[#111] z-20">
           <TouchStrips />
           <div className="flex flex-col gap-6 mt-4">
              <WhiteBtn label="Keyboard" subLabel="Bend/Wheel" />
              <WhiteBtn label="Macros" subLabel="M1/M2" />
              <WhiteBtn label="Seq/Arp" subLabel="Gate/Spice" />
           </div>
-        </div>
+        </DocLink>
 
         {/* Right Keyboard Area */}
-        <div className="flex-1 flex flex-col justify-end">
+        <DocLink sectionId="11-keyboard" className="flex-1 flex flex-col justify-end p-2 pb-0 -m-2">
           <Keyboard />
-        </div>
+        </DocLink>
 
       </div>
 
@@ -215,21 +239,9 @@ export default function ArturiaMiniFreak() {
 
   return (
     <div className="flex h-full w-full bg-neutral-900 overflow-hidden font-sans select-none relative">
-      {/* Left Drawer (Device Actions) */}
-      <ResponsiveDrawer className="bg-neutral-900 border-r border-neutral-800 shrink-0">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-xl font-bold tracking-tight text-white px-2">Arturia MiniFreak</h2>
-            <p className="text-sm text-neutral-400 px-2">
-              Control panel for the algorithmic synthesizer.
-            </p>
-          </div>
-          <div className="space-y-2 px-2">
-            {/* Control panel actions can be placed here in the future */}
-          </div>
-          <DownloadsList deviceId="minifreak" />
-        </div>
-      </ResponsiveDrawer>
+      <SidebarContextPortal>
+        <MiniFreakSidebarContext />
+      </SidebarContextPortal>
 
       {/* Center Panel */}
       <div className="flex-1 min-h-0 bg-[#111] flex flex-col items-center justify-center relative overflow-hidden">

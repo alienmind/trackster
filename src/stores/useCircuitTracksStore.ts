@@ -10,6 +10,7 @@ import { computeRenamePlan } from '../utils/renamePlan';
 import { TAG_DEFINITIONS } from '../utils/constants';
 import { computeSimilarity } from '../utils/similarity';
 import { useUIStore } from './useUIStore';
+import { useAudioStore } from './useAudioStore';
 
 export type DeviceMode = 'samples' | 'packs' | 'scales' | 'tempo';
 
@@ -22,15 +23,12 @@ export interface PackHistoryEntry {
 
 export interface CircuitTracksState {
   // Audio State
-  audioContext: AudioContext | null;
-  analyser: AnalyserNode | null;
   currentlyPlayingSlot: number | null;
   decodedBuffers: Map<number, AudioBuffer>;
   currentSource: AudioBufferSourceNode | null;
   analysisProgress: { current: number; total: number } | null;
   duplicatePairs: [number, number][];
 
-  initAudioContext: () => void;
   playSlot: (slotIndex: number, fileHandle: FileSystemFileHandle) => Promise<void>;
   stopPlayback: () => void;
   togglePlayback: (slotIndex: number, fileHandle: FileSystemFileHandle) => Promise<void>;
@@ -196,31 +194,19 @@ const idbStorage: PersistStorage<any> = {
 export const useCircuitTracksStore = create<CircuitTracksState>()(
   (persist as unknown as (config: StateCreator<CircuitTracksState>, options: any) => StateCreator<CircuitTracksState>)(
     (set, get) => ({
-      // Audio Store properties
-      audioContext: null,
-      analyser: null,
       currentlyPlayingSlot: null,
       decodedBuffers: new Map(),
       currentSource: null,
       analysisProgress: null,
       duplicatePairs: [],
 
-      initAudioContext: () => {
-        if (!get().audioContext) {
-          const ctx = new AudioContext();
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 2048;
-          analyser.connect(ctx.destination);
-          set({ audioContext: ctx, analyser });
-        }
-      },
-
       playSlot: async (slotIndex, fileHandle) => {
         const state = get();
-        if (!state.audioContext) {
-          state.initAudioContext();
+        const { audioContext, initAudioContext, analyser } = useAudioStore.getState();
+        if (!audioContext) {
+          initAudioContext();
         }
-        const ctx = get().audioContext!;
+        const ctx = useAudioStore.getState().audioContext!;
         
         get().stopPlayback();
 
@@ -246,9 +232,9 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
 
         const source = ctx.createBufferSource();
         source.buffer = buffer;
-        if (state.analyser) {
-          source.connect(state.analyser);
-          state.analyser.connect(ctx.destination);
+        if (analyser) {
+          source.connect(analyser);
+          analyser.connect(ctx.destination);
         } else {
           source.connect(ctx.destination);
         }
