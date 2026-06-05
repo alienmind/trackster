@@ -17,7 +17,7 @@ import {
 import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import ConfirmModal from './components/Core/ConfirmModal/ConfirmModal';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
-import { SidebarProvider } from './components/Core/ui/sidebar';
+import { SidebarProvider, useSidebar } from './components/Core/ui/sidebar';
 import { AppSidebar } from './components/Core/AppSidebar/AppSidebar';
 import DocumentationDrawer from './components/Core/DocumentationDrawer/DocumentationDrawer';
 import { TagBadge } from './components/Core/TagBadge/TagBadge';
@@ -29,6 +29,29 @@ import WIPPage from './components/Core/WIPPage/WIPPage';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
 import OscilloscopeDrawer from './components/Core/OscilloscopeDrawer/OscilloscopeDrawer';
 import { HARDWARE_LIBRARY } from './devices';
+
+// Floating hamburger button that opens the sidebar on mobile/tablet,
+// and toggles the icon-collapsed sidebar on desktop. Hides itself when the
+// mobile sheet sidebar is already open so it never overlaps the menu.
+function FloatingMenuButton() {
+  const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
+  // Hide while the mobile sheet is open (the sheet has its own close button)
+  if (isMobile && openMobile) return null;
+  // On desktop, only show when sidebar is collapsed to icons; on mobile/tablet,
+  // always show because the sidebar lives in a Sheet that needs an external trigger.
+  const visible = isMobile || state === 'collapsed';
+  if (!visible) return null;
+  return (
+    <button
+      type="button"
+      aria-label="Open menu"
+      onClick={toggleSidebar}
+      className="fixed top-2 left-1.5 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/85 backdrop-blur text-foreground shadow-lg hover:bg-accent hover:text-accent-foreground active:scale-95 transition"
+    >
+      <Icons.Menu className="h-5 w-5" />
+    </button>
+  );
+}
 
 export default function App() {
   const activePage = useUIStore((s) => s.activePage);
@@ -142,6 +165,7 @@ export default function App() {
       <div className="min-h-screen bg-background text-foreground flex flex-col font-sans h-screen overflow-hidden" onClick={initAudioContext}>
         <SidebarProvider>
           <AppSidebar />
+          <FloatingMenuButton />
           <div className="flex flex-1 overflow-hidden min-h-0 relative z-0">
             {/* Main View Container */}
             <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">

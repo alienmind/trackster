@@ -562,12 +562,12 @@ export default function OverviewTab() {
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
-                <div className="flex flex-col gap-2 px-2 mt-2">
+                <div className="flex flex-col gap-2 px-2 mt-2 group-data-[collapsible=icon]:px-0">
                   {/* Built-in presets */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1">Built-in</span>
+                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1 group-data-[collapsible=icon]:hidden">Built-in</span>
                     {presetLayouts.length === 0 && (
-                      <p className="text-[10px] text-neutral-600 px-1 italic">No presets available.</p>
+                      <p className="text-[10px] text-neutral-600 px-1 italic group-data-[collapsible=icon]:hidden">No presets available.</p>
                     )}
                     {presetLayouts.map(p => (
                       <div key={p.id} className="flex items-center gap-1 group/row">
@@ -584,9 +584,9 @@ export default function OverviewTab() {
 
                   {/* Custom profiles */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1">My Profiles</span>
+                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1 group-data-[collapsible=icon]:hidden">My Profiles</span>
                     {customLayouts.length === 0 && (
-                      <p className="text-[10px] text-neutral-600 px-1 italic">No saved profiles. Save the current layout below.</p>
+                      <p className="text-[10px] text-neutral-600 px-1 italic group-data-[collapsible=icon]:hidden">No saved profiles. Save the current layout below.</p>
                     )}
                     {customLayouts.map(p => (
                       <div key={p.id} className="flex items-center gap-1 group/row">
@@ -610,12 +610,12 @@ export default function OverviewTab() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-1">
-                    <Button variant="secondary" className="justify-start text-xs h-8"
+                    <Button variant="ghost" className="justify-start text-xs h-8"
                       onClick={() => setNewProfileOpen(true)}
                       title="Start a new empty profile">
                       <Icons.FilePlus size={14} className="mr-2" /> New Profile
                     </Button>
-                    <Button variant="secondary" className="justify-start text-xs h-8"
+                    <Button variant="ghost" className="justify-start text-xs h-8"
                       onClick={() => setSaveLayoutOpen(true)}
                       disabled={nodeCount === 0}
                       title={nodeCount === 0 ? 'Add devices first' : 'Save current layout'}>

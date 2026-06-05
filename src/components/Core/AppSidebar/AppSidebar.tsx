@@ -1,5 +1,6 @@
 import {
   Sidebar,
+  useSidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -26,6 +27,7 @@ import { useState } from 'react';
 
 export function AppSidebar() {
   const { activeMainView, setActiveMainView, sidebarSectionStates, setSidebarSectionState, isOscilloscopeOpen, setOscilloscopeOpen } = useUIStore();
+  const { toggleSidebar } = useSidebar();
 
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, description: React.ReactNode, onConfirm: () => void, destructive?: boolean }>({ isOpen: false, title: '', description: '', onConfirm: () => {} });
 
@@ -46,12 +48,22 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
-      <SidebarHeader className="flex flex-col items-center justify-center py-4 border-b border-border">
-        <Logo className="h-8 w-auto text-foreground mb-2" />
+      <SidebarHeader className="relative flex flex-col items-center justify-center py-4 border-b border-border group-data-[collapsible=icon]:pt-14">
+        <Logo className="h-8 w-auto text-foreground mb-2 group-data-[collapsible=icon]:h-5 group-data-[collapsible=icon]:mb-0" />
         <div className="flex items-baseline space-x-1 group-data-[collapsible=icon]:hidden">
           <h1 className="text-xl font-bold tracking-tight text-foreground">Tracks(ter)</h1>
           <span className="text-[10px] text-muted-foreground font-mono font-bold">v{pkg.version}</span>
         </div>
+        {/* Collapse button — visible only when sidebar is expanded (not in icon mode). */}
+        <button
+          type="button"
+          aria-label="Collapse sidebar"
+          title="Collapse sidebar (Ctrl/Cmd+B)"
+          onClick={() => toggleSidebar()}
+          className="absolute top-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition group-data-[collapsible=icon]:hidden"
+        >
+          <Icons.PanelLeftClose className="h-4 w-4" />
+        </button>
       </SidebarHeader>
 
       <SidebarContent>
@@ -87,46 +99,51 @@ export function AppSidebar() {
           </SidebarGroup>
         </Collapsible>
 
-        <SidebarSeparator />
+        {/* Everything below is hidden when the sidebar is collapsed to icons,
+            since secondary sections and per-device content don't fit reliably
+            in the narrow icon rail. Re-expand the sidebar to access them. */}
+        <div className="group-data-[collapsible=icon]:hidden">
+          <SidebarSeparator />
 
-        {/* Global Tools */}
-        <Collapsible 
-          open={sidebarSectionStates['global-tools'] ?? true}
-          onOpenChange={(isOpen) => setSidebarSectionState('global-tools', isOpen)}
-          className="group/collapsible"
-        >
-          <SidebarGroup>
-            <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-              Global Tools
-              <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-            </SidebarGroupLabel>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      isActive={isOscilloscopeOpen}
-                      onClick={() => setOscilloscopeOpen(!isOscilloscopeOpen)}
-                      tooltip="Toggle Oscilloscope"
-                    >
-                      <Icons.Activity className="w-4 h-4" />
-                      <span>Oscilloscope</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+          {/* Global Tools */}
+          <Collapsible 
+            open={sidebarSectionStates['global-tools'] ?? true}
+            onOpenChange={(isOpen) => setSidebarSectionState('global-tools', isOpen)}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
+                Global Tools
+                <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        isActive={isOscilloscopeOpen}
+                        onClick={() => setOscilloscopeOpen(!isOscilloscopeOpen)}
+                        tooltip="Toggle Oscilloscope"
+                      >
+                        <Icons.Activity className="w-4 h-4" />
+                        <span>Oscilloscope</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
 
-        <SidebarSeparator />
+          <SidebarSeparator />
 
-        {/* Contextual Device Tools Injected Here */}
-        <div id="sidebar-context-portal-root"></div>
+          {/* Contextual Device Tools Injected Here */}
+          <div id="sidebar-context-portal-root"></div>
+        </div>
         
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border flex flex-col gap-2 p-2">
+      <SidebarFooter className="border-t border-border flex flex-col gap-2 p-2 group-data-[collapsible=icon]:hidden">
         {/* Action Buttons */}
         <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col">
           <ThemeToggle />
