@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import ScaleFit from '../../Core/ScaleFit/ScaleFit';
 import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
 import GrindSidebarContext from './GrindSidebarContext';
+import DeviceHelpToggle from '../../Core/DeviceHelpToggle/DeviceHelpToggle';
 
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
@@ -38,7 +39,8 @@ const MidiPort = () => (
 // Analog style knob with metallic cap
 const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, onInteract }: any) => {
   const [rotation, setRotation] = useState(0); // -135 to 135 degrees
-  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
+  const { hoveredDocSection, setHoveredDocSection, helpMode } = useUIStore();
+  const interactive = helpMode && !!sectionId;
   const isDragging = useRef(false);
   const startY = useRef(0);
 
@@ -111,7 +113,7 @@ const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, onI
         </svg>
         <div className={cn(
           "absolute inset-0 rounded-full pointer-events-none transition-all duration-300", 
-          sectionId ? "group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]" : "",
+          interactive ? "group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]" : "",
           hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
         )} />
       </div>
@@ -288,11 +290,14 @@ export default function BehringerGrind() {
   // State for Bank (0: Red, 1: Green, 2: Yellow) and Model Grid position (0-9)
   const [bank, setBank] = useState(0); 
   const [model, setModel] = useState(0);
-  const { setActiveDocSection, hoveredDocSection, setHoveredDocSection } = useUIStore();
+  const { setActiveDocSection, hoveredDocSection, setHoveredDocSection, helpMode } = useUIStore();
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const activeDoc = useUIStore((s) => s.activeDoc);
 
   const handleSectionClick = (sectionId: string) => {
+    // Only surface inline help when the user has opted into help mode via
+    // the floating "?" toggle in the top-right corner of the device.
+    if (!helpMode) return;
     setActiveDocSection(sectionId);
     if (!activeDoc || activeDoc.url !== grindGuideUrl) {
       setActiveDoc({ url: grindGuideUrl, type: 'md' });
@@ -301,6 +306,7 @@ export default function BehringerGrind() {
 
   const handleBankClick = () => {
     handleSectionClick('213-bank-button');
+    if (helpMode) return;
     setBank((prev) => {
       const nextBank = (prev + 1) % 3;
       // When switching to Bank C (Yellow), restrict models to 1-4 (indexes 0-3)
@@ -313,6 +319,7 @@ export default function BehringerGrind() {
 
   const handleModelIncrement = () => {
     handleSectionClick('214-model-button');
+    if (helpMode) return;
     setModel((prev) => {
       const max = bank === 2 ? 4 : 10;
       return (prev + 1) % max;
@@ -321,6 +328,7 @@ export default function BehringerGrind() {
 
   const handleModelDecrement = () => {
     handleSectionClick('214-model-button');
+    if (helpMode) return;
     setModel((prev) => {
       const max = bank === 2 ? 4 : 10;
       return (prev - 1 + max) % max;
@@ -336,6 +344,7 @@ export default function BehringerGrind() {
 
         {/* Center Panel */}
         <div className="flex-1 min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
+          <DeviceHelpToggle guideUrl={grindGuideUrl} />
           <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
             {/* Synth Chassis with Wood Panels */}
             <div className="flex shadow-2xl relative shrink-0 origin-center transition-transform">

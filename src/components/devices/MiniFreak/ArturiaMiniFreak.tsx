@@ -1,6 +1,7 @@
 import ScaleFit from '../../Core/ScaleFit/ScaleFit';
 import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
 import MiniFreakSidebarContext from './MiniFreakSidebarContext';
+import DeviceHelpToggle from '../../Core/DeviceHelpToggle/DeviceHelpToggle';
 import { 
   SpaceGraphics, 
   WhiteBtn, 
@@ -15,9 +16,12 @@ import { cn } from '../../../lib/utils';
 import minifreakGuideUrl from '../../../../doc/minifreak/minifreak-guide.md?url';
 
 const DocLink = ({ sectionId, children, className }: { sectionId: string, children: React.ReactNode, className?: string }) => {
-  const { hoveredDocSection, setHoveredDocSection, setActiveDocSection, activeDoc, setActiveDoc } = useUIStore();
+  const { hoveredDocSection, setHoveredDocSection, setActiveDocSection, activeDoc, setActiveDoc, helpMode } = useUIStore();
   const isActive = hoveredDocSection === sectionId;
   const handleClick = () => {
+     // Inline help interactions only fire while help mode is enabled via the
+     // floating "?" toggle; otherwise the device behaves as normal hardware.
+     if (!helpMode) return;
      setActiveDocSection(sectionId);
      if (!activeDoc || activeDoc.url !== minifreakGuideUrl) {
        setActiveDoc({ url: minifreakGuideUrl, type: 'md' });
@@ -26,8 +30,8 @@ const DocLink = ({ sectionId, children, className }: { sectionId: string, childr
   return (
     <div 
       className={cn("relative transition-all duration-300 rounded-lg", isActive ? "ring-2 ring-cyan-500 shadow-[0_0_15px_cyan] bg-cyan-900/10" : "", className)}
-      onPointerEnter={() => setHoveredDocSection(sectionId)}
-      onPointerLeave={() => setHoveredDocSection(null)}
+      onPointerEnter={() => helpMode && setHoveredDocSection(sectionId)}
+      onPointerLeave={() => helpMode && setHoveredDocSection(null)}
       onClick={handleClick}
     >
       {children}
@@ -245,6 +249,7 @@ export default function ArturiaMiniFreak() {
 
       {/* Center Panel */}
       <div className="flex-1 min-h-0 bg-[#111] flex flex-col items-center justify-center relative overflow-hidden">
+        <DeviceHelpToggle guideUrl={minifreakGuideUrl} />
         <ScaleFit baseWidth={1100} baseHeight={600} maxScale={3}>
           {deviceContent}
         </ScaleFit>

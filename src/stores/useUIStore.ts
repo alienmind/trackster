@@ -4,7 +4,7 @@ import type { PageIndex, Notification, SampleFile } from '../types';
 
 interface UIState {
   activePage: PageIndex;
-  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | 'soundtoys';
+  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys';
   selectedPadIndex: number | null;
   selectedPads: number[];
   isCommitDialogOpen: boolean;
@@ -16,6 +16,8 @@ interface UIState {
 
   activeDocSection: string | null;
   hoveredDocSection: string | null;
+
+  helpMode: boolean;
 
   isDuplicateModalOpen: boolean;
   duplicateClusters: SampleFile[][];
@@ -35,7 +37,7 @@ interface UIState {
     destructive?: boolean;
   };
 
-  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'ableton' | 'soundtoys') => void;
+  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys') => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null, shiftKey?: boolean, ctrlKey?: boolean) => void;
   openCommitDialog: () => void;
@@ -48,6 +50,9 @@ interface UIState {
 
   setActiveDocSection: (sectionId: string | null) => void;
   setHoveredDocSection: (sectionId: string | null) => void;
+
+  setHelpMode: (enabled: boolean) => void;
+  toggleHelpMode: () => void;
 
   openDuplicateModal: (clusters: SampleFile[][]) => void;
   closeDuplicateModal: () => void;
@@ -77,6 +82,8 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   activeDocSection: null,
   hoveredDocSection: null,
 
+  helpMode: false,
+
   isDuplicateModalOpen: false,
   duplicateClusters: [],
   isMobileDrawerOpen: false,
@@ -93,7 +100,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   deferredPrompt: null,
 
   setActiveMainView: (view) => set(() => {
-    return { activeMainView: view, activeDoc: null };
+    return { activeMainView: view, activeDoc: null, helpMode: false, activeDocSection: null, hoveredDocSection: null };
   }),
   setActivePage: (page) => {
     set({ activePage: page });
@@ -152,14 +159,24 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   toggleLeftPane: () => set((state) => ({ isLeftPaneCollapsed: !state.isLeftPaneCollapsed })),
   setSelectedFile: (file) => set({ selectedFile: file }),
   setActiveDoc: (doc) => set(() => {
-    return { 
-      activeDoc: doc, 
-      activeDocSection: null
-    };
+    if (doc === null) {
+      return { activeDoc: null, activeDocSection: null, helpMode: false, hoveredDocSection: null };
+    }
+    return { activeDoc: doc, activeDocSection: null };
   }),
 
   setActiveDocSection: (sectionId) => set({ activeDocSection: sectionId }),
-  setHoveredDocSection: (sectionId) => set({ hoveredDocSection: sectionId }),
+  setHoveredDocSection: (sectionId) => set((state) => {
+    // Hover highlights are part of the inline-help affordance. Suppress them
+    // entirely when help mode is off so devices behave like normal hardware.
+    if (!state.helpMode) {
+      return state.hoveredDocSection === null ? state : { hoveredDocSection: null };
+    }
+    return { hoveredDocSection: sectionId };
+  }),
+
+  setHelpMode: (enabled) => set({ helpMode: enabled }),
+  toggleHelpMode: () => set((state) => ({ helpMode: !state.helpMode })),
 
   openDuplicateModal: (clusters) => set({ isDuplicateModalOpen: true, duplicateClusters: clusters }),
   closeDuplicateModal: () => set({ isDuplicateModalOpen: false, duplicateClusters: [] }),

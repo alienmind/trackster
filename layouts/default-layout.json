@@ -5,8 +5,6 @@
     "n_circuit": {
       "id": "n_circuit",
       "type": "circuit",
-      "x": 2049.3690163063275,
-      "y": 306.0676383397557,
       "zIndex": 35,
       "isExpanded": false,
       "circuitLogicalOuts": {
@@ -14,50 +12,52 @@
         "synth2": 4,
         "midi1": 1,
         "midi2": 2
-      }
+      },
+      "gridX": 1,
+      "gridY": 0
     },
     "n_grind": {
       "id": "n_grind",
       "type": "grind",
-      "x": 1169.9251961003847,
-      "y": 585.638510205241,
       "zIndex": 41,
       "isExpanded": false,
-      "logicalInChannel": 1
+      "logicalInChannel": 1,
+      "gridX": 0,
+      "gridY": 0
     },
     "n_s1": {
       "id": "n_s1",
       "type": "s1",
-      "x": 1811.6956709189897,
-      "y": 827.4078019043545,
       "zIndex": 37,
       "isExpanded": false,
-      "logicalInChannel": 2
+      "logicalInChannel": 2,
+      "gridX": 2,
+      "gridY": 1
     },
     "n_minifreak": {
       "id": "n_minifreak",
       "type": "minifreak",
-      "x": 736.4555110307512,
-      "y": 231.7867109612344,
       "zIndex": 38,
       "isExpanded": false,
-      "logicalInChannel": 3
+      "logicalInChannel": 3,
+      "gridX": 0,
+      "gridY": 1
     },
     "n_flow8": {
       "id": "n_flow8",
       "type": "flow8",
-      "x": 2695.4941362057957,
-      "y": 229.37818381131575,
       "zIndex": 33,
-      "isExpanded": false
+      "isExpanded": false,
+      "gridX": 1,
+      "gridY": 1
     },
-    "n_ableton": {
-      "id": "n_ableton",
-      "type": "ableton",
-      "x": 3253.9074125444085,
-      "y": 310.5278484270192,
+    "n_daw": {
+      "id": "n_daw",
+      "type": "daw",
       "zIndex": 40,
-      "isExpanded": false
+      "isExpanded": false,
+      "gridX": 2,
+      "gridY": 0
     }
   },
   "connections": {
@@ -140,7 +140,7 @@
     "c_flow_usb": {
       "id": "c_flow_usb",
       "source": "n_flow8",
-      "target": "n_ableton",
+      "target": "n_daw",
       "type": "midi_usb",
       "label": "USB Type-B to Type-A",
       "startOffset": {

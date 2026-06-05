@@ -13,7 +13,8 @@ export interface KnobProps {
 }
 
 export const Knob = ({ label = '', subLabel, size = 50, onInteract, variant = 'classic', hasLed, sectionId }: KnobProps) => {
-  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
+  const { hoveredDocSection, setHoveredDocSection, helpMode } = useUIStore();
+  const interactive = helpMode && !!sectionId;
   const gradId = label.replace(/\s+/g, '') + '-' + variant;
 
   const [rotation, setRotation] = useState(0); // -135 to 135 degrees
@@ -86,10 +87,10 @@ export const Knob = ({ label = '', subLabel, size = 50, onInteract, variant = 'c
       className={cn(
         "flex flex-col items-center group cursor-ns-resize relative rounded-lg p-1 transition-all duration-300",
         variant !== 'classic' ? 'z-10 w-12' : '',
-        hoveredDocSection === sectionId && sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
+        interactive && hoveredDocSection === sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
       )}
-      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
-      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+      onPointerEnter={() => interactive && setHoveredDocSection(sectionId!)}
+      onPointerLeave={() => interactive && setHoveredDocSection(null)}
       onPointerDown={handlePointerDown}
       onDoubleClick={() => setRotation(0)}
       style={{ touchAction: 'none' }}
