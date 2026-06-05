@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUIStore } from './stores/useUIStore';
 import { PAGES } from './utils/constants';
 import { useCircuitTracksStore } from './stores/useCircuitTracksStore';
+import { useAudioStore } from './stores/useAudioStore';
 import {
   DndContext,
   closestCenter,
@@ -16,33 +17,22 @@ import {
 import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import ConfirmModal from './components/Core/ConfirmModal/ConfirmModal';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
-import Toolbar from './components/Core/Toolbar/Toolbar';
-import DocumentViewer from './components/Core/DocumentViewer/DocumentViewer';
-import RightPane from './components/Core/RightPane/RightPane';
-import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
-import StagingArea from './components/devices/Circuit/StagingArea/StagingArea';
-import FileInspector from './components/Core/FileInspector/FileInspector';
-import Oscilloscope from './components/Core/Oscilloscope/Oscilloscope';
+import { SidebarProvider } from './components/Core/ui/sidebar';
+import { AppSidebar } from './components/Core/AppSidebar/AppSidebar';
+import DocumentationDrawer from './components/Core/DocumentationDrawer/DocumentationDrawer';
 import { TagBadge } from './components/Core/TagBadge/TagBadge';
-import Logo from './components/Core/Logo';
 import * as Icons from 'lucide-react';
-import { cn } from './lib/utils';
-import { ThemeToggle } from './components/Core/ThemeToggle';
-import pkg from '../package.json';
+import React from 'react';
 
-import CircuitTracksLayout from './components/devices/Circuit/CircuitTracksLayout';
 import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
-import BehringerGrind from './components/devices/Grind/BehringerGrind';
-import ArturiaMiniFreak from './components/devices/MiniFreak/ArturiaMiniFreak';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
+import OscilloscopeDrawer from './components/Core/OscilloscopeDrawer/OscilloscopeDrawer';
+import { HARDWARE_LIBRARY } from './devices';
 
 export default function App() {
   const activePage = useUIStore((s) => s.activePage);
   const activeMainView = useUIStore((s) => s.activeMainView);
-  const isDeviceMinimized = useUIStore((s) => s.isDeviceMinimized);
-  const setDeviceMinimized = useUIStore((s) => s.setDeviceMinimized);
-  const setRightPaneWidth = useUIStore((s) => s.setRightPaneWidth);
   
   const moveSlot = useCircuitTracksStore((s) => s.moveSlot);
   const movePackSlot = useCircuitTracksStore((s) => s.movePackSlot);
@@ -50,7 +40,7 @@ export default function App() {
   const confirmModal = useUIStore((s) => s.confirmModal);
   const closeConfirmModal = useUIStore((s) => s.closeConfirmModal);
 
-  const initAudioContext = useCircuitTracksStore((s) => s.initAudioContext);
+  const initAudioContext = useAudioStore((s) => s.initAudioContext);
   const [activeDragItem, setActiveDragItem] = useState<{ id: string, type: string, data: any } | null>(null);
   
   const activeTagItem = activeDragItem?.type === 'tag'
@@ -144,105 +134,34 @@ export default function App() {
     }
   };
 
+  const activeHardware = HARDWARE_LIBRARY[activeMainView];
+  const DeviceLayout = activeHardware?.layoutComponent;
+
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="min-h-screen bg-background text-foreground flex flex-col font-sans h-screen overflow-hidden" onClick={initAudioContext}>
-        {/* Header */}
-        <div className="hidden lg:flex h-16 flex-none border-b border-border bg-card items-center px-4 justify-between order-1">
-          {/* Left part (logo) */}
-          <div className="flex-1 flex items-center space-x-3">
-            <Logo className="h-8 w-auto text-foreground" />
-          </div>
-
-          {/* Center part */}
-          <div className="flex flex-col items-center justify-center shrink-0">
-            <div className="flex items-baseline space-x-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">Tracks(ter)</h1>
-              <span className="text-[10px] text-muted-foreground font-mono font-bold">v{pkg.version}</span>
+        <SidebarProvider>
+          <AppSidebar />
+          <div className="flex flex-1 overflow-hidden min-h-0 relative z-0">
+            {/* Main View Container */}
+            <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
+              <OscilloscopeDrawer />
+              {activeMainView === 'overview' ? (
+                <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
+              ) : activeMainView === 'soundtoys' ? (
+                <SoundToysLayout />
+              ) : DeviceLayout ? (
+                <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-muted-foreground">Loading device...</div>}>
+                  <DeviceLayout />
+                </React.Suspense>
+              ) : (
+                <WIPPage deviceId={activeMainView} />
+              )}
             </div>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground hidden sm:block mt-0.5">Hybrid DAWless documentation and utility tool</span>
+
+            <DocumentationDrawer />
           </div>
-
-          <div className="flex-1 flex items-center justify-end space-x-3">
-            <a
-              href="https://github.com/alienmind/trackster"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors bg-muted px-3 py-1.5 rounded-md hover:bg-secondary whitespace-nowrap"
-            >
-              <Icons.GitBranch size={14} />
-              GitHub
-            </a>
-            <ThemeToggle />
-          </div>
-        </div>
-
-        <div className="order-3 md:order-2 flex-none z-20">
-          <Toolbar />
-        </div>
-
-        <div className="flex flex-1 overflow-hidden min-h-0 order-2 md:order-3 relative z-0">
-          
-          {/* Main View Container */}
-          <div className={cn("flex-1 overflow-hidden transition-all duration-300", isDeviceMinimized ? 'w-0 flex-none opacity-0' : 'flex')}>
-            {activeMainView === 'overview' ? (
-              <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
-            ) : activeMainView === 'circuit' ? (
-              <CircuitTracksLayout />
-            ) : activeMainView === 'grind' ? (
-              <BehringerGrind />
-            ) : activeMainView === 'minifreak' ? (
-              <ArturiaMiniFreak />
-            ) : activeMainView === 'soundtoys' ? (
-              <SoundToysLayout />
-            ) : (
-              <WIPPage deviceId={activeMainView} />
-            )}
-          </div>
-
-          <RightPane>
-            {activeMainView === 'circuit' ? (
-              <div className="flex flex-col h-full overflow-hidden w-full">
-                <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                  <div className="flex-1 overflow-hidden min-h-0">
-                    <PendingChangesPane />
-                  </div>
-                  <div className="flex-1 border-t border-border bg-card overflow-hidden min-h-0">
-                    <StagingArea />
-                  </div>
-                </div>
-                <div className="p-4 flex flex-col gap-4 border-t border-border shrink-0 bg-card overflow-y-auto max-h-[50%]">
-                  <FileInspector />
-                  <div className="relative border border-border/50 rounded bg-black overflow-hidden shadow-inner h-48 flex-none">
-                    <Oscilloscope />
-                  </div>
-                </div>
-              </div>
-            ) : activeMainView === 'grind' ? (
-              <DocumentViewer />
-            ) : (
-              <DocumentViewer /> // Default fallback for other devices if a doc is active
-            )}
-          </RightPane>
-
-          {/* Restore Device Layout Button */}
-          {isDeviceMinimized && (
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 z-50 animate-in fade-in slide-in-from-left-4 duration-300">
-              <button 
-                onClick={() => {
-                  setDeviceMinimized(false);
-                  setRightPaneWidth(400); // restore reasonable width
-                }}
-                className="group flex flex-col items-center justify-center bg-card border border-l-0 border-border rounded-r-lg shadow-2xl py-4 px-2 hover:bg-muted transition-colors hover:pl-4"
-              >
-                <Icons.ChevronRight size={24} className="text-primary group-hover:scale-110 transition-transform" />
-                <span className="[writing-mode:vertical-lr] text-xs font-semibold tracking-widest uppercase mt-4 text-muted-foreground group-hover:text-foreground">
-                  Device Layout
-                </span>
-              </button>
-            </div>
-          )}
-        </div>
+        </SidebarProvider>
 
         <CommitDialog />
         <DuplicateScanModal />

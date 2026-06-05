@@ -1,9 +1,11 @@
 import { HardwareBlueprint } from '../stores/useOverviewStore';
+import React from 'react';
 
 import data from '../../devices/circuittracks/circuit.json';
 
 export const circuit: HardwareBlueprint = {
   ...(data as unknown as HardwareBlueprint),
+  layoutComponent: React.lazy(() => import('../components/devices/Circuit/CircuitTracksLayout')),
 visual: () => (
     <div className="w-full bg-[#1c1c21] rounded-md border border-neutral-800 p-2 shadow-inner flex flex-col gap-2 pointer-events-none">
        {/* Knobs */}

@@ -21,8 +21,10 @@ import { Circle, Square, ChevronDown, ChevronRight } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import { useOverviewStore } from '../../stores/useOverviewStore';
 import { Button } from '../Core/ui/button';
-import RemoveButton from '../Core/ui/RemoveButton';
-import ResponsiveDrawer from '../Core/ui/ResponsiveDrawer';
+import RemoveButton from '../Core/RemoveButton/RemoveButton';
+import { SidebarContextPortal } from '../Core/AppSidebar/SidebarContextPortal';
+import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '../Core/ui/sidebar';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../Core/ui/collapsible';
 import * as Icons from 'lucide-react';
 
 import cableGuideUrl from '../../../doc/cabletypes/cable-types.md?url';
@@ -123,7 +125,7 @@ export default function OverviewTab() {
     }
   }, [hardcodedLayouts]);
 
-  const { setActiveMainView, setActiveDoc } = useUIStore();
+  const { setActiveMainView, setActiveDoc, sidebarSectionStates, setSidebarSectionState } = useUIStore();
   const { nodes, connections, routingMode, customLayouts, setNodes, setConnections, setRoutingMode, resetLayout, autoArrange, saveCustomLayout, removeCustomLayout, removeNode } = useOverviewStore();
   const [draggingNode, setDraggingNode] = useState<any>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -650,76 +652,114 @@ export default function OverviewTab() {
     <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden text-neutral-800 dark:text-neutral-200">
       <div className="flex flex-1 min-h-0">
         
-        {/* Left Panel */}
-        <ResponsiveDrawer className="bg-card border-r border-border z-10 shrink-0 text-card-foreground">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Routing Mode</h2>
-            <Button
-              variant={routingMode === 'physical' ? 'default' : 'secondary'}
-              onClick={() => setRoutingMode('physical')}
-              className="w-full justify-start font-semibold shadow-md"
-            >
-              <Icons.Cable className="mr-2" size={16} />
-              Physical Cabling
-            </Button>
-            <Button
-              variant={routingMode === 'logical' ? 'default' : 'secondary'}
-              onClick={() => setRoutingMode('logical')}
-              className="w-full justify-start font-semibold shadow-md"
-            >
-              <Icons.Network className="mr-2" size={16} />
-              Logical MIDI
-            </Button>
-          </div>
+        <SidebarContextPortal>
+          <Collapsible 
+            open={sidebarSectionStates['overview-routing'] ?? true}
+            onOpenChange={(isOpen) => setSidebarSectionState('overview-routing', isOpen)}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
+                Routing Mode
+                <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <div className="flex flex-col gap-2 px-2 mt-2">
+                    <Button
+                      variant={routingMode === 'physical' ? 'default' : 'secondary'}
+                      onClick={() => setRoutingMode('physical')}
+                      className="w-full justify-start font-semibold shadow-md"
+                    >
+                      <Icons.Cable className="mr-2" size={16} />
+                      Physical Cabling
+                    </Button>
+                    <Button
+                      variant={routingMode === 'logical' ? 'default' : 'secondary'}
+                      onClick={() => setRoutingMode('logical')}
+                      className="w-full justify-start font-semibold shadow-md"
+                    >
+                      <Icons.Network className="mr-2" size={16} />
+                      Logical MIDI
+                    </Button>
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
 
-          <hr className="border-border my-2" />
+          <Collapsible 
+            open={sidebarSectionStates['overview-docs'] ?? true}
+            onOpenChange={(isOpen) => setSidebarSectionState('overview-docs', isOpen)}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
+                Documentation
+                <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <div className="flex flex-col gap-2 px-2 mt-2">
+                    <Button variant="outline" onClick={() => setActiveDoc({ url: cableGuideUrl, type: 'md' })} className="w-full justify-start shadow-sm text-cyan-600 dark:text-cyan-400 border-cyan-800">
+                      <Icons.BookOpen size={14} className="mr-2" /> Cable Types Guide
+                    </Button>
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
 
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Documentation</h2>
-            <Button variant="outline" onClick={() => setActiveDoc({ url: cableGuideUrl, type: 'md' })} className="w-full justify-start shadow-sm text-cyan-600 dark:text-cyan-400 border-cyan-800">
-              <Icons.BookOpen size={14} className="mr-2" /> Cable Types Guide
-            </Button>
-          </div>
-
-          <hr className="border-border my-2" />
-
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Layouts</h2>
-            <div className="flex flex-col gap-1 mb-2 pr-1">
-              {hardcodedLayouts.map((l: any) => (
-                 <Button key={l.id} variant="secondary" className="w-full justify-start shadow-sm text-xs h-8"
-                         onClick={() => resetLayout(l.nodes, l.connections)}>
-                    {l.name}
-                 </Button>
-              ))}
-              {customLayouts.map((l: any) => (
-                 <div key={l.id} className="flex group gap-1">
-                   <Button variant="secondary" className="flex-1 justify-start shadow-sm text-xs h-8"
-                           onClick={() => resetLayout(l.nodes, l.connections)}
-                           onDoubleClick={() => navigator.clipboard.writeText(JSON.stringify(l, null, 2)).then(() => useUIStore.getState().addNotification({ type: 'success', message: 'Custom layout JSON copied to clipboard!' }))}
-                           title="Double click to copy JSON">
-                      {l.name}
-                   </Button>
-                   <Button variant="secondary" className="px-2 h-8 text-muted-foreground hover:bg-destructive hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                           onClick={() => removeCustomLayout(l.id)}>
-                      <Icons.Trash2 size={12} />
-                   </Button>
-                 </div>
-              ))}
-            </div>
-            <Button variant="secondary" onClick={() => {
-                const name = prompt("Enter a name for the new layout:");
-                if (name) saveCustomLayout(name);
-              }} className="w-full justify-start shadow-sm text-xs h-8">
-              <Icons.Plus size={14} className="mr-2" /> Save New Layout
-            </Button>
-            <Button variant="secondary" onClick={() => autoArrange()} className="w-full justify-start shadow-sm text-xs h-8">
-              <Icons.LayoutGrid size={14} className="mr-2" /> Auto Arrange
-            </Button>
-
-          </div>
-
-        </ResponsiveDrawer>
+          <Collapsible 
+            open={sidebarSectionStates['overview-layouts'] ?? true}
+            onOpenChange={(isOpen) => setSidebarSectionState('overview-layouts', isOpen)}
+            className="group/collapsible"
+          >
+            <SidebarGroup>
+              <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
+                Layouts
+                <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <div className="flex flex-col gap-2 px-2 mt-2">
+                    <div className="flex flex-col gap-1 mb-2 pr-1">
+                      {hardcodedLayouts.map((l: any) => (
+                        <Button key={l.id} variant="secondary" className="w-full justify-start shadow-sm text-xs h-8"
+                                onClick={() => resetLayout(l.nodes, l.connections)}>
+                            {l.name}
+                        </Button>
+                      ))}
+                      {customLayouts.map((l: any) => (
+                        <div key={l.id} className="flex group gap-1">
+                          <Button variant="secondary" className="flex-1 justify-start shadow-sm text-xs h-8"
+                                  onClick={() => resetLayout(l.nodes, l.connections)}
+                                  onDoubleClick={() => navigator.clipboard.writeText(JSON.stringify(l, null, 2)).then(() => useUIStore.getState().addNotification({ type: 'success', message: 'Custom layout JSON copied to clipboard!' }))}
+                                  title="Double click to copy JSON">
+                              {l.name}
+                          </Button>
+                          <Button variant="secondary" className="px-2 h-8 text-muted-foreground hover:bg-destructive hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => removeCustomLayout(l.id)}>
+                              <Icons.Trash2 size={12} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button variant="secondary" onClick={() => {
+                        const name = prompt("Enter a name for the new layout:");
+                        if (name) saveCustomLayout(name);
+                      }} className="w-full justify-start shadow-sm text-xs h-8">
+                      <Icons.Plus size={14} className="mr-2" /> Save New Layout
+                    </Button>
+                    <Button variant="secondary" onClick={() => autoArrange()} className="w-full justify-start shadow-sm text-xs h-8">
+                      <Icons.LayoutGrid size={14} className="mr-2" /> Auto Arrange
+                    </Button>
+                  </div>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        </SidebarContextPortal>
 
         {/* Main Canvas Area */}
         <div className="flex-1 w-full bg-neutral-100 dark:bg-neutral-900 p-6 font-sans flex flex-col items-center selection:bg-cyan-500/30">

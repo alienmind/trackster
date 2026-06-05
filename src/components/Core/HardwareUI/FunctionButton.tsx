@@ -1,4 +1,6 @@
 import React from 'react';
+import { useUIStore } from '../../../stores/useUIStore';
+import { cn } from '../../../lib/utils';
 
 interface FunctionButtonProps {
   label?: string;
@@ -9,15 +11,24 @@ interface FunctionButtonProps {
   className?: string;
   isActive?: boolean;
   onClick?: () => void;
+  sectionId?: string;
 }
 
-export const FunctionButton = ({ label, topLabel, bottomLabel, icon, labelColor, className, isActive = false, onClick }: FunctionButtonProps) => {
+export const FunctionButton = ({ label, topLabel, bottomLabel, icon, labelColor, className, isActive = false, onClick, sectionId }: FunctionButtonProps) => {
+  const { hoveredDocSection, setHoveredDocSection } = useUIStore();
   const handleClick = () => {
     if (onClick) onClick();
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full">
+    <div 
+      className={cn(
+        "flex flex-col items-center justify-center w-full relative rounded-lg p-1 transition-all duration-300",
+        hoveredDocSection === sectionId && sectionId ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : ''
+      )}
+      onPointerEnter={() => sectionId && setHoveredDocSection(sectionId)}
+      onPointerLeave={() => sectionId && setHoveredDocSection(null)}
+    >
       <div className="h-5 flex items-end justify-center pb-1 w-full">
         {topLabel && <span className="text-[9px] text-gray-400 font-medium tracking-wide text-center leading-none">{topLabel}</span>}
       </div>
