@@ -8,6 +8,7 @@ This document contains a set of structured new feature ideas, concepts, and high
 
 ### Configuration Backup & Restore (Local ZIP)
 Implement a robust configuration backup system to serialize all local user settings, canvas layouts, and custom device definitions into a single, portable file. 
+* Allow to have multiple configuration profiles (add them, delete them, backup them)
 * Generate a downloadable `.zip` file containing a set of JSON files representing the current state of Trackster.
 * Allow users to import this `.zip` file later to completely restore their setup, preserving the offline-first, local nature of the app without needing a backend server.
 
@@ -17,6 +18,15 @@ Implement a robust configuration backup system to serialize all local user setti
 * **Import Workflow (Restore)**: User selects a ZIP file. Decompress via `JSZip`. Parse and validate the JSON against predefined schemas to ensure the backup file isn't corrupted. Overwrite relevant Zustand store states and IndexedDB entries, then trigger a UI re-render.
 * **Dependencies**: `JSZip` (for creating/reading zip files on the client side).
 * **Potential Challenges**: Handling breaking schema changes in future versions (requires a `"version"` key). Managing large custom assets (like base64 images) which might inflate the ZIP size.
+
+### Overview Canvas Improvements
+* **Automatic Optimization of Cabling**: Suggest reconnecting things in a different way via an "Optimize" button in the overview to clean up the physical routing diagram.
+* **Add new gear (LLM assisted)**:
+  * This feature would allow users to easily add new hardware synthesizers to the application. 
+  * With one LLM we will receive a description of the device.
+  * An image of the gear will be added - LLM will generate an SVG optionally, but the image can still be used.
+  * LLM would also generate a set of cable routings for the new gear as a default.
+  * It will be added to the catalogue of available units.
 
 ### Browser Sequencer
 Your browser becomes your DAW!
@@ -33,22 +43,16 @@ Seamlessly integrate Strudel live-coding to merge your hardware setup with algor
 * **MIDI-to-Strudel Support**: Utilize scripts to convert recorded MIDI files into editable Strudel syntax for further algorithmic manipulation.
 * **Layout Syncing**: Save Strudel sketches alongside your DAWless hardware routing configurations to instantly recall entire studio states.
 
-### Overview Canvas Improvements
-* **Automatic Optimization of Cabling**: Suggest reconnecting things in a different way via an "Optimize" button in the overview to clean up the physical routing diagram.
-* **MIDI Channels Sidebar**: Render a table on a new right collapsible navbar displaying the assigned MIDI channels for each device on the canvas.
-* **Add new gear (LLM assisted)**:
-  * This feature would allow users to easily add new hardware synthesizers to the application. 
-  * With one LLM we will receive a description of the device.
-  * An image of the gear will be added - LLM will generate an SVG optionally, but the image can still be used.
-  * LLM would also generate a set of cable routings for the new gear as a default.
-  * It will be added to the catalogue of available units.
-
 ### Generic MIDI Listening
 * The ability to "listen to midi" and save the sequenced pattern on any connected MIDI device.
 
 ---
 
 ## Novation Circuit Tracks
+
+### Enhancements in the samples similarity search
+The current feature is very poor, we need to first cluster all sample types by what it is (this is usually hinted by the name). Kicks compare to kicks, Snares to snares. Now everything compares to everything.
+The algorithm should be more robust, we need to do spectral analysis and transients analysis. We have too many false positives
 
 ### Live MIDI Preview Feature
 The "Live Preview" module is a Web MIDI-powered interface for the "Trackster" web application. It allows users to remotely control a connected Novation Circuit Tracks via USB. The UI provides a track selector (Synth 1-2, MIDI 1-2, Drum 1-4) and a 64-pad grid. Clicking a pad automatically sends the specific MIDI protocol sequence to load that preset/sample on the hardware and immediately trigger a sound, simulating a physical pad press on the device.
