@@ -15,19 +15,22 @@ The following specifications govern the Overview's behavior, based on direct des
 ### 2. Device Representation & Interaction
 - **Scalable Visuals**: Devices render either using raster images (`device.png`) or native React/SVG components via the blueprint's `visual()` function. The container automatically applies a `scale()` transform so complex SVG dashboards (like the Circuit Tracks) perfectly fit the bounds without cropping.
 - **Split Click Targets**: 
-  - Clicking the **Header** (device name/brand) selects the device and slides out the properties pane.
-  - Clicking the **Body/Picture** navigates the user directly to the device's dedicated application view.
+  - **Device Header**: Clicking on the device header triggers an opening/closing animation for the left pane where the device properties are displayed.
+  - **Device Picture**: Clicking on the device picture/body takes you directly to the device detailed page.
 
 ### 3. Drag, Drop, and Live Preview
-Users can rearrange the layout by dragging and dropping devices onto other grid cells.
+Dragging and dropping a device in the grid is allowed and provides immediate visual feedback.
 - **Stable Drop Zones**: HTML5 drag-and-drop often fails when the DOM element under the cursor moves. To solve this, Trackster renders an invisible `z-30` grid of "Drop Zones" that sit over the physical nodes during a drag but never move themselves.
-- **Live State Interception**: While dragging over a drop zone, a `previewNodes` state is dynamically generated. This state temporally swaps the coordinates of the `draggedNode` and the `dragHoverNode`. 
-- **Real-Time Visual Feedback**: The visual device cards instantly read from `previewNodes`. When hovering over a drop zone, the target device gracefully moves out of the way (highlighted in cyan), and the dragged device snaps into its new position—complete with smooth CSS transition animations.
+- **Live Repositioning & Re-Routing**: While dragging over a drop zone, a `previewNodes` state is dynamically generated. This causes the other devices to reposition live while we drag (in a grayed out state) and the cables routing to recompute. 
+- **State Recovery**: Once we finalize the drag and drop movement, the layout is committed and the coloring recovers its normal state.
 
 ### 4. Intelligent Cable Routing
 Cables between devices never intersect the device bodies and always route cleanly around them.
-- **Edge Anchoring**: Cables connect perfectly flush to the absolute center of a device's edge.
-- **4-Sided Smart Anchoring (`bestSide`)**: The system calculates the relative `dx` and `dy` between the source and target device to pick the optimal face. Devices stacked vertically connect top-to-bottom. Devices side-by-side connect left-to-right. Diagonals prefer the axis with the larger delta.
+- **Draggable Cable Endpoints (Upcoming)**: It should be possible to drag and drop cables by their edges. The edges should be a dot and can be draggable and droppable over any other device that allows that type of connection.
+- **Connector Dots & Capacity Constraints**: The connector dots need to be differentiated for each cable. 
+  - **Distribution**: If one side of the device has already more than the maximum allowed cables (4, which should be equidistant and distributed across that side), the system must find another connector on another side of the square container of the device. 
+  - **Global Limit**: Each device can have up to 16 maximum connections. This limit can be changed as a global definition.
+- **4-Sided Smart Anchoring (`bestSide`)**: The system calculates the relative `dx` and `dy` between the source and target device to pick the optimal face. Devices stacked vertically connect top-to-bottom. Devices side-by-side connect left-to-right.
 - **The Routing Grid (2N+1)**: To route cables *around* devices, we project the N×N device grid into a `(2N+1) x (2N+1)` routing grid. Odd coordinates represent the solid device cells (obstacles), and even coordinates represent the empty "margin lanes".
 - **A* Pathfinding**: The `findPath` algorithm navigates through the margin lanes to find the shortest rectilinear route.
 - **Live Re-Routing**: Because the path generation hooks into the `previewNodes` state, cables instantly animate and re-route themselves *while* you drag a device around the grid.
