@@ -2,12 +2,12 @@ import React, { useRef } from 'react';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
 
-export default function RightPane({ children }: { children: React.ReactNode }) {
-  const rightPaneWidth = useUIStore((s) => s.rightPaneWidth);
-  const setRightPaneWidth = useUIStore((s) => s.setRightPaneWidth);
+export default function CircuitTracksUtilityPane({ children }: { children: React.ReactNode }) {
+  const utilityPaneWidth = useUIStore((s) => s.utilityPaneWidth);
+  const setUtilityPaneWidth = useUIStore((s) => s.setUtilityPaneWidth);
   const isDeviceMinimized = useUIStore((s) => s.isDeviceMinimized);
   const setDeviceMinimized = useUIStore((s) => s.setDeviceMinimized);
-  const isRightPaneCollapsed = useUIStore((s) => s.isRightPaneCollapsed);
+  const isUtilityPaneCollapsed = useUIStore((s) => s.isUtilityPaneCollapsed);
   const activeMainView = useUIStore((s) => s.activeMainView);
 
   const isResizing = useRef(false);
@@ -15,14 +15,14 @@ export default function RightPane({ children }: { children: React.ReactNode }) {
   const handlePointerDown = (e: React.PointerEvent) => {
     isResizing.current = true;
     const startX = e.clientX;
-    const startWidth = rightPaneWidth;
+    const startWidth = utilityPaneWidth;
     
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (!isResizing.current) return;
       const deltaX = startX - moveEvent.clientX;
       const maxWidth = window.innerWidth;
       const newWidth = Math.min(maxWidth, Math.max(300, startWidth + deltaX));
-      setRightPaneWidth(newWidth);
+      setUtilityPaneWidth(newWidth);
       
       if (newWidth > maxWidth * 0.8) {
         setDeviceMinimized(true);
@@ -42,7 +42,7 @@ export default function RightPane({ children }: { children: React.ReactNode }) {
     e.preventDefault();
   };
 
-  if (isRightPaneCollapsed && activeMainView !== 'circuit') {
+  if (isUtilityPaneCollapsed && activeMainView !== 'circuit') {
     return null;
   }
 
@@ -52,7 +52,7 @@ export default function RightPane({ children }: { children: React.ReactNode }) {
         "flex relative border-l border-border bg-card shrink-0 transition-[width]",
         isDeviceMinimized ? "w-full" : "h-full"
       )}
-      style={{ width: isDeviceMinimized ? '100%' : `${rightPaneWidth}px` }}
+      style={{ width: isDeviceMinimized ? '100%' : `${utilityPaneWidth}px` }}
     >
       {/* Resize Handle */}
       {!isDeviceMinimized && (
