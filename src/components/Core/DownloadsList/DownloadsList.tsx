@@ -8,8 +8,10 @@ export default function DownloadsList({ deviceId }: { deviceId: string }) {
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const activeDoc = useUIStore((s) => s.activeDoc);
 
-  // Dynamically import all files in devices/*/downloads
-  const filesGlob = import.meta.glob('/devices/*/downloads/*.*', { query: '?url', import: 'default', eager: true });
+  // Dynamically import all files from doc and downloads
+  const docGlob = import.meta.glob('/doc/*/*.*', { query: '?url', import: 'default', eager: true });
+  const downloadsGlob = import.meta.glob('/downloads/*/*.*', { query: '?url', import: 'default', eager: true });
+  const filesGlob = { ...docGlob, ...downloadsGlob };
 
   const extWeight: Record<string, number> = {
     md: 1,
@@ -32,7 +34,7 @@ export default function DownloadsList({ deviceId }: { deviceId: string }) {
       url: url as string,
       ext,
     };
-  }).filter(m => m.path.includes(`/devices/${deviceId}/downloads/`))
+  }).filter(m => m.path.includes(`/doc/${deviceId}/`) || m.path.includes(`/downloads/${deviceId}/`))
     .sort((a, b) => {
       
       const weightA = extWeight[a.ext] ?? 99;

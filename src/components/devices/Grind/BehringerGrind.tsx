@@ -6,7 +6,7 @@ import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 import { useGrindStore } from '../../../stores/useGrindStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
-import grindGuideUrl from '../../../../devices/grind/downloads/behringer-grind-guide.md?url';
+import grindGuideUrl from "../../../../doc/grind/behringer-grind-guide.md?url";
 
 // --- ICONS & SVGS ---
 
