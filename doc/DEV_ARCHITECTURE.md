@@ -13,7 +13,7 @@ Trackster is a fully client-side, offline-capable Progressive Web App (PWA) desi
 ---
 
 ## 2. Technology Stack & Core APIs
-*   **Package Manager**: `pnpm` (Strictly `pnpm` - do not use `npm` or `yarn`).
+*   **Package Manager**: `pnpm` (Strictly `pnpm` - do not use `npm` or `yarn`). All terminal commands, build tests, and package installations MUST use `pnpm` (e.g., `pnpm build`, `pnpm dev`).
 *   **Bundler & Dev Server**: Vite.
 *   **UI Framework**: React 19.x (using TypeScript 5.x in strict mode).
 *   **State Management**: Zustand 5.x (minimal selector-based state subscriptions to prevent excessive React re-renders).
@@ -34,7 +34,7 @@ trackster/
 │   │   │   ├── DocumentationDrawer/ # Global sliding drawer for displaying manuals/markdown
 │   │   │   ├── ManualsList/    # Sidebar listing available PDF manuals for selected device
 │   │   │   ├── DownloadsList/  # Generic list for fetching device-specific files
-│   │   │   └── ui/             # Primitives like Buttons, Dialogs, tooltips, drawers, etc
+│   │   │   └── ui/             # Strictly for verbatim shadcn components (do not modify or place custom components here)
 │   │   ├── Overview/           # DAWless interactive routing canvas & touch gesture viewport
 │   │   └── devices/            # Hardware specific UI implementations
 │   │       ├── Circuit/        # Novation Circuit Tracks layout and utility panes
@@ -157,3 +157,5 @@ When contributing, these rules are **strictly enforced**:
 *   **Strict Types**: Never use the `any` type. Build precise interface schemas and type check your work (`pnpm tsc --noEmit`).
 *   **No Em-Dashes (`—`)**: Do not use the em-dash (`—`) character in markdown files, UI text, or comments. Use hyphens (`-`) or colons (`:`) instead.
 *   **Clean Architecture**: Ensure documentation and download paths respect the `deviceId` consistency rules, and avoid device-specific UI components in the global layout.
+*   **UI Component Separation**: The `src/components/Core/ui` directory is strictly reserved for verbatim shadcn/ui components. Do not modify these components or place custom UI components here. Any custom components (e.g., `DeviceUtilityDrawer`, `SidebarSection`) must be placed in their own dedicated folders under `src/components/Core/` or appropriate directories.
+*   **Command Execution**: When testing the build, running linting, or starting a dev server, you MUST use `pnpm` (e.g., `pnpm build`). Never run `npm run build` or `npm install`.

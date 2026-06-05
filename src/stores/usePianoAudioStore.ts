@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import Soundfont from 'soundfont-player';
+import { useAudioStore } from './useAudioStore';
 import { useCircuitTracksStore } from './useCircuitTracksStore';
 
 interface PianoAudioState {
@@ -31,18 +32,14 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
 
     set({ isLoadingAudio: true });
     try {
-      let ac = useCircuitTracksStore.getState().audioContext;
-      if (!ac) {
-        useCircuitTracksStore.getState().initAudioContext();
-        ac = useCircuitTracksStore.getState().audioContext;
-      }
+      const ac = useAudioStore.getState().audioContext;
+      const analyser = useAudioStore.getState().analyser;
+      
       if (!ac) throw new Error("Could not initialize shared AudioContext");
 
       if (typeof Soundfont.instrument !== 'function') {
         throw new Error("Soundfont.instrument is not a function. Check import.");
       }
-      
-      const analyser = useCircuitTracksStore.getState().analyser;
       
       const instrument = await Soundfont.instrument(ac, 'acoustic_grand_piano', {
         nameToUrl: (name: string, _sf: string, format?: string) => `${import.meta.env.BASE_URL}soundfonts/${name}-${format || 'mp3'}.js`,

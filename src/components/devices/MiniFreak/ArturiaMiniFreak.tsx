@@ -1,6 +1,6 @@
-import ScaleFit from '../../Core/ui/ScaleFit';
-import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
-import { Knob } from '../../Core/HardwareUI/Knob';
+import ScaleFit from '../../Core/ScaleFit/ScaleFit';
+import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
+import MiniFreakSidebarContext from './MiniFreakSidebarContext';
 import { 
   SpaceGraphics, 
   WhiteBtn, 
@@ -9,7 +9,7 @@ import {
   TouchStrips, 
   Keyboard 
 } from './MiniFreakControls';
-import DownloadsList from '../../Core/DownloadsList/DownloadsList';
+import { Knob } from '../../Core/HardwareUI/Knob';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
 import minifreakGuideUrl from '../../../../doc/minifreak/minifreak-guide.md?url';
@@ -239,21 +239,9 @@ export default function ArturiaMiniFreak() {
 
   return (
     <div className="flex h-full w-full bg-neutral-900 overflow-hidden font-sans select-none relative">
-      {/* Left Drawer (Device Actions) */}
-      <ResponsiveDrawer className="bg-neutral-900 border-r border-neutral-800 shrink-0">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-xl font-bold tracking-tight text-white px-2">Arturia MiniFreak</h2>
-            <p className="text-sm text-neutral-400 px-2">
-              Control panel for the algorithmic synthesizer.
-            </p>
-          </div>
-          <div className="space-y-2 px-2">
-            {/* Control panel actions can be placed here in the future */}
-          </div>
-          <DownloadsList deviceId="minifreak" />
-        </div>
-      </ResponsiveDrawer>
+      <SidebarContextPortal>
+        <MiniFreakSidebarContext />
+      </SidebarContextPortal>
 
       {/* Center Panel */}
       <div className="flex-1 min-h-0 bg-[#111] flex flex-col items-center justify-center relative overflow-hidden">

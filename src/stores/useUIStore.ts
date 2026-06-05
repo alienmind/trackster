@@ -11,11 +11,8 @@ interface UIState {
   notifications: Notification[];
 
   isLeftPaneCollapsed: boolean;
-  isUtilityPaneCollapsed: boolean;
   selectedFile: SampleFile | null;
   activeDoc: { url: string; type: 'pdf' | 'md' } | null;
-  utilityPaneWidth: number;
-  isDeviceMinimized: boolean;
 
   activeDocSection: string | null;
   hoveredDocSection: string | null;
@@ -24,6 +21,9 @@ interface UIState {
   duplicateClusters: SampleFile[][];
 
   isMobileDrawerOpen: boolean;
+  isOscilloscopeOpen: boolean;
+
+  sidebarSectionStates: Record<string, boolean>;
 
   confirmModal: {
     isOpen: boolean;
@@ -43,12 +43,8 @@ interface UIState {
   addNotification: (notification: Omit<Notification, 'id'>) => void;
   dismissNotification: (id: string) => void;
   toggleLeftPane: () => void;
-  toggleUtilityPane: () => void;
-  setUtilityPaneCollapsed: (collapsed: boolean) => void;
   setSelectedFile: (file: SampleFile | null) => void;
   setActiveDoc: (doc: { url: string; type: 'pdf' | 'md' } | null) => void;
-  setUtilityPaneWidth: (width: number) => void;
-  setDeviceMinimized: (minimized: boolean) => void;
 
   setActiveDocSection: (sectionId: string | null) => void;
   setHoveredDocSection: (sectionId: string | null) => void;
@@ -63,6 +59,8 @@ interface UIState {
 
   deferredPrompt: any | null;
   setDeferredPrompt: (prompt: any | null) => void;
+  setSidebarSectionState: (sectionId: string, isOpen: boolean) => void;
+  setOscilloscopeOpen: (isOpen: boolean) => void;
 }
 
 const storeCreator: StateCreator<UIState> = (set) => ({
@@ -73,11 +71,8 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isCommitDialogOpen: false,
   notifications: [],
   isLeftPaneCollapsed: false,
-  isUtilityPaneCollapsed: true,
   selectedFile: null,
   activeDoc: null,
-  utilityPaneWidth: 400,
-  isDeviceMinimized: false,
 
   activeDocSection: null,
   hoveredDocSection: null,
@@ -85,6 +80,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   isDuplicateModalOpen: false,
   duplicateClusters: [],
   isMobileDrawerOpen: false,
+  isOscilloscopeOpen: false,
   confirmModal: {
     isOpen: false,
     title: '',
@@ -92,16 +88,12 @@ const storeCreator: StateCreator<UIState> = (set) => ({
     onConfirm: () => {},
   },
 
+  sidebarSectionStates: {},
+
   deferredPrompt: null,
 
-  setActiveMainView: (view) => set((state) => {
-    let rightPaneCollapsed = state.isUtilityPaneCollapsed;
-    if (view === 'circuit') {
-      rightPaneCollapsed = false; // Always open for circuit tracks
-    } else if (!state.activeDoc) {
-      rightPaneCollapsed = true; // Collapse for other views if no doc is open
-    }
-    return { activeMainView: view, activeDoc: null, isUtilityPaneCollapsed: rightPaneCollapsed };
+  setActiveMainView: (view) => set(() => {
+    return { activeMainView: view, activeDoc: null };
   }),
   setActivePage: (page) => {
     set({ activePage: page });
@@ -158,33 +150,13 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   },
 
   toggleLeftPane: () => set((state) => ({ isLeftPaneCollapsed: !state.isLeftPaneCollapsed })),
-  toggleUtilityPane: () => set((state) => ({ isUtilityPaneCollapsed: !state.isUtilityPaneCollapsed })),
-  setUtilityPaneCollapsed: (collapsed) => set({ isUtilityPaneCollapsed: collapsed }),
   setSelectedFile: (file) => set({ selectedFile: file }),
-  setActiveDoc: (doc) => set((state) => {
-    let newWidth = state.utilityPaneWidth;
-    if (doc && typeof window !== 'undefined') {
-      const halfWidth = window.innerWidth * 0.5;
-      if (newWidth < halfWidth) {
-        newWidth = halfWidth;
-      }
-    }
-    
-    let shouldCollapse = false;
-    if (!doc && state.activeMainView !== 'circuit') {
-      shouldCollapse = true;
-    }
-    
+  setActiveDoc: (doc) => set(() => {
     return { 
       activeDoc: doc, 
-      activeDocSection: null,
-      isUtilityPaneCollapsed: doc ? false : shouldCollapse, 
-      isDeviceMinimized: false, 
-      utilityPaneWidth: newWidth 
+      activeDocSection: null
     };
   }),
-  setUtilityPaneWidth: (width) => set({ utilityPaneWidth: width }),
-  setDeviceMinimized: (minimized) => set({ isDeviceMinimized: minimized }),
 
   setActiveDocSection: (sectionId) => set({ activeDocSection: sectionId }),
   setHoveredDocSection: (sectionId) => set({ hoveredDocSection: sectionId }),
@@ -196,8 +168,16 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   closeConfirmModal: () => set((state) => ({ confirmModal: { ...state.confirmModal, isOpen: false } })),
 
   setMobileDrawerOpen: (isOpen) => set({ isMobileDrawerOpen: isOpen }),
+  setOscilloscopeOpen: (isOpen) => set({ isOscilloscopeOpen: isOpen }),
 
-  setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt })
+  setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
+
+  setSidebarSectionState: (sectionId, isOpen) => set((state) => ({
+    sidebarSectionStates: {
+      ...state.sidebarSectionStates,
+      [sectionId]: isOpen
+    }
+  }))
 });
 
 export const useUIStore = create<UIState>()(
@@ -209,8 +189,7 @@ export const useUIStore = create<UIState>()(
         activePage: state.activePage,
         activeMainView: state.activeMainView,
         isLeftPaneCollapsed: state.isLeftPaneCollapsed,
-        isUtilityPaneCollapsed: state.isUtilityPaneCollapsed,
-        utilityPaneWidth: state.utilityPaneWidth
+        sidebarSectionStates: state.sidebarSectionStates
       })
     }
   )

@@ -31,6 +31,7 @@ export interface HardwareDeviceData {
 
 export interface HardwareBlueprint extends HardwareDeviceData {
   visual?: () => React.ReactNode;
+  layoutComponent?: React.LazyExoticComponent<any> | React.ComponentType<any>;
 }
 
 export interface OverviewNode {

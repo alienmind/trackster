@@ -12,7 +12,7 @@ import { Knob } from '../../Core/HardwareUI/Knob';
 import { FunctionButton } from '../../Core/HardwareUI/FunctionButton';
 import { FunctionPad } from '../../Core/HardwareUI/FunctionPad';
 import { DownArrow, UpArrow, RecordIcon, PlayIcon } from '../../Core/HardwareUI/Icons';
-import ScaleFit from '../../Core/ui/ScaleFit';
+import ScaleFit from '../../Core/ScaleFit/ScaleFit';
 import circuitGuideUrl from "../../../../doc/circuit/circuit-tracks-guide.md?url";
 
 export default function CircuitTracksDevice() {
