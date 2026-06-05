@@ -20,14 +20,17 @@ export default function Toolbar() {
   const [infoModal, setInfoModal] = useState<{ isOpen: boolean, title: string, description: string }>({ isOpen: false, title: '', description: '' });
   const [newDeviceModalOpen, setNewDeviceModalOpen] = useState(false);
 
+  const hardwareDevices = Object.values(HARDWARE_LIBRARY)
+    .filter(device => !device.hideFromToolbar)
+    .map(device => ({
+      id: device.id,
+      label: device.longName,
+      requiresMount: device.requiresMount
+    }));
+
   const ALL_DEVICES: { id: string; label: string; requiresMount?: boolean }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'circuit', label: HARDWARE_LIBRARY['circuit']?.longName || 'Circuit Tracks', requiresMount: true },
-    { id: 'grind', label: HARDWARE_LIBRARY['grind']?.longName || 'Behringer Grind' },
-    { id: 's1', label: HARDWARE_LIBRARY['s1']?.longName || 'Roland S-1' },
-    { id: 'minifreak', label: HARDWARE_LIBRARY['minifreak']?.longName || 'Arturia Minifreak' },
-    { id: 'flow8', label: HARDWARE_LIBRARY['flow8']?.longName || 'Flow 8' },
-    { id: 'ableton', label: HARDWARE_LIBRARY['ableton']?.longName || 'Ableton Live' },
+    ...hardwareDevices,
     { id: 'soundtoys', label: 'Sound Toys' },
   ];
 

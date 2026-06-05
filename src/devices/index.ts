@@ -7,10 +7,10 @@ import { ableton } from './ableton';
 import { HardwareBlueprint } from '../stores/useOverviewStore';
 
 export const HARDWARE_LIBRARY: Record<string, HardwareBlueprint> = {
-  minifreak,
+  circuit,
   grind,
   s1,
-  circuit,
+  minifreak,
   flow8,
   ableton
 };
