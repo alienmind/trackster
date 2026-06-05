@@ -10,6 +10,23 @@ We strongly encourage you to **use an LLM (Large Language Model)** like Claude, 
 
 Modern AI models are excellent at translating images into code. By simply uploading a top-down picture of your synthesizer, groovebox, or mixer to an LLM, it can instantly generate both the port mappings and a beautiful SVG render of the device.
 
+## What Makes a Device?
+
+Under the hood, every device in Trackster is defined by a `HardwareBlueprint` object inside `src/devices/`. A blueprint contains:
+- **Identity**: `brand`, `model`, `tagline` (e.g. "Roland", "TR-8S", "DRUM MACHINE").
+- **Theme**: Tailwind classes defining the UI styling (`border`, `header`, `title`, `badge`).
+- **Physical Ports**: A list of inputs/outputs detailing exactly what connections the hardware supports.
+- **Visual Representation**: Devices are rendered on the grid via a `visual()` function that returns a React component. We strongly encourage developers to create beautiful, pure-CSS or inline-SVG approximations of the top faceplate to keep the app lightweight and gorgeous. If no `visual()` is provided, the system falls back to an optional `device.png` raster image.
+
+### Cable & Port Types
+
+Trackster routes cables between device ports. These connections are styled and color-coded based on the connection standard defined in `src/devices/cables.ts`. The standard list of cables includes:
+- **Audio**: `audio_ts` (Mono), `audio_trs` (Stereo), `audio_jack_to_minijack`, `audio_minijack_to_dual_trs`, `audio_trs_to_xlr`, `audio_xlr_to_xlr`
+- **MIDI**: `midi_din` (5-pin), `midi_din_to_trs`, `midi_usb`, `midi_usb_c`
+- **Power**: `power_cable`
+
+*Note: The actual ports listed in the device blueprint (e.g., `TS`, `TRS`, `MINIJACK`, `XLR_MALE`, `USB_C`) restrict which cables can logically connect to them.*
+
 ## Sourcing Images (Frictionless Paste)
 
 Trackster has a native clipboard interception feature for easily embedding images without dealing with URLs or CORS errors:
