@@ -17,12 +17,7 @@ import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import ConfirmModal from './components/Core/ConfirmModal/ConfirmModal';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
 import Toolbar from './components/Core/Toolbar/Toolbar';
-import DocumentViewer from './components/Core/DocumentViewer/DocumentViewer';
-import RightPane from './components/Core/RightPane/RightPane';
-import PendingChangesPane from './components/Core/PendingChangesPane/PendingChangesPane';
-import StagingArea from './components/devices/Circuit/StagingArea/StagingArea';
-import FileInspector from './components/Core/FileInspector/FileInspector';
-import Oscilloscope from './components/Core/Oscilloscope/Oscilloscope';
+import DocumentationDrawer from './components/Core/DocumentationDrawer/DocumentationDrawer';
 import { TagBadge } from './components/Core/TagBadge/TagBadge';
 import Logo from './components/Core/Logo';
 import * as Icons from 'lucide-react';
@@ -42,7 +37,7 @@ export default function App() {
   const activeMainView = useUIStore((s) => s.activeMainView);
   const isDeviceMinimized = useUIStore((s) => s.isDeviceMinimized);
   const setDeviceMinimized = useUIStore((s) => s.setDeviceMinimized);
-  const setRightPaneWidth = useUIStore((s) => s.setRightPaneWidth);
+  const setUtilityPaneWidth = useUIStore((s) => s.setUtilityPaneWidth);
   
   const moveSlot = useCircuitTracksStore((s) => s.moveSlot);
   const movePackSlot = useCircuitTracksStore((s) => s.movePackSlot);
@@ -200,30 +195,7 @@ export default function App() {
             )}
           </div>
 
-          <RightPane>
-            {activeMainView === 'circuit' ? (
-              <div className="flex flex-col h-full overflow-hidden w-full">
-                <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                  <div className="flex-1 overflow-hidden min-h-0">
-                    <PendingChangesPane />
-                  </div>
-                  <div className="flex-1 border-t border-border bg-card overflow-hidden min-h-0">
-                    <StagingArea />
-                  </div>
-                </div>
-                <div className="p-4 flex flex-col gap-4 border-t border-border shrink-0 bg-card overflow-y-auto max-h-[50%]">
-                  <FileInspector />
-                  <div className="relative border border-border/50 rounded bg-black overflow-hidden shadow-inner h-48 flex-none">
-                    <Oscilloscope />
-                  </div>
-                </div>
-              </div>
-            ) : activeMainView === 'grind' ? (
-              <DocumentViewer />
-            ) : (
-              <DocumentViewer /> // Default fallback for other devices if a doc is active
-            )}
-          </RightPane>
+          <DocumentationDrawer />
 
           {/* Restore Device Layout Button */}
           {isDeviceMinimized && (
@@ -231,7 +203,7 @@ export default function App() {
               <button 
                 onClick={() => {
                   setDeviceMinimized(false);
-                  setRightPaneWidth(400); // restore reasonable width
+                  setUtilityPaneWidth(400); // restore reasonable width
                 }}
                 className="group flex flex-col items-center justify-center bg-card border border-l-0 border-border rounded-r-lg shadow-2xl py-4 px-2 hover:bg-muted transition-colors hover:pl-4"
               >

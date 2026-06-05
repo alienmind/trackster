@@ -10,6 +10,11 @@ import ResponsiveDrawer from '../../Core/ui/ResponsiveDrawer';
 import StatusBar from '../../Core/StatusBar/StatusBar';
 import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 import BrowserWarning from '../../Core/BrowserWarning/BrowserWarning';
+import CircuitTracksUtilityPane from './CircuitTracksUtilityPane';
+import PendingChangesPane from '../../Core/PendingChangesPane/PendingChangesPane';
+import StagingArea from './StagingArea/StagingArea';
+import FileInspector from '../../Core/FileInspector/FileInspector';
+import Oscilloscope from '../../Core/Oscilloscope/Oscilloscope';
 
 export default function CircuitTracksLayout() {
   const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames, deviceMode } = useCircuitTracksStore();
@@ -124,6 +129,25 @@ export default function CircuitTracksLayout() {
             <CircuitTracksDevice />
           </div>
         </div>
+
+        <CircuitTracksUtilityPane>
+          <div className="flex flex-col h-full overflow-hidden w-full">
+            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+              <div className="flex-1 overflow-hidden min-h-0">
+                <PendingChangesPane />
+              </div>
+              <div className="flex-1 border-t border-border bg-card overflow-hidden min-h-0">
+                <StagingArea />
+              </div>
+            </div>
+            <div className="p-4 flex flex-col gap-4 border-t border-border shrink-0 bg-card overflow-y-auto max-h-[50%]">
+              <FileInspector />
+              <div className="relative border border-border/50 rounded bg-black overflow-hidden shadow-inner h-48 flex-none">
+                <Oscilloscope />
+              </div>
+            </div>
+          </div>
+        </CircuitTracksUtilityPane>
       </div>
 
       <div className="hidden md:block">
