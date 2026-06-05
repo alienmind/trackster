@@ -43,6 +43,7 @@ export default defineConfig({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 5000000,
+        navigateFallbackDenylist: [/.*\.(pdf|md|apk|exe|zip)$/i],
       }
     }),
   ],
