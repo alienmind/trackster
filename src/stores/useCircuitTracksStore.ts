@@ -12,7 +12,7 @@ import { computeSimilarity } from '../utils/similarity';
 import { useUIStore } from './useUIStore';
 import { useAudioStore } from './useAudioStore';
 
-export type DeviceMode = 'samples' | 'packs' | 'scales' | 'tempo';
+export type DeviceMode = 'samples' | 'packs' | 'scales' | 'tempo' | 'fx';
 
 export interface PackHistoryEntry {
   packSlots: PackSlot[];
@@ -76,6 +76,10 @@ export interface CircuitTracksState {
   setPreviewArpMode: (mode: 'up' | 'up-down' | 'random') => void;
   previewSustain: 'on' | 'off';
   setPreviewSustain: (mode: 'on' | 'off') => void;
+  activeDelayId: number;
+  setActiveDelayId: (id: number) => void;
+  activeReverbId: number;
+  setActiveReverbId: (id: number) => void;
   duplicateActivePack: () => void;
   clearActivePack: () => void;
   
@@ -389,6 +393,10 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       setPreviewArpMode: (mode) => set({ previewArpMode: mode }),
       previewSustain: 'on',
       setPreviewSustain: (mode) => set({ previewSustain: mode }),
+      activeDelayId: 5,
+      setActiveDelayId: (id) => set({ activeDelayId: id }),
+      activeReverbId: 20,
+      setActiveReverbId: (id) => set({ activeReverbId: id }),
       setWorkspaceMode: async (mode) => {
         const { rootHandle } = get();
         if (!rootHandle) return false;
@@ -1741,6 +1749,8 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         previewLoop: state.previewLoop,
         previewArpMode: state.previewArpMode,
         previewSustain: state.previewSustain,
+        activeDelayId: state.activeDelayId,
+        activeReverbId: state.activeReverbId,
         bpm: state.bpm,
       }),
     }

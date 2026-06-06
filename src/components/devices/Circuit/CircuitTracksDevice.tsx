@@ -6,6 +6,8 @@ import type { PageIndex } from '../../../types';
 import SortablePad from './Grid/SortablePad';
 import PackPad from './PackOrganizer/PackPad';
 import ScalePad from './Scales/ScalePad';
+import FXPad from './FX/FXPad';
+import FXDrawer from './FX/FXDrawer';
 import ScalesDrawer from './Scales/ScalesDrawer';
 import TempoDrawer from './Tempo/TempoDrawer';
 import { Knob } from '../../Core/HardwareUI/Knob';
@@ -97,6 +99,12 @@ export default function CircuitTracksDevice() {
   const padsToRender = deviceMode === 'packs' ? activePackSlots : activePageSlots;
 
   const renderPadRow = (startIndex: number, endIndex: number) => {
+    if (deviceMode === 'fx') {
+      return Array.from({ length: endIndex - startIndex }, (_, i) => {
+        const absoluteIndex = startIndex + i;
+        return <FXPad key={`fx-${absoluteIndex}`} index={absoluteIndex} />;
+      });
+    }
     if (deviceMode === 'scales') {
       return Array.from({ length: endIndex - startIndex }, (_, i) => {
         const absoluteIndex = startIndex + i;
@@ -116,6 +124,7 @@ export default function CircuitTracksDevice() {
         
         <ScalesDrawer />
         <TempoDrawer />
+        <FXDrawer />
 
         {/* KNOBS SECTION */}
         <div className="grid grid-cols-11 w-full relative mb-10 mt-2 gap-y-6">
@@ -150,7 +159,7 @@ export default function CircuitTracksDevice() {
             <FunctionButton 
               topLabel="Tap" 
               label={"Tempo\nSwing"} 
-              isActive={deviceMode === 'tempo'}
+              isActive={true}
               onClick={() => { if (!helpMode) setDeviceMode(deviceMode === 'tempo' ? 'samples' : 'tempo'); handleSectionClick('263-tempo-swing'); }}
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="263-tempo-swing"
@@ -158,16 +167,16 @@ export default function CircuitTracksDevice() {
             <FunctionButton 
               topLabel="Click" 
               label="Clear" 
-              isActive={true} 
-              onClick={() => { if (!helpMode) clearActivePack(); handleSectionClick('264-clear'); }} 
+              isActive={deviceMode === 'packs'} 
+              onClick={() => { if (deviceMode !== 'packs') return; if (!helpMode) clearActivePack(); handleSectionClick('264-clear'); }} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="264-clear"
             />
             <FunctionButton 
               topLabel="Mutate" 
               label="Duplicate" 
-              isActive={true} 
-              onClick={() => { if (!helpMode) duplicateActivePack(); handleSectionClick('265-duplicate'); }} 
+              isActive={deviceMode === 'packs'} 
+              onClick={() => { if (deviceMode !== 'packs') return; if (!helpMode) duplicateActivePack(); handleSectionClick('265-duplicate'); }} 
               className="!opacity-100 ring-2 ring-transparent active:ring-white transition-all"
               sectionId="265-duplicate"
             />
@@ -208,7 +217,14 @@ export default function CircuitTracksDevice() {
             {/* ROW 4 */}
             <FunctionPad label="Velocity" subLabel="Fixed" className="opacity-50 !opacity-100 ring-2 ring-transparent hover:ring-cyan-500 transition-all" sectionId="242-velocity" onClick={() => handleSectionClick('242-velocity')} />
             {renderPadRow(8, 16)}
-            <FunctionPad label="FX" subLabel="Side Chain" className="opacity-50 !opacity-100 ring-2 ring-transparent hover:ring-cyan-500 transition-all" sectionId="254-fx" onClick={() => handleSectionClick('254-fx')} />
+            <FunctionPad 
+              label="FX" 
+              subLabel="Side Chain" 
+              isActive={true}
+              className="opacity-50 !opacity-100 ring-2 ring-transparent active:ring-cyan-500 hover:ring-cyan-500 transition-all" 
+              sectionId="254-fx" 
+              onClick={() => { if (!helpMode) setDeviceMode(deviceMode === 'fx' ? 'samples' : 'fx'); handleSectionClick('254-fx'); }} 
+            />
 
             {/* ROW 5 */}
             <FunctionPad label="Gate" subLabel="Micro Step" className="opacity-50 !opacity-100 ring-2 ring-transparent hover:ring-cyan-500 transition-all" sectionId="243-gate" onClick={() => handleSectionClick('243-gate')} />
