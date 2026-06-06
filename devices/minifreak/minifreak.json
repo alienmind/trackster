@@ -7,9 +7,9 @@
   "width": 300,
   "theme": {
     "border": "border-t-zinc-500",
-    "header": "bg-zinc-950",
-    "title": "text-zinc-300",
-    "badge": "bg-zinc-800 text-zinc-400"
+    "header": "bg-zinc-100 dark:bg-zinc-950",
+    "title": "text-foreground",
+    "badge": "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
   },
   "ports": [
     {

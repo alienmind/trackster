@@ -336,14 +336,14 @@ export default function BehringerGrind() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 bg-background overflow-hidden">
       <div className="flex flex-1 min-h-0">
         <SidebarContextPortal>
           <GrindSidebarContext />
         </SidebarContextPortal>
 
         {/* Center Panel */}
-        <div className="flex-1 min-h-full h-full w-full bg-[#111] font-sans select-none overflow-hidden relative">
+        <div className="flex-1 min-h-full h-full w-full bg-background font-sans select-none overflow-hidden relative">
           <DeviceHelpToggle guideUrl={grindGuideUrl} />
           <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
             {/* Synth Chassis with Wood Panels */}

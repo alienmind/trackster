@@ -1,14 +1,12 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '../../Core/ui/sidebar';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../../Core/ui/collapsible';
 import DownloadsList from '../../Core/DownloadsList/DownloadsList';
-import { Button } from '../../Core/ui/button';
+
 import { useUIStore } from '../../../stores/useUIStore';
-import { HARDWARE_LIBRARY } from '../../../devices';
 import * as Icons from 'lucide-react';
 
 export default function MiniFreakSidebarContext() {
-  const { activeMainView, setActiveMainView, sidebarSectionStates, setSidebarSectionState } = useUIStore();
-  const longName = HARDWARE_LIBRARY[activeMainView]?.longName || 'MiniFreak';
+  const { sidebarSectionStates, setSidebarSectionState } = useUIStore();
 
   return (
     <>
@@ -19,16 +17,15 @@ export default function MiniFreakSidebarContext() {
       >
         <SidebarGroup>
           <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-            {longName} Utilities
+            <>
+              <span className="dark:hidden">Arturia MiniFreak</span>
+              <span className="hidden dark:inline">Arturia MiniFreak Stellar</span>
+            </> Utilities
             <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
           </SidebarGroupLabel>
           <CollapsibleContent>
             <SidebarGroupContent>
-              <div className="px-2 mt-2 mb-4">
-                <Button variant="default" className="w-full" onClick={() => setActiveMainView('overview')}>
-                  Back to Routing
-                </Button>
-              </div>
+
               <div className="px-2">
                 <DownloadsList deviceId="minifreak" />
               </div>

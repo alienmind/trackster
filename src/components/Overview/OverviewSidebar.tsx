@@ -215,7 +215,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
           >
             {dirIcon}
             <span>{label}</span>
-            <span className="text-[9px] uppercase tracking-wider text-neutral-500">{port.type}</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{port.type}</span>
           </div>
         </div>
 
@@ -245,7 +245,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                     key={c.id}
                     onClick={() => setSelectedConnectionId(c.id)}
                     className={`p-1.5 rounded border text-xs flex items-start gap-1.5 cursor-pointer relative group ${
-                      isSel ? 'bg-cyan-950/40 border-cyan-500/60 ring-1 ring-cyan-400/40' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
+                      isSel ? 'bg-cyan-950/40 border-cyan-500/60 ring-1 ring-cyan-400/40' : 'bg-muted/30 border-border hover:border-foreground/30'
                     }`}
                   >
                     <div className="flex flex-col items-center gap-1.5 pt-1 pb-1 px-0.5">
@@ -254,7 +254,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                       {/* Direction arrow: points TOWARDS this device */}
                       <Icons.ArrowDown
                         size={12}
-                        className="text-neutral-500"
+                        className="text-muted-foreground"
                         aria-hidden
                       />
                       {/* Local end (this device) — highlighted with cyan halo */}
@@ -263,7 +263,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                     <div className="flex-1 min-w-0 flex flex-col gap-1 pr-4">
                       {/* Remote device picker */}
                       <select
-                        className="bg-neutral-900 border border-neutral-700 rounded text-[11px] p-0.5 text-white w-full"
+                        className="bg-background border border-border rounded text-[11px] p-0.5 text-foreground w-full"
                         value={remoteId}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateConnection(c.id, { [remoteNodeField]: e.target.value } as Partial<OverviewConnection>)}
@@ -275,7 +275,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                       {/* Remote port picker (only show ports of opposite direction) */}
                       {remotePorts.length > 0 && (
                         <select
-                          className="bg-neutral-900 border border-neutral-700 rounded text-[10px] p-0.5 text-neutral-300 w-full"
+                          className="bg-background border border-border rounded text-[10px] p-0.5 text-muted-foreground w-full"
                           value={remotePortId ?? ''}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => updateConnection(c.id, { [remotePortField]: e.target.value } as Partial<OverviewConnection>)}
@@ -292,7 +292,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                       )}
                       {/* Cable type */}
                       <select
-                        className="bg-neutral-900 border border-neutral-700 rounded text-[10px] p-0.5 text-neutral-300 w-full"
+                        className="bg-background border border-border rounded text-[10px] p-0.5 text-muted-foreground w-full"
                         value={c.type || 'default'}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateConnection(c.id, { type: e.target.value })}
@@ -303,7 +303,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                       </select>
                     </div>
                     <button
-                      className="absolute right-1 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => { e.stopPropagation(); deleteConnection(c.id); }}
                       title="Delete connection"
                     >
@@ -321,16 +321,25 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
 
   return (
     <div
-      className="h-full w-80 bg-neutral-900 border-r border-neutral-800 shadow-2xl flex flex-col"
+      className="h-full w-80 bg-background border-r border-border shadow-2xl flex flex-col"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <div>
-          <h2 className="text-lg font-bold text-white">{blueprint?.model || 'Unknown Device'}</h2>
-          <p className="text-xs text-neutral-400 uppercase tracking-widest">{blueprint?.brand}</p>
+          <h2 className="text-lg font-bold text-foreground">
+            {blueprint?.id === 'minifreak' ? (
+              <>
+                <span className="dark:hidden">Arturia MiniFreak</span>
+                <span className="hidden dark:inline">Arturia MiniFreak Stellar</span>
+              </>
+            ) : (
+              blueprint?.model || 'Unknown Device'
+            )}
+          </h2>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest">{blueprint?.brand}</p>
         </div>
-        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onClose(); }} className="text-neutral-400 hover:text-white">
+        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onClose(); }} className="text-muted-foreground hover:text-foreground">
           <Icons.X size={18} />
         </Button>
       </div>
@@ -338,20 +347,20 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {/* Device Info */}
         <section>
-          <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Details</h3>
-          <div className="bg-neutral-950 p-2 rounded-lg border border-neutral-800 text-xs text-neutral-300">
-            <p><span className="text-neutral-500 mr-2">Type:</span>{blueprint?.tagline || 'Device'}</p>
+          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Details</h3>
+          <div className="bg-muted/50 p-2 rounded-lg border border-border text-xs text-muted-foreground">
+            <p><span className="text-muted-foreground/70 mr-2">Type:</span>{blueprint?.tagline || 'Device'}</p>
           </div>
         </section>
 
         {/* MIDI channel routing (logical mode) */}
         {routingMode === 'logical' && (
           <section>
-            <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">MIDI Channel Routing</h3>
+            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">MIDI Channel Routing</h3>
             {(() => {
               const isMidi = !!blueprint?.midiCapable;
               if (!isMidi) {
-                return <p className="text-[11px] text-neutral-600 italic">This device has no MIDI ports.</p>;
+                return <p className="text-[11px] text-muted-foreground italic">This device has no MIDI ports.</p>;
               }
               // Resolve the device's declared MIDI tracks; fall back to a single 'Main' in_out track.
               const declaredTracks: MidiTrackDef[] = (blueprint?.midiTracks ?? [{ id: 'main', label: 'Main', direction: 'in_out' }]) as MidiTrackDef[];
@@ -426,7 +435,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
 
               const ChannelSelect = ({ value, onChange, placeholder }: { value: number | '*' | null | undefined; onChange: (v: number | '*' | null) => void; placeholder: string }) => (
                 <select
-                  className="bg-neutral-900 border border-neutral-700 rounded text-xs p-1 text-white w-full"
+                  className="bg-card border border-border rounded text-xs p-1 text-foreground w-full"
                   value={value == null ? '' : (value === '*' ? '*' : String(value))}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -456,7 +465,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                           {isOut
                             ? <Icons.ArrowRightFromLine size={12} />
                             : <Icons.ArrowRightToLine size={12} />}
-                          <span>{slot.trackLabel} <span className="text-neutral-500">({isOut ? 'OUT' : 'IN'})</span></span>
+                          <span>{slot.trackLabel} <span className="text-muted-foreground">({isOut ? 'OUT' : 'IN'})</span></span>
                         </div>
                         <ChannelSelect
                           value={myCh}
@@ -485,9 +494,9 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
         {/* Ports & Connectivity grouped by port direction (physical mode only) */}
         {routingMode === 'physical' && (
         <section>
-          <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Ports & Cabling</h3>
+          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ports & Cabling</h3>
           {allPorts.length === 0 ? (
-            <p className="text-[11px] text-neutral-600 italic">This device exposes no ports.</p>
+            <p className="text-[11px] text-muted-foreground italic">This device exposes no ports.</p>
           ) : (
             <div className="space-y-4">
               {generalPorts.length > 0 && (
@@ -509,12 +518,12 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                 </div>
               )}
               {generalPorts.length + outputPorts.length + inputPorts.length === 0 && (
-                <p className="text-[11px] text-neutral-600 italic px-1">No connections yet. Use the button below to wire a port.</p>
+                <p className="text-[11px] text-muted-foreground italic px-1">No connections yet. Use the button below to wire a port.</p>
               )}
               {unusedPorts.length > 0 && (
                 <Button
                   variant="ghost"
-                  className="w-full justify-center text-xs h-8 border border-dashed border-neutral-800 hover:border-cyan-700 text-neutral-400 hover:text-cyan-400"
+                  className="w-full justify-center text-xs h-8 border border-dashed border-border hover:border-cyan-700 text-muted-foreground hover:text-cyan-400"
                   onClick={() => { setPendingPortId(null); setPendingRemoteId(null); setPendingRemotePortId(null); setAddOpen(true); }}
                 >
                   <Icons.Plus size={14} className="mr-1" /> Add Connection
@@ -526,7 +535,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
         )}
       </div>
 
-      <div className="p-3 border-t border-neutral-800">
+      <div className="p-3 border-t border-border">
         <Button
           variant="destructive"
           className="w-full flex items-center justify-center gap-2"
@@ -548,7 +557,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
           <div className="max-h-[420px] overflow-y-auto -mx-2 px-2 py-1 flex flex-col gap-4">
             {/* 1. Local port */}
             <div className="flex flex-col gap-1.5">
-              <div className="text-[10px] uppercase tracking-wider text-neutral-500">1. This device's port</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">1. This device's port</div>
               {unusedPorts.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">All ports are already in use.</p>
               ) : (
@@ -561,11 +570,11 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                       <button
                         key={p.id}
                         onClick={() => { setPendingPortId(p.id); setPendingRemotePortId(null); }}
-                        className={`flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-left transition ${pendingPortId === p.id ? 'border-cyan-500/60 bg-cyan-950/30' : 'border-neutral-800 hover:border-neutral-700 bg-neutral-950'}`}
+                        className={`flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-left transition ${pendingPortId === p.id ? 'border-cyan-500/60 bg-cyan-950/30' : 'border-border hover:border-foreground/30 bg-muted/30'}`}
                       >
                         <span className="flex flex-col min-w-0">
-                          <span className="text-xs font-medium text-white truncate">{p.label ?? humanisePortId(p.id)}</span>
-                          <span className="text-[10px] uppercase tracking-wider text-neutral-500">{p.type}</span>
+                          <span className="text-xs font-medium text-foreground truncate">{p.label ?? humanisePortId(p.id)}</span>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.type}</span>
                         </span>
                         <span className={`text-[10px] font-bold ${dirColor}`}>{dirLabel}</span>
                       </button>
@@ -577,12 +586,12 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
 
             {/* 2. Remote device */}
             <div className="flex flex-col gap-1.5">
-              <div className="text-[10px] uppercase tracking-wider text-neutral-500">2. Other device</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">2. Other device</div>
               {availableDevices.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">Add at least one more device to the grid first.</p>
               ) : (
                 <select
-                  className="bg-neutral-900 border border-neutral-700 rounded text-xs p-1.5 text-white w-full"
+                  className="bg-background border border-border rounded text-xs p-1.5 text-foreground w-full"
                   value={pendingRemoteId ?? ''}
                   onChange={(e) => { setPendingRemoteId(e.target.value || null); setPendingRemotePortId(null); }}
                 >
@@ -605,12 +614,12 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
               );
               return (
                 <div className="flex flex-col gap-1.5">
-                  <div className="text-[10px] uppercase tracking-wider text-neutral-500">3. Other device's port</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">3. Other device's port</div>
                   {remotePorts.length === 0 ? (
                     <p className="text-xs text-muted-foreground italic">No compatible ports on the selected device.</p>
                   ) : (
                     <select
-                      className="bg-neutral-900 border border-neutral-700 rounded text-xs p-1.5 text-white w-full"
+                      className="bg-background border border-border rounded text-xs p-1.5 text-foreground w-full"
                       value={pendingRemotePortId ?? ''}
                       onChange={(e) => setPendingRemotePortId(e.target.value || null)}
                     >

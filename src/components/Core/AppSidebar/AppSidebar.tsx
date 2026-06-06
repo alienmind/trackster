@@ -38,7 +38,16 @@ export function AppSidebar() {
   const hardwareDevices = activeDeviceTypes
     .map(type => HARDWARE_LIBRARY[type])
     .filter((bp): bp is NonNullable<typeof bp> => !!bp)
-    .map(bp => ({ id: bp.id, label: bp.longName, requiresMount: bp.requiresMount }));
+    .map(bp => ({ 
+      id: bp.id, 
+      label: bp.id === 'minifreak' ? (
+        <>
+          <span className="dark:hidden">Arturia MiniFreak</span>
+          <span className="hidden dark:inline">Arturia MiniFreak Stellar</span>
+        </>
+      ) : bp.longName, 
+      requiresMount: bp.requiresMount 
+    }));
 
   const DEVICES = [
     { id: 'overview', label: 'Overview', icon: Icons.Activity },

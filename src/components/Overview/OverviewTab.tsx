@@ -659,7 +659,7 @@ export default function OverviewTab() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-neutral-950 overflow-hidden relative font-sans text-white">
+    <div className="flex flex-col flex-1 min-h-0 bg-background overflow-hidden relative font-sans text-foreground">
       
       {/* Sidebar Integrations — Profiles */}
       <SidebarContextPortal>
@@ -678,9 +678,9 @@ export default function OverviewTab() {
                 <div className="flex flex-col gap-2 px-2 mt-2 group-data-[collapsible=icon]:px-0">
                   {/* Built-in presets */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1 group-data-[collapsible=icon]:hidden">Built-in</span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-1 group-data-[collapsible=icon]:hidden">Built-in</span>
                     {presetLayouts.length === 0 && (
-                      <p className="text-[10px] text-neutral-600 px-1 italic group-data-[collapsible=icon]:hidden">No presets available.</p>
+                      <p className="text-[10px] text-muted-foreground px-1 italic group-data-[collapsible=icon]:hidden">No presets available.</p>
                     )}
                     {presetLayouts.map(p => (
                       <div key={p.id} className="flex items-center gap-1 group/row">
@@ -693,23 +693,23 @@ export default function OverviewTab() {
                     ))}
                   </div>
 
-                  <div className="h-px bg-neutral-800 my-1" />
+                  <div className="h-px bg-border my-1" />
 
                   {/* Custom profiles */}
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 px-1 group-data-[collapsible=icon]:hidden">My Profiles</span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-1 group-data-[collapsible=icon]:hidden">My Profiles</span>
                     {customLayouts.length === 0 && (
-                      <p className="text-[10px] text-neutral-600 px-1 italic group-data-[collapsible=icon]:hidden">No saved profiles. Save the current layout below.</p>
+                      <p className="text-[10px] text-muted-foreground px-1 italic group-data-[collapsible=icon]:hidden">No saved profiles. Save the current layout below.</p>
                     )}
                     {customLayouts.map(p => (
                       <div key={p.id} className="flex items-center gap-1 group/row">
                         <Button variant="ghost" className="flex-1 justify-start text-xs h-8"
                           onClick={() => applyLayout(p.nodes, p.connections, p.id)}
                           title={`Apply "${p.name}"`}>
-                          <Icons.LayoutGrid size={14} className="mr-2 text-neutral-400" /> {p.name}
+                          <Icons.LayoutGrid size={14} className="mr-2 text-muted-foreground" /> {p.name}
                         </Button>
                         <button
-                          className="opacity-0 group-hover/row:opacity-100 transition-opacity text-neutral-500 hover:text-red-500 p-1"
+                          className="opacity-0 group-hover/row:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
                           onClick={() => setDeleteProfileId(p.id)}
                           title="Delete profile"
                         >
@@ -719,7 +719,7 @@ export default function OverviewTab() {
                     ))}
                   </div>
 
-                  <div className="h-px bg-neutral-800 my-1" />
+                  <div className="h-px bg-border my-1" />
 
                   {/* Actions */}
                   <div className="flex flex-col gap-1">
@@ -734,7 +734,7 @@ export default function OverviewTab() {
                       title={nodeCount === 0 ? 'Add devices first' : 'Save current layout'}>
                       <Icons.Save size={14} className="mr-2" /> Save Current
                     </Button>
-                    <Button variant="ghost" className="justify-start text-xs h-8 text-neutral-400 hover:text-red-400"
+                    <Button variant="ghost" className="justify-start text-xs h-8 text-muted-foreground hover:text-destructive"
                       onClick={() => setClearGridOpen(true)}
                       disabled={nodeCount === 0}>
                       <Icons.Eraser size={14} className="mr-2" /> Clear Grid
@@ -750,15 +750,41 @@ export default function OverviewTab() {
       {/* Main Canvas Area */}
       <div 
         ref={containerRef}
-        className="flex-1 relative overflow-hidden cursor-default"
-        style={{ background: 'radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0d0d14 100%)' }}
+        className="flex-1 relative overflow-hidden cursor-default bg-background"
         onClick={handleCanvasClick}
       >
+        {/* Profile Selector Dropdown */}
+        <div className="absolute top-4 left-4 z-50 overview-floating-ui">
+          <div className="flex items-center gap-2 bg-card/80 backdrop-blur border border-border rounded px-2 py-1 shadow-lg">
+            <Icons.LayoutGrid size={14} className="text-muted-foreground" />
+            <select 
+              className="bg-transparent text-sm text-foreground outline-none cursor-pointer border-none"
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const id = e.target.value;
+                const all = [...presetLayouts, ...customLayouts];
+                const match = all.find(p => p.id === id);
+                if (match) applyLayout(match.nodes, match.connections, match.id);
+                e.target.value = ''; // Reset back to placeholder
+              }}
+              defaultValue=""
+            >
+              <option value="" disabled hidden>Load Profile...</option>
+              {presetLayouts.length > 0 && <optgroup label="Built-in">
+                {presetLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground">{p.name}</option>)}
+              </optgroup>}
+              {customLayouts.length > 0 && <optgroup label="My Profiles">
+                {customLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground">{p.name}</option>)}
+              </optgroup>}
+            </select>
+          </div>
+        </div>
+
         {/* Subtle dot grid background */}
         <div 
           className="absolute inset-0 pointer-events-none opacity-20"
           style={{
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)',
             backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
             backgroundPosition: `${panX}px ${panY}px`
           }}
@@ -911,19 +937,15 @@ export default function OverviewTab() {
                   transition: 'left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease',
                 }}
               >
-                {/* Visible card is much smaller than the cell - 3-row legend fits comfortably in ~180x140 */}
-                <div
-                  className="bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-xl flex flex-col cursor-grab active:cursor-grabbing shadow-lg"
-                  style={{ width: 180, height: legendCell.collapsed ? 40 : 'auto' }}
-                >
-                  <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-neutral-800/50">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">Cable Colors</div>
+                <div className="bg-card/90 backdrop-blur border border-border/60 rounded-lg shadow-lg flex flex-col w-[200px] overflow-hidden">
+                  <div className="bg-muted p-2 flex justify-between items-center cursor-move border-b border-border/50">
+                    <h3 className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Cable Legend</h3>
                     <button
                       type="button"
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); persistLegendCell({ ...legendCell, collapsed: !legendCell.collapsed }); }}
                       title={legendCell.collapsed ? 'Expand legend' : 'Collapse legend'}
-                      className="text-neutral-500 hover:text-cyan-400 transition pointer-events-auto"
+                      className="text-muted-foreground hover:text-foreground transition"
                     >
                       {legendCell.collapsed ? <Icons.ChevronDown size={14} /> : <Icons.ChevronUp size={14} />}
                     </button>
@@ -932,7 +954,7 @@ export default function OverviewTab() {
                     <div className="flex-1 overflow-auto px-3 py-2">
                       <div className="flex flex-col gap-1.5 text-[12px]">
                         {CABLE_CATEGORIES.filter(cat => cat.legend).map(cat => (
-                          <div key={cat.id} className="flex items-center gap-2 text-neutral-300">
+                          <div key={cat.id} className="flex items-center gap-2 text-foreground">
                             <div className="w-6 h-1.5 rounded" style={{ background: cat.color }} />
                             <span className="truncate">{cat.label}</span>
                           </div>
@@ -972,13 +994,13 @@ export default function OverviewTab() {
         {/* Empty state */}
         {nodeCount === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center text-neutral-500 pointer-events-auto">
+            <div className="text-center text-muted-foreground pointer-events-auto">
               <Icons.LayoutGrid size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium mb-4">No devices on the grid</p>
+              <p className="text-lg font-medium mb-4 text-foreground">No devices on the grid</p>
               <Button
                 size="lg"
                 variant="secondary"
-                className="bg-neutral-900/90 backdrop-blur border border-neutral-700/60 hover:bg-neutral-800"
+                className="bg-card/90 backdrop-blur border border-border/60 hover:bg-muted text-foreground"
                 onClick={() => setNewDeviceOpen(true)}
               >
                 <Icons.Plus size={16} className="mr-2" /> New Device
@@ -993,17 +1015,17 @@ export default function OverviewTab() {
         {/* Top toolbar - routing mode toggle + New Device */}
         <div className="absolute top-4 right-4 z-40 flex gap-2 items-center pointer-events-auto">
           {/* Physical vs Logical mode toggle */}
-          <div className="flex bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-md p-0.5 select-none">
+          <div className="flex bg-card/90 backdrop-blur border border-border/60 rounded-md p-0.5 select-none">
             <button
               onClick={() => setRoutingMode('physical')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'physical' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'physical' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               title="Physical cable routing"
             >
               Physical
             </button>
             <button
               onClick={() => setRoutingMode('logical')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'logical' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'logical' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               title="Logical MIDI routing"
             >
               Logical
@@ -1012,7 +1034,7 @@ export default function OverviewTab() {
           <Button
             size="sm"
             variant="secondary"
-            className="bg-neutral-900/90 backdrop-blur border border-neutral-700/60 hover:bg-neutral-800"
+            className="bg-card/90 backdrop-blur border border-border/60 hover:bg-muted text-foreground"
             onClick={() => setNewDeviceOpen(true)}
           >
             <Icons.Plus size={14} className="mr-1" /> New Device
@@ -1020,18 +1042,18 @@ export default function OverviewTab() {
         </div>
 
         {/* Zoom controls — bottom-right */}
-        <div className="absolute bottom-4 right-4 z-40 flex items-center gap-1 bg-neutral-900/90 backdrop-blur border border-neutral-700/60 rounded-lg p-1 pointer-events-auto">
+        <div className="absolute bottom-4 right-4 z-40 flex items-center gap-1 bg-card/90 backdrop-blur border border-border/60 rounded-lg p-1 pointer-events-auto">
           <button
-            className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded text-neutral-300 hover:text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
             disabled={effectiveGridSize >= 10}
             onClick={() => setGridSize(Math.min(10, effectiveGridSize + 1))}
             title="Zoom out (larger grid)"
           >−</button>
-          <span className="text-[10px] font-mono w-12 text-center text-neutral-300 select-none">
+          <span className="text-[10px] font-mono w-12 text-center text-muted-foreground select-none">
             {effectiveGridSize}×{effectiveGridSize}
           </span>
           <button
-            className="w-8 h-8 flex items-center justify-center hover:bg-neutral-800 rounded text-neutral-300 hover:text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
             disabled={effectiveGridSize <= minGridSize}
             onClick={() => setGridSize(Math.max(minGridSize, effectiveGridSize - 1))}
             title="Zoom in (smaller grid)"

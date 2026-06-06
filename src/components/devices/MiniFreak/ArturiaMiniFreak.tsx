@@ -242,15 +242,15 @@ export default function ArturiaMiniFreak() {
   );
 
   return (
-    <div className="flex h-full w-full bg-neutral-900 overflow-hidden font-sans select-none relative">
+    <div className="flex h-full w-full bg-background overflow-hidden font-sans select-none relative">
       <SidebarContextPortal>
         <MiniFreakSidebarContext />
       </SidebarContextPortal>
 
       {/* Center Panel */}
-      <div className="flex-1 min-h-0 bg-[#111] flex flex-col items-center justify-center relative overflow-hidden">
+      <div className="flex-1 min-h-0 bg-background flex flex-col items-center justify-center relative overflow-hidden">
         <DeviceHelpToggle guideUrl={minifreakGuideUrl} />
-        <ScaleFit baseWidth={1100} baseHeight={600} maxScale={3}>
+        <ScaleFit baseWidth={1450} baseHeight={650} maxScale={3}>
           {deviceContent}
         </ScaleFit>
       </div>
