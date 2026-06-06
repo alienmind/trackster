@@ -17,6 +17,7 @@ import {
 import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import ConfirmModal from './components/Core/ConfirmModal/ConfirmModal';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
+import MonitorDeviceModal from './components/Core/MonitorDeviceModal/MonitorDeviceModal';
 import { SidebarProvider, useSidebar } from './components/Core/ui/sidebar';
 import { AppSidebar } from './components/Core/AppSidebar/AppSidebar';
 import DocumentationDrawer from './components/Core/DocumentationDrawer/DocumentationDrawer';
@@ -239,8 +240,10 @@ export default function App() {
           </div>
         </SidebarProvider>
 
+        {/* Modals & Overlays */}
         <CommitDialog />
         <DuplicateScanModal />
+        <MonitorDeviceModal />
         <ConfirmModal 
           isOpen={confirmModal.isOpen} 
           title={confirmModal.title} 

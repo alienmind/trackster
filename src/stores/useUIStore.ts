@@ -24,6 +24,7 @@ interface UIState {
 
   isMobileDrawerOpen: boolean;
   isOscilloscopeOpen: boolean;
+  isMonitorModalOpen: boolean;
 
   sidebarSectionStates: Record<string, boolean>;
 
@@ -66,6 +67,7 @@ interface UIState {
   setDeferredPrompt: (prompt: any | null) => void;
   setSidebarSectionState: (sectionId: string, isOpen: boolean) => void;
   setOscilloscopeOpen: (isOpen: boolean) => void;
+  setMonitorModalOpen: (isOpen: boolean) => void;
 }
 
 const storeCreator: StateCreator<UIState> = (set) => ({
@@ -88,6 +90,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
   duplicateClusters: [],
   isMobileDrawerOpen: false,
   isOscilloscopeOpen: false,
+  isMonitorModalOpen: false,
   confirmModal: {
     isOpen: false,
     title: '',
@@ -193,6 +196,7 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   setMobileDrawerOpen: (isOpen) => set({ isMobileDrawerOpen: isOpen }),
   setOscilloscopeOpen: (isOpen) => set({ isOscilloscopeOpen: isOpen }),
+  setMonitorModalOpen: (isOpen) => set({ isMonitorModalOpen: isOpen }),
 
   setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
 

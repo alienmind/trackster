@@ -7,6 +7,12 @@ interface AudioState {
   lastPlayedStartTime: number | null;
   setLastPlayed: (buffer: AudioBuffer | null, startTime: number | null) => void;
   initAudioContext: () => void;
+
+  isMonitoring: boolean;
+  mediaStream: MediaStream | null;
+  mediaStreamSource: MediaStreamAudioSourceNode | null;
+  startMonitoring: (deviceId: string) => Promise<void>;
+  stopMonitoring: () => void;
 }
 
 export const useAudioStore = create<AudioState>((set, get) => ({
@@ -17,6 +23,10 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   setLastPlayed: (buffer, startTime) => set({ lastPlayedBuffer: buffer, lastPlayedStartTime: startTime }),
 
+  isMonitoring: false,
+  mediaStream: null,
+  mediaStreamSource: null,
+
   initAudioContext: () => {
     if (!get().audioContext) {
       const ctx = new AudioContext();
@@ -25,5 +35,52 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       analyser.connect(ctx.destination);
       set({ audioContext: ctx, analyser });
     }
+  },
+
+  startMonitoring: async (deviceId: string) => {
+    const { audioContext, initAudioContext } = get();
+    if (!audioContext) {
+      initAudioContext();
+    }
+    const ctx = get().audioContext!;
+    const analyserNode = get().analyser!;
+
+    // Clean up any existing monitoring
+    get().stopMonitoring();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: { exact: deviceId } }
+      });
+      
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(analyserNode);
+
+      set({
+        isMonitoring: true,
+        mediaStream: stream,
+        mediaStreamSource: source
+      });
+    } catch (err) {
+      console.error('Error starting audio monitor:', err);
+    }
+  },
+
+  stopMonitoring: () => {
+    const { mediaStream, mediaStreamSource } = get();
+    
+    if (mediaStreamSource) {
+      mediaStreamSource.disconnect();
+    }
+    
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+    }
+
+    set({
+      isMonitoring: false,
+      mediaStream: null,
+      mediaStreamSource: null
+    });
   }
 }));

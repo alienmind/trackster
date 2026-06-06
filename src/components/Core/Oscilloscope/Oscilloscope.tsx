@@ -11,6 +11,9 @@ export default function Oscilloscope() {
   const analyser = useAudioStore((s) => s.analyser);
   const lastPlayedBuffer = useAudioStore((s) => s.lastPlayedBuffer);
   const lastPlayedStartTime = useAudioStore((s) => s.lastPlayedStartTime);
+  const isMonitoring = useAudioStore((s) => s.isMonitoring);
+
+  const monitorHistoryRef = useRef<Float32Array>(new Float32Array(2000));
 
   const fullWaveformPaths = useMemo(() => {
     if (!lastPlayedBuffer) return [];
@@ -60,8 +63,11 @@ export default function Oscilloscope() {
       const width = canvas.width;
       const height = canvas.height;
       
+      const isVert = isMonitoring;
       const thirdWidth = width / 3;
       const twoThirdsWidth = 2 * thirdWidth;
+      const thirdHeight = height / 3;
+      const twoThirdsHeight = 2 * thirdHeight;
 
       const timeDataArray = new Uint8Array(bufferLength);
       analyser.getByteTimeDomainData(timeDataArray);
@@ -72,52 +78,82 @@ export default function Oscilloscope() {
       canvasCtx.fillStyle = 'rgba(24, 24, 27, 0.8)'; // bg-background basically
       canvasCtx.fillRect(0, 0, width, height);
 
-      // --- 1. Left Third: Full Waveform ---
-      if (fullWaveformPaths.length > 0) {
+      // --- 1. Top/Left: Full Waveform or Monitoring History ---
+      if (isMonitoring) {
+        // Calculate max amplitude of current frame
+        let maxAmp = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const val = (timeDataArray[i]! - 128) / 128.0;
+          if (Math.abs(val) > maxAmp) maxAmp = Math.abs(val);
+        }
+
+        // Shift array left
+        const hist = monitorHistoryRef.current;
+        hist.copyWithin(0, 1);
+        hist[hist.length - 1] = maxAmp;
+
+        // Draw seismograph
         canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.6)';
-        
-        const stepX = thirdWidth / fullWaveformPaths.length;
-        for (let i = 0; i < fullWaveformPaths.length; i++) {
-          const item = fullWaveformPaths[i]!;
-          const { min, max } = item;
-          const x = i * stepX;
-          const y1 = (height / 2) + (min * height / 2);
-          const y2 = (height / 2) + (max * height / 2);
-          const h = Math.max(1, y2 - y1);
+        const stepX = width / hist.length;
+        for (let i = 0; i < hist.length; i++) {
+          const amp = hist[i]!;
+          if (amp > 0) {
+            const x = i * stepX;
+            const h = Math.max(1, amp * thirdHeight);
+            const y = (thirdHeight / 2) - (h / 2);
+            canvasCtx.fillRect(x, y, stepX + 0.5, h);
+          }
+        }
+      } else {
+        if (fullWaveformPaths.length > 0) {
+          canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.6)';
           
-          canvasCtx.fillRect(x, y1, stepX + 0.5, h);
+          const stepX = thirdWidth / fullWaveformPaths.length;
+          for (let i = 0; i < fullWaveformPaths.length; i++) {
+            const item = fullWaveformPaths[i]!;
+            const { min, max } = item;
+            const x = i * stepX;
+            const y1 = (height / 2) + (min * height / 2);
+            const y2 = (height / 2) + (max * height / 2);
+            const h = Math.max(1, y2 - y1);
+            
+            canvasCtx.fillRect(x, y1, stepX + 0.5, h);
+          }
+        }
+
+        // Draw traversing playhead line
+        if (lastPlayedBuffer && lastPlayedStartTime !== null) {
+          const elapsed = analyser.context.currentTime - lastPlayedStartTime;
+          let progress = elapsed / lastPlayedBuffer.duration;
+          
+          if (progress > 1) progress = 1; // Stop at end
+
+          if (progress >= 0 && progress <= 1) {
+            const lineX = progress * thirdWidth;
+            
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(lineX, 0);
+            canvasCtx.lineTo(lineX, height);
+            canvasCtx.lineWidth = 2 * dpr;
+            canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            canvasCtx.stroke();
+          }
         }
       }
 
-      // Draw traversing playhead line
-      if (lastPlayedBuffer && lastPlayedStartTime !== null) {
-        const elapsed = analyser.context.currentTime - lastPlayedStartTime;
-        let progress = elapsed / lastPlayedBuffer.duration;
-        
-        if (progress > 1) progress = 1; // Stop at end
-
-        if (progress >= 0 && progress <= 1) {
-          const lineX = progress * thirdWidth;
-          canvasCtx.beginPath();
-          canvasCtx.moveTo(lineX, 0);
-          canvasCtx.lineTo(lineX, height);
-          canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-          canvasCtx.lineWidth = 1 * dpr;
-          canvasCtx.stroke();
-        }
-      }
-
-      // --- 2. Middle Third: Live Signal (Amplitude View) ---
+      // --- 2. Middle: Live Signal (Amplitude View) ---
       canvasCtx.lineWidth = 2 * dpr;
       canvasCtx.strokeStyle = '#00e5ff'; // primary accent
       canvasCtx.beginPath();
 
-      const sliceWidth = thirdWidth * 1.0 / bufferLength;
-      let xMid = thirdWidth;
+      const sliceWidth = (isVert ? width : thirdWidth) * 1.0 / bufferLength;
+      let xMid = isVert ? 0 : thirdWidth;
+      const midYOffset = isVert ? thirdHeight : 0;
+      const midBoxHeight = isVert ? thirdHeight : height;
 
       for (let i = 0; i < bufferLength; i++) {
         const v = (timeDataArray[i]! - 128) / 128.0;
-        const y = (v * height / 2) + (height / 2);
+        const y = midYOffset + (v * midBoxHeight / 2) + (midBoxHeight / 2);
 
         if (i === 0) {
           canvasCtx.moveTo(xMid, y);
@@ -128,30 +164,42 @@ export default function Oscilloscope() {
         xMid += sliceWidth;
       }
 
-      canvasCtx.lineTo(twoThirdsWidth, height / 2);
+      canvasCtx.lineTo(isVert ? width : twoThirdsWidth, midYOffset + midBoxHeight / 2);
       canvasCtx.stroke();
 
-      // --- Vertical Separators ---
+      // --- Separators ---
       canvasCtx.beginPath();
-      canvasCtx.moveTo(thirdWidth, 0);
-      canvasCtx.lineTo(thirdWidth, height);
-      canvasCtx.moveTo(twoThirdsWidth, 0);
-      canvasCtx.lineTo(twoThirdsWidth, height);
+      if (isVert) {
+        canvasCtx.moveTo(0, thirdHeight);
+        canvasCtx.lineTo(width, thirdHeight);
+        canvasCtx.moveTo(0, twoThirdsHeight);
+        canvasCtx.lineTo(width, twoThirdsHeight);
+      } else {
+        canvasCtx.moveTo(thirdWidth, 0);
+        canvasCtx.lineTo(thirdWidth, height);
+        canvasCtx.moveTo(twoThirdsWidth, 0);
+        canvasCtx.lineTo(twoThirdsWidth, height);
+      }
       canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       canvasCtx.stroke();
 
-      // --- 3. Right Third: Logarithmic Granular FFT ---
+      // --- 3. Right/Bottom: Logarithmic Granular FFT ---
       const minFreq = 50;
       const maxFreq = analyser.context.sampleRate / 2;
       
+      const fftXOffset = isVert ? 0 : twoThirdsWidth;
+      const fftYOffset = isVert ? twoThirdsHeight : 0;
+      const fftBoxWidth = isVert ? width : thirdWidth;
+      const fftBoxHeight = isVert ? thirdHeight : height;
+
       const getXLog = (freq: number) => {
-        if (freq <= minFreq) return twoThirdsWidth;
-        if (freq >= maxFreq) return width;
-        return twoThirdsWidth + (thirdWidth * (Math.log2(freq / minFreq) / Math.log2(maxFreq / minFreq)));
+        if (freq <= minFreq) return fftXOffset;
+        if (freq >= maxFreq) return fftXOffset + fftBoxWidth;
+        return fftXOffset + (fftBoxWidth * (Math.log2(freq / minFreq) / Math.log2(maxFreq / minFreq)));
       };
 
       const getFreqFromX = (x: number) => {
-        const ratio = (x - twoThirdsWidth) / thirdWidth;
+        const ratio = (x - fftXOffset) / fftBoxWidth;
         return minFreq * Math.pow(maxFreq / minFreq, ratio);
       };
 
@@ -166,19 +214,19 @@ export default function Oscilloscope() {
         // Vertical line
         canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
         canvasCtx.beginPath();
-        canvasCtx.moveTo(x, 0);
-        canvasCtx.lineTo(x, height);
+        canvasCtx.moveTo(x, fftYOffset);
+        canvasCtx.lineTo(x, fftYOffset + fftBoxHeight);
         canvasCtx.stroke();
         
         // Label
         canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        canvasCtx.fillText(f >= 1000 ? `${(f/1000).toFixed(1)}k` : `${f}`, x, height - 4);
+        canvasCtx.fillText(f >= 1000 ? `${(f/1000).toFixed(1)}k` : `${f}`, x, fftYOffset + fftBoxHeight - 4);
       });
 
       // Draw bins in granular style
-      const barWidth = 2.5; 
-      const gap = 1;
-      let barX = twoThirdsWidth + 2;
+      const barWidth = (isVert ? 4 : 2.5) * dpr; 
+      const gap = (isVert ? 1 : 1) * dpr;
+      let barX = fftXOffset + 2 * dpr;
       
       let currentFramePeakAmp = 0;
       let currentFramePeakFreq = 0;
@@ -195,7 +243,7 @@ export default function Oscilloscope() {
       }
 
       // Draw evenly spaced bars on screen mapping to log frequencies
-      while (barX < width) {
+      while (barX < fftXOffset + fftBoxWidth) {
         const startFreq = getFreqFromX(barX);
         const endFreq = getFreqFromX(barX + barWidth + gap);
         
@@ -218,15 +266,15 @@ export default function Oscilloscope() {
           maxAmp = freqDataArray[Math.min(bufferLength - 1, Math.max(0, nearestBin))] || 0;
         }
 
-        const barHeight = (maxAmp / 255.0) * height;
+        const barHeight = (maxAmp / 255.0) * fftBoxHeight;
 
-        const i_ratio = (barX - twoThirdsWidth) / thirdWidth;
+        const i_ratio = (barX - fftXOffset) / fftBoxWidth;
         const r = barHeight + (25 * i_ratio);
         const g = 250 * i_ratio;
         const b = 250;
         
         canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
-        canvasCtx.fillRect(barX, height - barHeight, barWidth, barHeight);
+        canvasCtx.fillRect(barX, fftYOffset + fftBoxHeight - barHeight, barWidth, barHeight);
 
         barX += barWidth + gap;
       }
@@ -268,8 +316,8 @@ export default function Oscilloscope() {
 
         // Vertical dashed line at the peak
         canvasCtx.beginPath();
-        canvasCtx.moveTo(peakX, 30);
-        canvasCtx.lineTo(peakX, height);
+        canvasCtx.moveTo(peakX, fftYOffset + 30);
+        canvasCtx.lineTo(peakX, fftYOffset + fftBoxHeight);
         canvasCtx.strokeStyle = `rgba(0, 229, 255, ${alpha * 0.5})`;
         canvasCtx.setLineDash([2, 4]);
         canvasCtx.stroke();
@@ -279,7 +327,7 @@ export default function Oscilloscope() {
         canvasCtx.font = 'bold 11px monospace';
         canvasCtx.textAlign = 'right';
         canvasCtx.fillStyle = `rgba(0, 229, 255, ${alpha})`;
-        canvasCtx.fillText(text, width - 15, 20);
+        canvasCtx.fillText(text, fftXOffset + fftBoxWidth - 15, fftYOffset + 20);
       }
 
       requestRef.current = requestAnimationFrame(draw);
@@ -290,7 +338,7 @@ export default function Oscilloscope() {
     return () => {
       cancelAnimationFrame(requestRef.current);
     };
-  }, [analyser, fullWaveformPaths, lastPlayedBuffer, lastPlayedStartTime]);
+  }, [analyser, fullWaveformPaths, lastPlayedBuffer, lastPlayedStartTime, isMonitoring]);
 
   return (
     <div className="h-full w-full relative bg-background rounded-md border border-border overflow-hidden">
@@ -299,13 +347,19 @@ export default function Oscilloscope() {
         className="absolute top-0 left-0 w-full h-full block z-0"
       />
 
-      <div className="absolute top-2 left-[16.66%] -translate-x-1/2 text-[10px] uppercase font-mono font-bold tracking-widest text-primary/60 pointer-events-none z-10">
-        Waveform
+      <div className={`absolute pointer-events-none z-10 text-[10px] uppercase font-mono font-bold tracking-widest text-primary/60 transition-all ${
+        isMonitoring ? 'top-2 left-1/2 -translate-x-1/2' : 'top-2 left-[16.66%] -translate-x-1/2'
+      }`}>
+        {isMonitoring ? 'Seismograph' : 'Waveform'}
       </div>
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase font-mono font-bold tracking-widest text-primary/60 pointer-events-none z-10">
-        Live Signal
+      <div className={`absolute pointer-events-none z-10 text-[10px] uppercase font-mono font-bold tracking-widest text-primary/60 transition-all ${
+        isMonitoring ? 'top-[calc(33.33%+8px)] left-1/2 -translate-x-1/2' : 'top-2 left-1/2 -translate-x-1/2'
+      }`}>
+        Signal
       </div>
-      <div className="absolute top-2 left-[83.33%] -translate-x-1/2 text-[10px] uppercase font-mono font-bold tracking-widest text-primary/60 pointer-events-none z-10">
+      <div className={`absolute pointer-events-none z-10 text-[10px] uppercase font-mono font-bold tracking-widest text-primary/60 transition-all ${
+        isMonitoring ? 'top-[calc(66.66%+8px)] left-1/2 -translate-x-1/2' : 'top-2 left-[83.33%] -translate-x-1/2'
+      }`}>
         Spectrum (FFT)
       </div>
     </div>
