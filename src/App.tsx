@@ -17,6 +17,7 @@ import {
 import CommitDialog from './components/Core/CommitDialog/CommitDialog';
 import ConfirmModal from './components/Core/ConfirmModal/ConfirmModal';
 import DuplicateScanModal from './components/Core/DuplicateScanModal/DuplicateScanModal';
+import MonitorDeviceModal from './components/Core/MonitorDeviceModal/MonitorDeviceModal';
 import { SidebarProvider, useSidebar } from './components/Core/ui/sidebar';
 import { AppSidebar } from './components/Core/AppSidebar/AppSidebar';
 import DocumentationDrawer from './components/Core/DocumentationDrawer/DocumentationDrawer';
@@ -27,7 +28,6 @@ import React from 'react';
 import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
-import OscilloscopeDrawer from './components/Core/OscilloscopeDrawer/OscilloscopeDrawer';
 import { HARDWARE_LIBRARY } from './devices';
 
 // Floating hamburger button that opens the sidebar on mobile/tablet,
@@ -98,6 +98,25 @@ export default function App() {
   const closeConfirmModal = useUIStore((s) => s.closeConfirmModal);
 
   const initAudioContext = useAudioStore((s) => s.initAudioContext);
+  
+  useEffect(() => {
+    // Eagerly initialize AudioContext on the first user interaction
+    // to prevent any playback lag when hitting the first sample.
+    const handleInteraction = () => {
+      initAudioContext();
+      window.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+
+    window.addEventListener('pointerdown', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
+
+    return () => {
+      window.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+  }, [initAudioContext]);
+
   const [activeDragItem, setActiveDragItem] = useState<{ id: string, type: string, data: any } | null>(null);
   
   const activeTagItem = activeDragItem?.type === 'tag'
@@ -204,7 +223,6 @@ export default function App() {
             {/* Main View Container - reserves doc-drawer width when a doc is open */}
             <DocAwareLayoutEffects />
             <DocAwareMainView>
-              <OscilloscopeDrawer />
               {activeMainView === 'overview' ? (
                 <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
               ) : activeMainView === 'soundtoys' ? (
@@ -222,8 +240,10 @@ export default function App() {
           </div>
         </SidebarProvider>
 
+        {/* Modals & Overlays */}
         <CommitDialog />
         <DuplicateScanModal />
+        <MonitorDeviceModal />
         <ConfirmModal 
           isOpen={confirmModal.isOpen} 
           title={confirmModal.title} 

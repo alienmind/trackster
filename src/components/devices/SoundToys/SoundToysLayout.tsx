@@ -1,4 +1,5 @@
 import * as Icons from 'lucide-react';
+import OscilloscopeDrawer from '../../Core/OscilloscopeDrawer/OscilloscopeDrawer';
 
 const SOUND_TOYS_LINKS = [
   {
@@ -32,8 +33,9 @@ const SOUND_TOYS_LINKS = [
 
 export default function SoundToysLayout() {
   return (
-    <div className="flex-1 flex flex-col h-full bg-neutral-950 overflow-y-auto">
-      <div className="max-w-5xl mx-auto w-full p-8 space-y-8">
+    <div className="flex-1 flex flex-col h-full bg-neutral-950 overflow-y-auto relative">
+      <OscilloscopeDrawer />
+      <div className="max-w-5xl mx-auto w-full p-8 space-y-8 relative z-10">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
             <Icons.Music size={24} className="text-primary" /> Sound Toys

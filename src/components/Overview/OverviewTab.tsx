@@ -19,6 +19,7 @@ import NewDeviceModal from '../Core/NewDeviceModal/NewDeviceModal';
 import { HARDWARE_LIBRARY } from '../../devices';
 import PromptModal from '../Core/PromptModal/PromptModal';
 import ConfirmModal from '../Core/ConfirmModal/ConfirmModal';
+import OscilloscopeDrawer from '../Core/OscilloscopeDrawer/OscilloscopeDrawer';
 
 const CELL_W = 280;
 const CELL_H = 220;
@@ -85,23 +86,63 @@ export default function OverviewTab() {
     customLayouts, saveCustomLayout, removeCustomLayout, loadCustomLayouts,
     clearLayout
   } = useOverviewStore();
+  const activeProfileId = useOverviewStore(s => s.activeProfileId);
+  const legendStorageKey = `trackster_legend_cell_${activeProfileId || 'default'}`;
+  const newDeviceStorageKey = `trackster_new_device_cell_${activeProfileId || 'default'}`;
+
   const [newDeviceOpen, setNewDeviceOpen] = useState(false);
+  
   // === Cable legend lives in a grid cell, just like any device ===
   type LegendCell = { gridX: number; gridY: number; collapsed: boolean };
-  const [legendCell, setLegendCell] = useState<LegendCell>(() => {
+  const [legendCell, setLegendCell] = useState<LegendCell>({ gridX: 0, gridY: 0, collapsed: false });
+  
+  // === New Device Button lives in a grid cell ===
+  type NewDeviceCell = { gridX: number; gridY: number };
+  const [newDeviceCell, setNewDeviceCell] = useState<NewDeviceCell>({ gridX: 1, gridY: 0 });
+
+  // Load cells when profile changes
+  useEffect(() => {
     try {
-      const raw = localStorage.getItem('alienmind_legend_cell');
-      if (raw) {
-        const parsed = JSON.parse(raw) as LegendCell;
-        if (typeof parsed?.gridX === 'number' && typeof parsed?.gridY === 'number') return parsed;
+      const rawL = localStorage.getItem(legendStorageKey);
+      if (rawL) {
+        const parsed = JSON.parse(rawL) as LegendCell;
+        if (typeof parsed?.gridX === 'number' && typeof parsed?.gridY === 'number') {
+          setLegendCell(parsed);
+        }
+      } else {
+        setLegendCell(prev => {
+          try { localStorage.setItem(legendStorageKey, JSON.stringify(prev)); } catch {}
+          return prev;
+        });
       }
     } catch {}
-    return { gridX: 0, gridY: 0, collapsed: false };
-  });
+
+    try {
+      const rawN = localStorage.getItem(newDeviceStorageKey);
+      if (rawN) {
+        const parsed = JSON.parse(rawN) as NewDeviceCell;
+        if (typeof parsed?.gridX === 'number' && typeof parsed?.gridY === 'number') {
+          setNewDeviceCell(parsed);
+        }
+      } else {
+        setNewDeviceCell(prev => {
+          try { localStorage.setItem(newDeviceStorageKey, JSON.stringify(prev)); } catch {}
+          return prev;
+        });
+      }
+    } catch {}
+  }, [legendStorageKey, newDeviceStorageKey]);
+
   const persistLegendCell = (cell: LegendCell) => {
     setLegendCell(cell);
-    try { localStorage.setItem('alienmind_legend_cell', JSON.stringify(cell)); } catch {}
+    try { localStorage.setItem(legendStorageKey, JSON.stringify(cell)); } catch {}
   };
+
+  const persistNewDeviceCell = (cell: NewDeviceCell) => {
+    setNewDeviceCell(cell);
+    try { localStorage.setItem(newDeviceStorageKey, JSON.stringify(cell)); } catch {}
+  };
+  
   // Profile/layout modal state
   const [newProfileOpen, setNewProfileOpen] = useState(false);
   const [saveLayoutOpen, setSaveLayoutOpen] = useState(false);
@@ -191,6 +232,50 @@ export default function OverviewTab() {
   const nodeCount = Object.keys(nodes).length;
   const minGridSize = useMemo(() => Math.max(2, Math.ceil(Math.sqrt(nodeCount))), [nodeCount]);
   const effectiveGridSize = Math.max(gridSize, minGridSize);
+
+  // === COLLISION RESOLUTION ===
+  // Automatically move the New Device tile or Legend cell to an empty slot if they overlap an existing node
+  useEffect(() => {
+    let newDeviceMoved = false;
+    let legendMoved = false;
+
+    // 1. Resolve New Device Cell
+    const isNewDeviceOccupied = Object.values(nodes).some(n => n.gridX === newDeviceCell.gridX && n.gridY === newDeviceCell.gridY) ||
+                       (legendCell.gridX === newDeviceCell.gridX && legendCell.gridY === newDeviceCell.gridY);
+    
+    if (isNewDeviceOccupied) {
+      outer1: for (let y = effectiveGridSize - 1; y >= 0; y--) {
+        for (let x = effectiveGridSize - 1; x >= 0; x--) {
+          const occNodes = Object.values(nodes).some(n => n.gridX === x && n.gridY === y);
+          const occLegend = legendCell.gridX === x && legendCell.gridY === y;
+          if (!occNodes && !occLegend) {
+            persistNewDeviceCell({ gridX: x, gridY: y });
+            newDeviceMoved = true;
+            break outer1;
+          }
+        }
+      }
+    }
+
+    // 2. Resolve Legend Cell
+    // Only process if New Device wasn't just moved to avoid infinite loops across renders
+    if (!newDeviceMoved) {
+      const isLegendOccupied = Object.values(nodes).some(n => n.gridX === legendCell.gridX && n.gridY === legendCell.gridY);
+      if (isLegendOccupied) {
+        outer2: for (let y = effectiveGridSize - 1; y >= 0; y--) {
+          for (let x = effectiveGridSize - 1; x >= 0; x--) {
+            const occNodes = Object.values(nodes).some(n => n.gridX === x && n.gridY === y);
+            const occNewDevice = newDeviceCell.gridX === x && newDeviceCell.gridY === y;
+            if (!occNodes && !occNewDevice) {
+              persistLegendCell({ ...legendCell, gridX: x, gridY: y });
+              legendMoved = true;
+              break outer2;
+            }
+          }
+        }
+      }
+    }
+  }, [nodes, legendCell, effectiveGridSize, newDeviceCell]);
 
   // === LAYOUT SIZING ===
   useEffect(() => {
@@ -605,7 +690,33 @@ export default function OverviewTab() {
               return { ...prev, [targetId]: { ...moved, gridX: oldX, gridY: oldY } };
             });
           }
+          // If it landed on New Device cell, swap New Device
+          if (newDeviceCell.gridX === cell.gx && newDeviceCell.gridY === cell.gy) {
+            persistNewDeviceCell({ gridX: oldX, gridY: oldY });
+          }
           persistLegendCell({ ...legendCell, gridX: cell.gx, gridY: cell.gy });
+        }
+        setDraggedNodeId(null);
+        setDragHoverNodeId(null);
+        return;
+      }
+
+      // -- New Device Tile drag ------------------------------------------
+      if (ds.id === '__NEW_DEVICE__') {
+        if (cell) {
+          const oldX = newDeviceCell.gridX, oldY = newDeviceCell.gridY;
+          if (targetId) {
+            setNodes(prev => {
+              const moved = prev[targetId];
+              if (!moved) return prev;
+              return { ...prev, [targetId]: { ...moved, gridX: oldX, gridY: oldY } };
+            });
+          }
+          // If it landed on Legend cell, swap Legend
+          if (legendCell.gridX === cell.gx && legendCell.gridY === cell.gy) {
+            persistLegendCell({ ...legendCell, gridX: oldX, gridY: oldY });
+          }
+          persistNewDeviceCell({ gridX: cell.gx, gridY: cell.gy });
         }
         setDraggedNodeId(null);
         setDragHoverNodeId(null);
@@ -617,6 +728,10 @@ export default function OverviewTab() {
       const draggedNode = nodes[ds.id];
       if (cell && draggedNode && legendCell.gridX === cell.gx && legendCell.gridY === cell.gy) {
         persistLegendCell({ ...legendCell, gridX: draggedNode.gridX, gridY: draggedNode.gridY });
+      }
+      // If the device would land on the new device cell, push it to the device's old cell.
+      if (cell && draggedNode && newDeviceCell.gridX === cell.gx && newDeviceCell.gridY === cell.gy) {
+        persistNewDeviceCell({ gridX: draggedNode.gridX, gridY: draggedNode.gridY });
       }
 
       if (targetId && targetId !== ds.id) {
@@ -753,33 +868,7 @@ export default function OverviewTab() {
         className="flex-1 relative overflow-hidden cursor-default bg-background"
         onClick={handleCanvasClick}
       >
-        {/* Profile Selector Dropdown */}
-        <div className="absolute top-4 left-4 z-50 overview-floating-ui">
-          <div className="flex items-center gap-2 bg-card/80 backdrop-blur border border-border rounded px-2 py-1 shadow-lg">
-            <Icons.LayoutGrid size={14} className="text-muted-foreground" />
-            <select 
-              className="bg-transparent text-sm text-foreground outline-none cursor-pointer border-none"
-              onChange={(e) => {
-                if (!e.target.value) return;
-                const id = e.target.value;
-                const all = [...presetLayouts, ...customLayouts];
-                const match = all.find(p => p.id === id);
-                if (match) applyLayout(match.nodes, match.connections, match.id);
-                e.target.value = ''; // Reset back to placeholder
-              }}
-              defaultValue=""
-            >
-              <option value="" disabled hidden>Load Profile...</option>
-              {presetLayouts.length > 0 && <optgroup label="Built-in">
-                {presetLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground">{p.name}</option>)}
-              </optgroup>}
-              {customLayouts.length > 0 && <optgroup label="My Profiles">
-                {customLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground">{p.name}</option>)}
-              </optgroup>}
-            </select>
-          </div>
-        </div>
-
+        <OscilloscopeDrawer />
         {/* Subtle dot grid background */}
         <div 
           className="absolute inset-0 pointer-events-none opacity-20"
@@ -967,6 +1056,41 @@ export default function OverviewTab() {
             );
           })()}
 
+          {/* New Device Tile */}
+          {(() => {
+            const gx = Math.min(newDeviceCell.gridX, effectiveGridSize - 1);
+            const gy = Math.min(newDeviceCell.gridY, effectiveGridSize - 1);
+            const isDragged = draggedNodeId === '__NEW_DEVICE__';
+            return (
+              <div
+                className={`absolute select-none z-20 flex items-center justify-center ${isDragged ? 'opacity-30 scale-[0.97] pointer-events-none' : ''}`}
+                onPointerDown={(e) => handlePointerDown(e as React.PointerEvent<HTMLDivElement>, '__NEW_DEVICE__')}
+                style={{
+                  left: MARGIN + gx * (CELL_W + MARGIN),
+                  top:  MARGIN + gy * (CELL_H + MARGIN),
+                  width: CELL_W,
+                  height: CELL_H,
+                  transition: 'left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease',
+                }}
+              >
+                <div 
+                  className="bg-card/40 backdrop-blur border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 rounded-2xl flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors group"
+                  onClick={() => setNewDeviceOpen(true)}
+                  onPointerDown={() => {
+                    // Start drag if clicking on the border, open modal if clicking the center
+                    // We'll just let the parent handle drag unless we explicitly prevent default
+                    // e is not strictly needed here but kept for completeness
+                  }}
+                >
+                  <div className="bg-primary/10 text-primary p-4 rounded-full group-hover:scale-110 transition-transform">
+                    <Icons.Plus size={32} />
+                  </div>
+                  <span className="mt-4 font-semibold text-muted-foreground group-hover:text-primary transition-colors">New Device</span>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Floating drag ghost — follows the cursor */}
           {draggedNodeId && ghostPos && (() => {
             const node = nodes[draggedNodeId];
@@ -1012,33 +1136,55 @@ export default function OverviewTab() {
 
       {/* In-grid floating UI (toolbar, zoom, legend) */}
       <div className="overview-floating-ui">
-        {/* Top toolbar - routing mode toggle + New Device */}
-        <div className="absolute top-4 right-4 z-40 flex gap-2 items-center pointer-events-auto">
-          {/* Physical vs Logical mode toggle */}
-          <div className="flex bg-card/90 backdrop-blur border border-border/60 rounded-md p-0.5 select-none">
+        {/* Left Edge Routing Toggle (Vertical) */}
+        <div className="absolute top-1/2 left-4 -translate-y-1/2 z-40 pointer-events-auto">
+          <div 
+            className="flex bg-card/90 backdrop-blur border border-border/60 rounded-lg p-0.5 select-none shadow-lg gap-0.5"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
             <button
               onClick={() => setRoutingMode('physical')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'physical' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`px-1.5 py-3 text-xs font-semibold tracking-wider rounded transition-colors ${routingMode === 'physical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
               title="Physical cable routing"
             >
-              Physical
+              PHYSICAL
             </button>
             <button
               onClick={() => setRoutingMode('logical')}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${routingMode === 'logical' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`px-1.5 py-3 text-xs font-semibold tracking-wider rounded transition-colors ${routingMode === 'logical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
               title="Logical MIDI routing"
             >
-              Logical
+              LOGICAL
             </button>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="bg-card/90 backdrop-blur border border-border/60 hover:bg-muted text-foreground"
-            onClick={() => setNewDeviceOpen(true)}
-          >
-            <Icons.Plus size={14} className="mr-1" /> New Device
-          </Button>
+        </div>
+
+        {/* Bottom Left Toolbar - Profile */}
+        <div className="absolute bottom-4 left-4 z-50 flex gap-2 items-center pointer-events-auto">
+          {/* Profile Selector Dropdown */}
+          <div className="flex items-center gap-2 bg-card/90 backdrop-blur border border-border/60 rounded-md px-2 h-8 shadow-sm">
+            <Icons.LayoutGrid size={14} className="text-muted-foreground" />
+            <select 
+              className="bg-transparent text-sm text-foreground outline-none cursor-pointer border-none"
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const id = e.target.value;
+                const all = [...presetLayouts, ...customLayouts];
+                const match = all.find(p => p.id === id);
+                if (match) applyLayout(match.nodes, match.connections, match.id);
+                e.target.value = ''; // Reset back to placeholder
+              }}
+              defaultValue=""
+            >
+              <option value="" disabled hidden>Load Profile...</option>
+              {presetLayouts.length > 0 && <optgroup label="Built-in" className="bg-card text-foreground font-semibold">
+                {presetLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground font-normal">{p.name}</option>)}
+              </optgroup>}
+              {customLayouts.length > 0 && <optgroup label="My Profiles" className="bg-card text-foreground font-semibold">
+                {customLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground font-normal">{p.name}</option>)}
+              </optgroup>}
+            </select>
+          </div>
         </div>
 
         {/* Zoom controls — bottom-right */}

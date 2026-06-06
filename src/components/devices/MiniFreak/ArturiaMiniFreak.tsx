@@ -14,6 +14,7 @@ import { Knob } from '../../Core/HardwareUI/Knob';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
 import minifreakGuideUrl from '../../../../doc/minifreak/minifreak-guide.md?url';
+import OscilloscopeDrawer from '../../Core/OscilloscopeDrawer/OscilloscopeDrawer';
 
 const DocLink = ({ sectionId, children, className }: { sectionId: string, children: React.ReactNode, className?: string }) => {
   const { hoveredDocSection, setHoveredDocSection, setActiveDocSection, activeDoc, setActiveDoc, helpMode } = useUIStore();
@@ -249,6 +250,7 @@ export default function ArturiaMiniFreak() {
 
       {/* Center Panel */}
       <div className="flex-1 min-h-0 bg-background flex flex-col items-center justify-center relative overflow-hidden">
+        <OscilloscopeDrawer />
         <DeviceHelpToggle guideUrl={minifreakGuideUrl} />
         <ScaleFit baseWidth={1450} baseHeight={650} maxScale={3}>
           {deviceContent}

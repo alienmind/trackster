@@ -8,7 +8,7 @@ import { inferTag } from '../utils/autoTag';
 import { computeArrangement } from '../utils/autoArrange';
 import { computeRenamePlan } from '../utils/renamePlan';
 import { TAG_DEFINITIONS } from '../utils/constants';
-import { computeSimilarity } from '../utils/similarity';
+import { clusterAndFindDuplicates, type AnalyzedSample } from '../utils/clustering';
 import { useUIStore } from './useUIStore';
 import { useAudioStore } from './useAudioStore';
 
@@ -34,6 +34,11 @@ export interface CircuitTracksState {
   togglePlayback: (slotIndex: number, fileHandle: FileSystemFileHandle) => Promise<void>;
   scanDuplicates: () => Promise<void>;
   clearDuplicates: () => void;
+  
+  similarityThreshold: number;
+  setSimilarityThreshold: (val: number) => void;
+  analyzedSamples: AnalyzedSample[];
+  recalculateDuplicates: () => void;
 
   rootHandle: FileSystemDirectoryHandle | null;
   packs: string[];
@@ -203,14 +208,34 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       currentSource: null,
       analysisProgress: null,
       duplicatePairs: [],
+      similarityThreshold: 10.0,
+      analyzedSamples: [],
+
+      setSimilarityThreshold: (val: number) => {
+        set({ similarityThreshold: val });
+        get().recalculateDuplicates();
+      },
+
+      recalculateDuplicates: () => {
+        const { analyzedSamples, similarityThreshold } = get();
+        if (analyzedSamples.length < 2) return;
+        const duplicateClusters = clusterAndFindDuplicates(analyzedSamples, similarityThreshold);
+        if (duplicateClusters.length > 0) {
+          useUIStore.getState().openDuplicateModal(duplicateClusters);
+        } else {
+          // Keep it open if it's already open, but maybe show empty?
+          useUIStore.getState().openDuplicateModal([]);
+        }
+      },
 
       playSlot: async (slotIndex, fileHandle) => {
         const state = get();
-        const { audioContext, initAudioContext, analyser } = useAudioStore.getState();
-        if (!audioContext) {
+        const { audioContext: existingCtx, initAudioContext } = useAudioStore.getState();
+        if (!existingCtx) {
           initAudioContext();
         }
-        const ctx = useAudioStore.getState().audioContext!;
+        const { audioContext: ctx, analyser } = useAudioStore.getState();
+        if (!ctx) return;
         
         get().stopPlayback();
 
@@ -248,6 +273,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
           }
         };
         source.start();
+        useAudioStore.getState().setLastPlayed(buffer, ctx.currentTime);
         set({ currentlyPlayingSlot: slotIndex, currentSource: source });
       },
 
@@ -270,78 +296,85 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
 
       scanDuplicates: async () => {
         const { slots, unassignedFiles } = get();
-        const allSamples: any[] = [];
+        const allSamples: import('../types').SampleFile[] = [];
         
         slots.forEach(s => { if (s.sample) allSamples.push(s.sample); });
         unassignedFiles.forEach(s => allSamples.push(s));
         
+        // console.log(`[scanDuplicates] Starting. Found ${allSamples.length} samples to analyze.`);
         if (allSamples.length < 2) return;
 
         set({ analysisProgress: { current: 0, total: allSamples.length } });
 
         const worker = new Worker(new URL('../workers/audioAnalyzer.worker.ts', import.meta.url), { type: 'module' });
         
-        const fingerprints = new Map<string, number[]>();
-        let completed = 0;
+        const analyzedSamples: AnalyzedSample[] = [];
+        set({ analyzedSamples: [] }); // Reset
 
         return new Promise<void>((resolve) => {
           worker.onmessage = (e) => {
-            const { originalFilename, fingerprint, error } = e.data;
-            if (!error && fingerprint) {
-              fingerprints.set(originalFilename, fingerprint);
-            }
+            const { type, payload } = e.data;
             
-            completed++;
-            set({ analysisProgress: { current: completed, total: allSamples.length } });
-            
-            if (completed === allSamples.length) {
-              worker.terminate();
-              set({ analysisProgress: null });
+            if (type === 'BATCH_RESULT') {
+              const { results, processedCount, totalExpected } = payload;
+              // console.log(`[scanDuplicates] BATCH_RESULT received. processedCount: ${processedCount}/${totalExpected}`);
               
-              const clusters: any[][] = [];
-              const processed = new Set<string>();
-
-              for (let i = 0; i < allSamples.length; i++) {
-                const sampleA = allSamples[i]!;
-                if (processed.has(sampleA.originalFilename)) continue;
-                
-                const fpA = fingerprints.get(sampleA.originalFilename);
-                if (!fpA) continue;
-
-                const cluster: any[] = [sampleA];
-                processed.add(sampleA.originalFilename);
-
-                for (let j = i + 1; j < allSamples.length; j++) {
-                  const sampleB = allSamples[j]!;
-                  if (processed.has(sampleB.originalFilename)) continue;
-                  
-                  const fpB = fingerprints.get(sampleB.originalFilename);
-                  if (!fpB) continue;
-
-                  const sim = computeSimilarity(fpA, fpB);
-                  if (sim > 0.92) {
-                    cluster.push(sampleB);
-                    processed.add(sampleB.originalFilename);
-                  }
-                }
-                
-                if (cluster.length > 1) {
-                  clusters.push(cluster);
+              // Map results to AnalyzedSample objects
+              for (const res of results) {
+                const sample = allSamples.find(s => s.originalFilename === res.originalFilename);
+                if (sample && res.features) {
+                  analyzedSamples.push({ sample, features: res.features });
                 }
               }
               
-              useUIStore.getState().openDuplicateModal(clusters);
-              resolve();
+              set({ analysisProgress: { current: processedCount, total: totalExpected } });
+              
+              if (processedCount === totalExpected) {
+                // console.log(`[scanDuplicates] All files processed. Triggering clustering with ${analyzedSamples.length} samples.`);
+                worker.terminate();
+                set({ analysisProgress: null, analyzedSamples });
+                
+                try {
+                  // Trigger clustering
+                  const duplicateClusters = clusterAndFindDuplicates(analyzedSamples, get().similarityThreshold);
+                  // console.log(`[scanDuplicates] Clustering complete. Found ${duplicateClusters.length} duplicate groups.`);
+                  
+                  useUIStore.getState().openDuplicateModal(duplicateClusters);
+                  
+                  if (duplicateClusters.length === 0) {
+                    useUIStore.getState().addNotification({ message: 'No duplicates found at current threshold. Try adjusting the slider.', type: 'info' });
+                  }
+                  resolve();
+                } catch (err) {
+                  // console.error('[scanDuplicates] Clustering crashed!', err);
+                  resolve();
+                }
+              }
+            } else if (type === 'ERROR') {
+              // Ignore errors and move on for now, though we could increment a processedCount equivalent here 
+              // but the worker handles counting in PROCESS_FILE.
             }
           };
 
+          // Initialize worker
+          worker.postMessage({ type: 'INIT', payload: { totalExpected: allSamples.length } });
+
+          // Send files to worker
           allSamples.forEach(async (sample) => {
             try {
               const file = await sample.fileHandle.getFile();
               const buffer = await file.arrayBuffer();
-              worker.postMessage({ originalFilename: sample.originalFilename, buffer }, [buffer]);
+              // console.log(`[scanDuplicates] Sending ${sample.originalFilename} to worker.`);
+              worker.postMessage({ 
+                type: 'PROCESS_FILE', 
+                payload: { originalFilename: sample.originalFilename, buffer } 
+              }, [buffer]);
             } catch (err) {
-              worker.postMessage({ originalFilename: sample.originalFilename, error: 'File read error' });
+              // console.error(`[scanDuplicates] Failed to read file ${sample.originalFilename}:`, err);
+              worker.postMessage({ 
+                type: 'ERROR', 
+                payload: { originalFilename: sample.originalFilename, error: 'File read error' } 
+              });
             }
           });
         });
@@ -508,6 +541,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     const findWavFiles = async (dirHandle: FileSystemDirectoryHandle, prefix = '') => {
       for await (const entry of dirHandle.values()) {
         if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.wav')) {
+          console.log(`[Sample Discovered] Pack: ${packName} | File: ${entry.name}`);
           const parsed = parseFilename(entry.name);
           const fileHandle = entry as FileSystemFileHandle;
           const file = await fileHandle.getFile();
@@ -1752,6 +1786,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         activeDelayId: state.activeDelayId,
         activeReverbId: state.activeReverbId,
         bpm: state.bpm,
+        similarityThreshold: state.similarityThreshold,
       }),
     }
   )
