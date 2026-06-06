@@ -19,6 +19,7 @@ import NewDeviceModal from '../Core/NewDeviceModal/NewDeviceModal';
 import { HARDWARE_LIBRARY } from '../../devices';
 import PromptModal from '../Core/PromptModal/PromptModal';
 import ConfirmModal from '../Core/ConfirmModal/ConfirmModal';
+import OscilloscopeDrawer from '../Core/OscilloscopeDrawer/OscilloscopeDrawer';
 
 const CELL_W = 280;
 const CELL_H = 220;
@@ -753,6 +754,7 @@ export default function OverviewTab() {
         className="flex-1 relative overflow-hidden cursor-default bg-background"
         onClick={handleCanvasClick}
       >
+        <OscilloscopeDrawer />
         {/* Profile Selector Dropdown */}
         <div className="absolute top-4 left-4 z-50 overview-floating-ui">
           <div className="flex items-center gap-2 bg-card/80 backdrop-blur border border-border rounded px-2 py-1 shadow-lg">

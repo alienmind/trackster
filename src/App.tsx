@@ -27,7 +27,6 @@ import React from 'react';
 import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
-import OscilloscopeDrawer from './components/Core/OscilloscopeDrawer/OscilloscopeDrawer';
 import { HARDWARE_LIBRARY } from './devices';
 
 // Floating hamburger button that opens the sidebar on mobile/tablet,
@@ -204,7 +203,6 @@ export default function App() {
             {/* Main View Container - reserves doc-drawer width when a doc is open */}
             <DocAwareLayoutEffects />
             <DocAwareMainView>
-              <OscilloscopeDrawer />
               {activeMainView === 'overview' ? (
                 <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
               ) : activeMainView === 'soundtoys' ? (

@@ -107,10 +107,10 @@ export default function PendingChangesPane() {
 
       <ScrollArea className="flex-1">
         {totalChanges === 0 ? (
-          <div className="p-8 text-center flex flex-col items-center text-muted-foreground">
-            <Icons.CheckCircle2 className="mb-3 opacity-20" size={32} />
-            <p className="text-sm">No pending changes.</p>
-            <p className="text-xs mt-1 opacity-70">Move or rename packs and samples to see changes here.</p>
+          <div className="p-4 text-center flex flex-col items-center text-muted-foreground">
+            <Icons.CheckCircle2 className="mb-2 opacity-20" size={24} />
+            <p className="text-xs font-medium">No pending changes.</p>
+            <p className="text-[10px] mt-1 opacity-70 leading-tight">Move or rename packs and samples to see changes here.</p>
           </div>
         ) : (
           <div className="p-4 space-y-6">

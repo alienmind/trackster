@@ -46,6 +46,7 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
     if (slot.sample && !e.shiftKey) {
       togglePlayback(slot.index, slot.sample.fileHandle);
       setSelectedFile(slot.sample);
+      useUIStore.getState().setOscilloscopeOpen(true);
     } else {
       setSelectedFile(null);
     }
@@ -97,7 +98,7 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
             ) : (
               <div className="w-8 h-8" />
             )}
-            <div className="w-full truncate text-center text-[10px] font-bold px-1 drop-shadow-sm">
+            <div className="w-full text-center text-[10px] font-bold px-1 drop-shadow-sm whitespace-normal leading-[1.1] line-clamp-2 break-words">
               {slot.sample.displayName}
             </div>
           </div>

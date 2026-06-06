@@ -50,7 +50,7 @@ export default function OscilloscopeDrawer() {
 
   return (
     <div 
-      className="w-full flex flex-col border-b border-border bg-background relative z-10"
+      className="absolute top-0 left-0 w-full flex flex-col border-b border-border bg-background z-40 shadow-xl transition-[height] duration-200"
       style={{ height: `${height}px` }}
     >
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/50">

@@ -99,8 +99,15 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   deferredPrompt: null,
 
-  setActiveMainView: (view) => set(() => {
-    return { activeMainView: view, activeDoc: null, helpMode: false, activeDocSection: null, hoveredDocSection: null };
+  setActiveMainView: (view) => set((state) => {
+    return { 
+      activeMainView: view, 
+      activeDoc: null, 
+      helpMode: false, 
+      activeDocSection: null, 
+      hoveredDocSection: null,
+      isOscilloscopeOpen: view === 'circuit' ? state.isOscilloscopeOpen : false
+    };
   }),
   setActivePage: (page) => {
     set({ activePage: page });

@@ -1,7 +1,7 @@
 {
   "name": "trackster",
   "private": true,
-  "version": "0.5.7",
+  "version": "0.5.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +20,7 @@
     "idb-keyval": "^6.2.4",
     "lucide-react": "^1.16.0",
     "meyda": "^5.6.3",
+    "ml-kmeans": "^7.0.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",

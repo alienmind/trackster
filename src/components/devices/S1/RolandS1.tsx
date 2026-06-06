@@ -5,6 +5,7 @@ import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
 import S1SidebarContext from './S1SidebarContext';
+import OscilloscopeDrawer from '../../Core/OscilloscopeDrawer/OscilloscopeDrawer';
 import {
   Jack,
   S1Knob,
@@ -232,6 +233,7 @@ export default function RolandS1() {
 
       {/* Center Panel */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative overflow-hidden bg-background">
+        <OscilloscopeDrawer />
         <DeviceHelpToggle guideUrl={s1GuideUrl} />
         <ScaleFit baseWidth={1000} baseHeight={500} maxScale={3}>
           {deviceContent}

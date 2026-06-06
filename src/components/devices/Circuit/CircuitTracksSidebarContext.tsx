@@ -4,9 +4,6 @@ import { useUIStore } from '../../../stores/useUIStore';
 import * as Icons from 'lucide-react';
 import { Button } from '../../Core/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../Core/ui/tooltip';
-import PendingChangesPane from '../../Core/PendingChangesPane/PendingChangesPane';
-import StagingArea from './StagingArea/StagingArea';
-import FileInspector from '../../Core/FileInspector/FileInspector';
 import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 import { useState } from 'react';
 import DisclaimerModal from '../../Core/DisclaimerModal/DisclaimerModal';
@@ -17,8 +14,7 @@ import { HARDWARE_LIBRARY } from '../../../devices';
 import clsx from 'clsx';
 
 export default function CircuitTracksSidebarContext() {
-  const { autoTag, autoArrange, applyTagsToFilenames, setApplyTagsToFilenames, deviceMode, rootHandle, workspaceMode, setWorkspaceMode } = useCircuitTracksStore();
-  const scanDuplicates = useCircuitTracksStore((s) => s.scanDuplicates);
+  const { deviceMode, rootHandle, workspaceMode, setWorkspaceMode } = useCircuitTracksStore();
   const { activePage, setActivePage } = useUIStore();
   
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
@@ -30,62 +26,7 @@ export default function CircuitTracksSidebarContext() {
 
   return (
     <>
-      <Collapsible defaultOpen={false} className="group/collapsible">
-        <SidebarGroup>
-          <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-            {longName} Actions
-            <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-          </SidebarGroupLabel>
-          <CollapsibleContent>
-            <SidebarGroupContent>
-              <div className="flex flex-col gap-2 px-2 mt-2">
-                <Tooltip>
-                  <TooltipTrigger render={<div className="w-full" />}>
-                    <Button
-                      variant="success"
-                      onClick={() => {
-                        if ('showDirectoryPicker' in window) {
-                          setIsDisclaimerOpen(true);
-                        } else {
-                          setIsBrowserWarningOpen(true);
-                        }
-                      }}
-                      className="font-semibold shadow-md w-full justify-start"
-                    >
-                      <Icons.HardDrive className="mr-2 h-4 w-4" />
-                      Mount SD Card
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    Select the root directory of your SD Card (or the 'Tracks' folder directly).
-                  </TooltipContent>
-                </Tooltip>
 
-                <Button variant="default" className="justify-start w-full" onClick={() => { autoTag(); autoArrange(); }}>
-                  <Icons.Wand2 className="mr-2 h-4 w-4" />
-                  Auto-Tag & Arrange
-                </Button>
-
-                <Tooltip>
-                  <TooltipTrigger render={<div className="w-full" />}>
-                    <Button variant="secondary" className="justify-start w-full" onClick={scanDuplicates}>
-                      <Icons.Copy className="mr-2 h-4 w-4" />
-                      Find Duplicates
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    Scan all assigned samples for identical audio files.
-                  </TooltipContent>
-                </Tooltip>
-
-                <Button variant="state" data-state={applyTagsToFilenames ? 'active' : 'inactive'} className="justify-start w-full" onClick={() => setApplyTagsToFilenames(!applyTagsToFilenames)}>
-                  <Icons.Tag className="mr-2 h-4 w-4" /> Tags in Filenames
-                </Button>
-              </div>
-            </SidebarGroupContent>
-          </CollapsibleContent>
-        </SidebarGroup>
-      </Collapsible>
 
       <Collapsible defaultOpen={true} className="group/collapsible">
         <SidebarGroup>
@@ -118,53 +59,7 @@ export default function CircuitTracksSidebarContext() {
         </SidebarGroup>
       </Collapsible>
 
-      <Collapsible defaultOpen={true} className="group/collapsible">
-        <SidebarGroup>
-          <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-            Pending Changes
-            <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-          </SidebarGroupLabel>
-          <CollapsibleContent>
-            <SidebarGroupContent>
-              <div className="px-2 h-64 overflow-hidden mt-2">
-                <PendingChangesPane />
-              </div>
-            </SidebarGroupContent>
-          </CollapsibleContent>
-        </SidebarGroup>
-      </Collapsible>
 
-      <Collapsible defaultOpen={true} className="group/collapsible">
-        <SidebarGroup>
-          <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-            Staging Area
-            <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-          </SidebarGroupLabel>
-          <CollapsibleContent>
-            <SidebarGroupContent>
-              <div className="px-2 h-64 overflow-hidden mt-2">
-                <StagingArea />
-              </div>
-            </SidebarGroupContent>
-          </CollapsibleContent>
-        </SidebarGroup>
-      </Collapsible>
-
-      <Collapsible defaultOpen={false} className="group/collapsible">
-        <SidebarGroup>
-          <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-            File Inspector
-            <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-          </SidebarGroupLabel>
-          <CollapsibleContent>
-            <SidebarGroupContent>
-              <div className="px-2 mt-2">
-                <FileInspector />
-              </div>
-            </SidebarGroupContent>
-          </CollapsibleContent>
-        </SidebarGroup>
-      </Collapsible>
 
       <Collapsible defaultOpen={false} className="group/collapsible">
         <SidebarGroup>

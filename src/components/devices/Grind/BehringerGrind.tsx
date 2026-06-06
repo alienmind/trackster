@@ -7,6 +7,7 @@ import DeviceHelpToggle from '../../Core/DeviceHelpToggle/DeviceHelpToggle';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
 import grindGuideUrl from "../../../../doc/grind/behringer-grind-guide.md?url";
+import OscilloscopeDrawer from '../../Core/OscilloscopeDrawer/OscilloscopeDrawer';
 
 // --- ICONS & SVGS ---
 
@@ -343,7 +344,8 @@ export default function BehringerGrind() {
         </SidebarContextPortal>
 
         {/* Center Panel */}
-        <div className="flex-1 min-h-full h-full w-full bg-background font-sans select-none overflow-hidden relative">
+        <div className="flex-1 min-h-full h-full w-full bg-background font-sans select-none overflow-hidden relative flex flex-col items-center justify-center">
+          <OscilloscopeDrawer />
           <DeviceHelpToggle guideUrl={grindGuideUrl} />
           <ScaleFit baseWidth={1150} baseHeight={700} maxScale={4}>
             {/* Synth Chassis with Wood Panels */}

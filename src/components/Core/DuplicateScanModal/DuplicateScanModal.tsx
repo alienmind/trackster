@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '../../Core/ui/button';
 import { ScrollArea } from '../../Core/ui/scroll-area';
 
+import { Play } from 'lucide-react';
+
 export default function DuplicateScanModal() {
   const isDuplicateModalOpen = useUIStore((s) => s.isDuplicateModalOpen);
   const duplicateClusters = useUIStore((s) => s.duplicateClusters);
@@ -102,7 +104,26 @@ export default function DuplicateScanModal() {
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4 mt-2">
+        <div className="px-1 py-4 border-b border-border">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Similarity Threshold</span>
+            <span className="text-xs font-mono text-muted-foreground">{useCircuitTracksStore.getState().similarityThreshold.toFixed(1)}</span>
+          </div>
+          <input 
+            type="range" 
+            min="1.0" 
+            max="100.0" 
+            step="0.5" 
+            value={useCircuitTracksStore.getState().similarityThreshold}
+            onChange={(e) => useCircuitTracksStore.getState().setSimilarityThreshold(parseFloat(e.target.value))}
+            className="w-full accent-primary"
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            Lower values require stricter sonic similarity (fewer duplicates). Higher values are more lenient.
+          </p>
+        </div>
+
+        <ScrollArea className="max-h-[50vh] pr-4 mt-2">
           <div className="space-y-6">
             {localClusters.map((cluster, index) => (
               <div key={index} className="border border-border rounded-md p-4 bg-background">
@@ -128,6 +149,7 @@ export default function DuplicateScanModal() {
                             readOnly
                             className="w-4 h-4 text-primary focus:ring-primary"
                           />
+                          <Play className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
                           <span className="font-mono text-sm">{sample.displayName}</span>
                         </div>
                         <div className="flex items-center gap-3">
