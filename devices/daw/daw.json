@@ -6,10 +6,10 @@
   "tagline": "DAW",
   "width": 200,
   "theme": {
-    "border": "border-t-neutral-100",
-    "header": "bg-neutral-800",
-    "title": "text-white",
-    "badge": "bg-neutral-700 text-neutral-300"
+    "border": "border-t-neutral-800 dark:border-t-neutral-100",
+    "header": "bg-neutral-100 dark:bg-neutral-800",
+    "title": "text-foreground",
+    "badge": "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300"
   },
   "ports": [
     {

@@ -7,14 +7,14 @@ import circuitGuideUrl from '../../../../doc/circuittracks/circuit-tracks-guide.
 
 export default function CircuitTracksLayout() {
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-neutral-900 overflow-hidden relative">
+    <div className="flex flex-col flex-1 min-h-0 bg-background overflow-hidden relative">
       <SidebarContextPortal>
         <CircuitTracksSidebarContext />
       </SidebarContextPortal>
       
       <div className="flex flex-1 min-h-0">
         {/* Center Panel - Device */}
-        <div className="flex-1 overflow-hidden flex flex-col bg-neutral-950 relative">
+        <div className="flex-1 overflow-hidden flex flex-col bg-background relative">
           <DeviceHelpToggle guideUrl={circuitGuideUrl} />
           <div className="flex-1 overflow-y-auto flex items-center justify-center p-8">
             <CircuitTracksDevice />

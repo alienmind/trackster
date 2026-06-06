@@ -3,12 +3,10 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../../Core/
 import DownloadsList from '../../Core/DownloadsList/DownloadsList';
 
 import { useUIStore } from '../../../stores/useUIStore';
-import { HARDWARE_LIBRARY } from '../../../devices';
 import * as Icons from 'lucide-react';
 
 export default function MiniFreakSidebarContext() {
-  const { activeMainView, sidebarSectionStates, setSidebarSectionState } = useUIStore();
-  const longName = HARDWARE_LIBRARY[activeMainView]?.longName || 'MiniFreak';
+  const { sidebarSectionStates, setSidebarSectionState } = useUIStore();
 
   return (
     <>
@@ -19,7 +17,10 @@ export default function MiniFreakSidebarContext() {
       >
         <SidebarGroup>
           <SidebarGroupLabel render={<CollapsibleTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer flex items-center justify-between w-full" />}>
-            {longName} Utilities
+            <>
+              <span className="dark:hidden">Arturia MiniFreak</span>
+              <span className="hidden dark:inline">Arturia MiniFreak Stellar</span>
+            </> Utilities
             <Icons.ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
           </SidebarGroupLabel>
           <CollapsibleContent>

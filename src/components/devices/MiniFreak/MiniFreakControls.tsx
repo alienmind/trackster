@@ -267,7 +267,7 @@ export const Keyboard = () => {
         {mappedKeys.filter(k => k.type === 'w').map((_k, i) => (
           <div 
             key={`w-${i}`} 
-            className="h-full bg-gradient-to-b from-[#2a2d33] to-[#1a1b1e] border-x border-b border-[#0a0a0a] rounded-b-md shadow-[inset_0_1px_2px_rgba(255,255,255,0.05),0_2px_2px_rgba(0,0,0,0.5)] active:bg-[#111] flex-1 z-0 transition-colors"
+            className="h-full bg-gradient-to-b from-white to-gray-200 dark:from-[#2a2d33] dark:to-[#1a1b1e] border-x border-b border-gray-400 dark:border-[#0a0a0a] rounded-b-md shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),0_2px_2px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_1px_2px_rgba(255,255,255,0.05),0_2px_2px_rgba(0,0,0,0.5)] active:bg-gray-300 dark:active:bg-[#111] flex-1 z-0 transition-colors"
           />
         ))}
         {mappedKeys.filter(k => k.type === 'b').map((k, i) => (
