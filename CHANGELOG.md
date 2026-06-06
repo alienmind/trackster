@@ -7,7 +7,7 @@ This document tracks high-level major features and fixes across versions.
 | Type | Description |
 | --- | --- |
 | **Feature** | Interactive FX drawer with Delay and Reverb visualizers and synced state |
-| **Feature** | Logical MIDI routing with per-track channels and doc-aware layout (0.5.5) |
+| **Feature** | Logical MIDI routing with per-track channels and doc-aware layout |
 | **Feature** | Per-port cable management with directions, draggable in-grid legend, categorized colors |
 | **Feature** | Mobile sheet trigger, collapse button, and icon-mode cleanup for Sidebar |
 | **Feature** | Overview cable placement, icon for Circuit Tracks, Ableton generically renamed to DAW |
