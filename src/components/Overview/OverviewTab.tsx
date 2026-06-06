@@ -237,7 +237,6 @@ export default function OverviewTab() {
   // Automatically move the New Device tile or Legend cell to an empty slot if they overlap an existing node
   useEffect(() => {
     let newDeviceMoved = false;
-    let legendMoved = false;
 
     // 1. Resolve New Device Cell
     const isNewDeviceOccupied = Object.values(nodes).some(n => n.gridX === newDeviceCell.gridX && n.gridY === newDeviceCell.gridY) ||
@@ -268,7 +267,6 @@ export default function OverviewTab() {
             const occNewDevice = newDeviceCell.gridX === x && newDeviceCell.gridY === y;
             if (!occNodes && !occNewDevice) {
               persistLegendCell({ ...legendCell, gridX: x, gridY: y });
-              legendMoved = true;
               break outer2;
             }
           }
