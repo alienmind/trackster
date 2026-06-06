@@ -97,6 +97,25 @@ export default function App() {
   const closeConfirmModal = useUIStore((s) => s.closeConfirmModal);
 
   const initAudioContext = useAudioStore((s) => s.initAudioContext);
+  
+  useEffect(() => {
+    // Eagerly initialize AudioContext on the first user interaction
+    // to prevent any playback lag when hitting the first sample.
+    const handleInteraction = () => {
+      initAudioContext();
+      window.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+
+    window.addEventListener('pointerdown', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
+
+    return () => {
+      window.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+  }, [initAudioContext]);
+
   const [activeDragItem, setActiveDragItem] = useState<{ id: string, type: string, data: any } | null>(null);
   
   const activeTagItem = activeDragItem?.type === 'tag'

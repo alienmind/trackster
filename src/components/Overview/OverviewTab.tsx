@@ -772,11 +772,11 @@ export default function OverviewTab() {
               defaultValue=""
             >
               <option value="" disabled hidden>Load Profile...</option>
-              {presetLayouts.length > 0 && <optgroup label="Built-in">
-                {presetLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground">{p.name}</option>)}
+              {presetLayouts.length > 0 && <optgroup label="Built-in" className="bg-card text-foreground font-semibold">
+                {presetLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground font-normal">{p.name}</option>)}
               </optgroup>}
-              {customLayouts.length > 0 && <optgroup label="My Profiles">
-                {customLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground">{p.name}</option>)}
+              {customLayouts.length > 0 && <optgroup label="My Profiles" className="bg-card text-foreground font-semibold">
+                {customLayouts.map(p => <option key={p.id} value={p.id} className="bg-card text-foreground font-normal">{p.name}</option>)}
               </optgroup>}
             </select>
           </div>

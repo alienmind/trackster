@@ -230,11 +230,12 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
 
       playSlot: async (slotIndex, fileHandle) => {
         const state = get();
-        const { audioContext, initAudioContext, analyser } = useAudioStore.getState();
-        if (!audioContext) {
+        const { audioContext: existingCtx, initAudioContext } = useAudioStore.getState();
+        if (!existingCtx) {
           initAudioContext();
         }
-        const ctx = useAudioStore.getState().audioContext!;
+        const { audioContext: ctx, analyser } = useAudioStore.getState();
+        if (!ctx) return;
         
         get().stopPlayback();
 
