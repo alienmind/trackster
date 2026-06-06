@@ -250,7 +250,7 @@ export default function ArturiaMiniFreak() {
       {/* Center Panel */}
       <div className="flex-1 min-h-0 bg-[#111] flex flex-col items-center justify-center relative overflow-hidden">
         <DeviceHelpToggle guideUrl={minifreakGuideUrl} />
-        <ScaleFit baseWidth={1100} baseHeight={600} maxScale={3}>
+        <ScaleFit baseWidth={1450} baseHeight={650} maxScale={3}>
           {deviceContent}
         </ScaleFit>
       </div>
