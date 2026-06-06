@@ -272,6 +272,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
           }
         };
         source.start();
+        useAudioStore.getState().setLastPlayed(buffer, ctx.currentTime);
         set({ currentlyPlayingSlot: slotIndex, currentSource: source });
       },
 
