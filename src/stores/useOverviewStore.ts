@@ -119,6 +119,7 @@ interface OverviewState {
   customLayouts: Array<{ id: string; name: string; nodes: Record<string, OverviewNode>; connections: Record<string, OverviewConnection> }>;
   presetLayouts: Array<{ id: string; name: string; nodes: Record<string, OverviewNode>; connections: Record<string, OverviewConnection> }>;
   saveCustomLayout: (name: string) => void;
+  renameCustomLayout: (id: string, newName: string) => void;
   removeCustomLayout: (id: string) => void;
   loadCustomLayouts: (layouts: any[]) => void;
   loadPresetLayouts: (layouts: { id: string; name: string; nodes: Record<string, OverviewNode>; connections: Record<string, OverviewConnection> }[]) => void;
@@ -238,6 +239,14 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
     localStorage.setItem('alienmind_custom_layouts_v5', JSON.stringify(updated));
     try { localStorage.setItem('alienmind_active_profile', id); } catch {}
     useUIStore.getState().addNotification({ type: 'success', message: `Layout "${name}" saved!` });
+  },
+
+  renameCustomLayout: (id: string, newName: string) => {
+    const { customLayouts } = get();
+    const updated = customLayouts.map(l => l.id === id ? { ...l, name: newName } : l);
+    set({ customLayouts: updated });
+    localStorage.setItem('alienmind_custom_layouts_v5', JSON.stringify(updated));
+    useUIStore.getState().addNotification({ type: 'success', message: `Profile renamed to "${newName}"` });
   },
   
   removeCustomLayout: (id: string) => {

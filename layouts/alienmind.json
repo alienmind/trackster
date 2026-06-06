@@ -1,0 +1,141 @@
+{
+  "id": "preset_alienmind_v5",
+  "name": "AlienMind",
+  "nodes": {
+    "n_circuit_5hcr": {
+      "id": "n_circuit_5hcr",
+      "type": "circuit",
+      "gridX": 1,
+      "gridY": 0,
+      "zIndex": 100,
+      "isExpanded": true,
+      "midiTrackChannels": {
+        "synth1": {
+          "out": 3
+        },
+        "synth2": {
+          "out": 4
+        },
+        "midi1": {
+          "out": 1
+        },
+        "midi2": {
+          "out": 2
+        }
+      }
+    },
+    "n_s1_b269": {
+      "id": "n_s1_b269",
+      "type": "s1",
+      "gridX": 2,
+      "gridY": 1,
+      "zIndex": 100,
+      "isExpanded": true,
+      "midiTrackChannels": {
+        "main": {
+          "in": 2
+        }
+      }
+    },
+    "n_grind_0c5m": {
+      "id": "n_grind_0c5m",
+      "type": "grind",
+      "gridX": 0,
+      "gridY": 0,
+      "zIndex": 100,
+      "isExpanded": true,
+      "midiTrackChannels": {
+        "main": {
+          "in": 1
+        }
+      }
+    },
+    "n_flow8_sido": {
+      "id": "n_flow8_sido",
+      "type": "flow8",
+      "gridX": 1,
+      "gridY": 1,
+      "zIndex": 100,
+      "isExpanded": true
+    },
+    "n_minifreak_ar4k": {
+      "id": "n_minifreak_ar4k",
+      "type": "minifreak",
+      "gridX": 1,
+      "gridY": 2,
+      "zIndex": 100,
+      "isExpanded": true,
+      "midiTrackChannels": {
+        "main": {
+          "in": 3
+        }
+      }
+    }
+  },
+  "connections": {
+    "c_1780767216770": {
+      "id": "c_1780767216770",
+      "source": "n_s1_b269",
+      "target": "n_circuit_5hcr",
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn1",
+      "type": "audio_minijack_to_trs"
+    },
+    "c_1780767262687": {
+      "id": "c_1780767262687",
+      "source": "n_grind_0c5m",
+      "target": "n_circuit_5hcr",
+      "sourcePort": "audioOut",
+      "targetPort": "audioIn2",
+      "type": "audio_ts"
+    },
+    "c_1780767726857": {
+      "id": "c_1780767726857",
+      "source": "n_circuit_5hcr",
+      "target": "n_flow8_sido",
+      "sourcePort": "audioOutLMono",
+      "targetPort": "audioIn7",
+      "type": "audio_trs"
+    },
+    "c_1780767742423": {
+      "id": "c_1780767742423",
+      "source": "n_circuit_5hcr",
+      "target": "n_flow8_sido",
+      "sourcePort": "audioOutR",
+      "targetPort": "audioIn8",
+      "type": "audio_trs"
+    },
+    "c_1780767900142": {
+      "id": "c_1780767900142",
+      "source": "n_circuit_5hcr",
+      "target": "n_s1_b269",
+      "sourcePort": "midiThru",
+      "targetPort": "midiIn",
+      "type": "midi_din_to_trs"
+    },
+    "c_1780768038518": {
+      "id": "c_1780768038518",
+      "source": "n_circuit_5hcr",
+      "target": "n_grind_0c5m",
+      "sourcePort": "midiOut",
+      "targetPort": "midiIn",
+      "type": "midi_din"
+    },
+    "c_1780768102071": {
+      "id": "c_1780768102071",
+      "source": "n_grind_0c5m",
+      "target": "n_minifreak_ar4k",
+      "sourcePort": "midiOut",
+      "targetPort": "midiIn",
+      "type": "audio_ts_trs_combined"
+    },
+    "c_1780768448156": {
+      "id": "c_1780768448156",
+      "source": "n_minifreak_ar4k",
+      "target": "n_flow8_sido",
+      "sourcePort": "phonesOut",
+      "targetPort": "audioIn5_6",
+      "type": "default"
+    }
+  }
+}

@@ -25,6 +25,12 @@
       "label": "Audio Out R"
     },
     {
+      "id": "phonesOut",
+      "type": "TRS",
+      "direction": "out",
+      "label": "Phones Out"
+    },
+    {
       "id": "midiIn",
       "type": "MIDI_5PIN",
       "direction": "in",

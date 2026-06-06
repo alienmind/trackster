@@ -554,7 +554,7 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
               Select which physical port on <span className="font-semibold text-foreground">{blueprint?.model}</span> should host the new connection.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[420px] overflow-y-auto -mx-2 px-2 py-1 flex flex-col gap-4">
+          <div className="max-h-[70vh] overflow-y-auto -mx-2 px-2 py-1 flex flex-col gap-4">
             {/* 1. Local port */}
             <div className="flex flex-col gap-1.5">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">1. This device's port</div>

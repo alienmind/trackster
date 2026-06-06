@@ -25,6 +25,18 @@
       "label": "USB In/Out"
     },
     {
+      "id": "audioIn1",
+      "type": "XLR_FEMALE",
+      "direction": "in",
+      "label": "Audio In 1"
+    },
+    {
+      "id": "audioIn2",
+      "type": "XLR_FEMALE",
+      "direction": "in",
+      "label": "Audio In 2"
+    },
+    {
       "id": "audioIn3",
       "type": "TRS",
       "direction": "in",
@@ -40,31 +52,49 @@
       "id": "audioIn5",
       "type": "TS",
       "direction": "in",
-      "label": "Audio In 5"
+      "label": "Audio In 5 L"
     },
     {
       "id": "audioIn6",
       "type": "TS",
       "direction": "in",
-      "label": "Audio In 6"
+      "label": "Audio In 6 R"
     },
     {
       "id": "audioIn7",
       "type": "TS",
       "direction": "in",
-      "label": "Audio In 7"
+      "label": "Audio In 7 L"
     },
     {
       "id": "audioIn8",
       "type": "TS",
       "direction": "in",
-      "label": "Audio In 8"
+      "label": "Audio In 8 R"
     },
     {
-      "id": "audioOut",
+      "id": "audioIn5_6",
+      "type": "TRS",
+      "direction": "in",
+      "label": "Audio In 5/6"
+    },
+    {
+      "id": "audioIn7_8",
+      "type": "TRS",
+      "direction": "in",
+      "label": "Audio In 7/8"
+    },
+    {
+      "id": "audioOutMainL",
       "type": "XLR_MALE",
       "direction": "out",
-      "label": "Audio Out"
+      "label": "Audio Out Main L"
+    },
+    {
+      "id": "audioOutMainR",
+      "type": "XLR_MALE",
+      "direction": "out",
+      "label": "Audio Out Main R"
     }
   ]
 }

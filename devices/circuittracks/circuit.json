@@ -25,10 +25,16 @@
       "label": "Audio In 2"
     },
     {
-      "id": "audioOut",
-      "type": "TRS",
+      "id": "audioOutR",
+      "type": "TS",
       "direction": "out",
-      "label": "Audio Out"
+      "label": "Audio Out R"
+    },
+    {
+      "id": "audioOutLMono",
+      "type": "TS",
+      "direction": "out",
+      "label": "Audio Out L Mono"
     },
     {
       "id": "phonesOut",

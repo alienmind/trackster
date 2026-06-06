@@ -60,6 +60,7 @@ function migrateNodesToGrid(oldNodes: Record<string, any>): Record<string, Overv
       logicalInChannel: node.logicalInChannel,
       logicalOutChannel: node.logicalOutChannel,
       circuitLogicalOuts: node.circuitLogicalOuts,
+      midiTrackChannels: node.midiTrackChannels,
     };
   });
 
@@ -82,11 +83,10 @@ export default function OverviewTab() {
     selectedConnectionId, setSelectedConnectionId, setCableDotNumbers,
     setNodes,
     routingMode, setRoutingMode,
-    presetLayouts, loadPresetLayouts, applyLayout,
-    customLayouts, saveCustomLayout, removeCustomLayout, loadCustomLayouts,
+    presetLayouts, loadPresetLayouts, applyLayout, activeProfileId,
+    customLayouts, saveCustomLayout, renameCustomLayout, removeCustomLayout, loadCustomLayouts,
     clearLayout
   } = useOverviewStore();
-  const activeProfileId = useOverviewStore(s => s.activeProfileId);
   const legendStorageKey = `trackster_legend_cell_${activeProfileId || 'default'}`;
   const newDeviceStorageKey = `trackster_new_device_cell_${activeProfileId || 'default'}`;
 
@@ -147,6 +147,7 @@ export default function OverviewTab() {
   const [newProfileOpen, setNewProfileOpen] = useState(false);
   const [saveLayoutOpen, setSaveLayoutOpen] = useState(false);
   const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null);
+  const [renameProfileId, setRenameProfileId] = useState<string | null>(null);
   const [clearGridOpen, setClearGridOpen] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -190,15 +191,15 @@ export default function OverviewTab() {
   // Register built-in presets (e.g. "AlienMind Setup") but DO NOT auto-apply.
   // Default state is empty; user picks a preset or adds devices from the catalog.
   useEffect(() => {
-    const alienMindPreset = hardcodedLayouts.map((layout: any) => ({
+    const loadedPresets = hardcodedLayouts.map((layout: any) => ({
       id: layout.id ?? `preset_${layout.name ?? 'unnamed'}`,
-      name: 'AlienMind',
+      name: layout.name || 'Built-in Preset',
       nodes: migrateNodesToGrid(layout.nodes ?? {}),
       connections: migrateConnections(layout.connections ?? {}),
     }));
     const presets = [
       { id: 'preset_default_empty', name: 'Default (empty)', nodes: {} as Record<string, OverviewNode>, connections: {} as Record<string, OverviewConnection> },
-      ...alienMindPreset,
+      ...loadedPresets,
     ];
     loadPresetLayouts(presets);
 
@@ -239,18 +240,25 @@ export default function OverviewTab() {
     let newDeviceMoved = false;
 
     // 1. Resolve New Device Cell
-    const isNewDeviceOccupied = Object.values(nodes).some(n => n.gridX === newDeviceCell.gridX && n.gridY === newDeviceCell.gridY) ||
-                       (legendCell.gridX === newDeviceCell.gridX && legendCell.gridY === newDeviceCell.gridY);
-    
-    if (isNewDeviceOccupied) {
-      outer1: for (let y = effectiveGridSize - 1; y >= 0; y--) {
-        for (let x = effectiveGridSize - 1; x >= 0; x--) {
-          const occNodes = Object.values(nodes).some(n => n.gridX === x && n.gridY === y);
-          const occLegend = legendCell.gridX === x && legendCell.gridY === y;
-          if (!occNodes && !occLegend) {
-            persistNewDeviceCell({ gridX: x, gridY: y });
-            newDeviceMoved = true;
-            break outer1;
+    if (Object.keys(nodes).length === 0) {
+      if (newDeviceCell.gridX !== 1 || newDeviceCell.gridY !== 1) {
+        persistNewDeviceCell({ gridX: 1, gridY: 1 });
+        newDeviceMoved = true;
+      }
+    } else {
+      const isNewDeviceOccupied = Object.values(nodes).some(n => n.gridX === newDeviceCell.gridX && n.gridY === newDeviceCell.gridY) ||
+                         (legendCell.gridX === newDeviceCell.gridX && legendCell.gridY === newDeviceCell.gridY);
+      
+      if (isNewDeviceOccupied) {
+        outer1: for (let y = effectiveGridSize - 1; y >= 0; y--) {
+          for (let x = effectiveGridSize - 1; x >= 0; x--) {
+            const occNodes = Object.values(nodes).some(n => n.gridX === x && n.gridY === y);
+            const occLegend = legendCell.gridX === x && legendCell.gridY === y;
+            if (!occNodes && !occLegend) {
+              persistNewDeviceCell({ gridX: x, gridY: y });
+              newDeviceMoved = true;
+              break outer1;
+            }
           }
         }
       }
@@ -799,7 +807,13 @@ export default function OverviewTab() {
                       <div key={p.id} className="flex items-center gap-1 group/row">
                         <Button variant="ghost" className="flex-1 justify-start text-xs h-8"
                           onClick={() => applyLayout(p.nodes, p.connections, p.id)}
-                          title={`Apply "${p.name}"`}>
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            navigator.clipboard.writeText(JSON.stringify(p, null, 2)).then(() => {
+                              useUIStore.getState().addNotification({ type: 'success', message: `Copied "${p.name}" JSON to clipboard!` });
+                            });
+                          }}
+                          title={`Apply "${p.name}" (Right-click to copy JSON)`}>
                           <Icons.Sparkles size={14} className="mr-2 text-cyan-400" /> {p.name}
                         </Button>
                       </div>
@@ -817,8 +831,14 @@ export default function OverviewTab() {
                     {customLayouts.map(p => (
                       <div key={p.id} className="flex items-center gap-1 group/row">
                         <Button variant="ghost" className="flex-1 justify-start text-xs h-8"
-                          onClick={() => applyLayout(p.nodes, p.connections, p.id)}
-                          title={`Apply "${p.name}"`}>
+                          onClick={() => setRenameProfileId(p.id)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            navigator.clipboard.writeText(JSON.stringify(p, null, 2)).then(() => {
+                              useUIStore.getState().addNotification({ type: 'success', message: `Copied "${p.name}" JSON to clipboard!` });
+                            });
+                          }}
+                          title={`Rename "${p.name}" (Right-click to copy JSON)`}>
                           <Icons.LayoutGrid size={14} className="mr-2 text-muted-foreground" /> {p.name}
                         </Button>
                         <button
@@ -1112,24 +1132,6 @@ export default function OverviewTab() {
           })()}
 
         </div>
-
-        {/* Empty state */}
-        {nodeCount === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center text-muted-foreground pointer-events-auto">
-              <Icons.LayoutGrid size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium mb-4 text-foreground">No devices on the grid</p>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="bg-card/90 backdrop-blur border border-border/60 hover:bg-muted text-foreground"
-                onClick={() => setNewDeviceOpen(true)}
-              >
-                <Icons.Plus size={16} className="mr-2" /> New Device
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* In-grid floating UI (toolbar, zoom, legend) */}
@@ -1230,10 +1232,41 @@ export default function OverviewTab() {
         description="Save the current grid as a named profile."
         placeholder="Profile name"
         confirmText="Save"
+        validate={(name) => {
+          if (customLayouts.some(l => l.name.toLowerCase() === name.toLowerCase())) {
+            return 'A profile with this name already exists.';
+          }
+          if (presetLayouts.some(l => l.name.toLowerCase() === name.toLowerCase())) {
+            return 'A built-in preset already uses this name.';
+          }
+          return null;
+        }}
         onCancel={() => setSaveLayoutOpen(false)}
         onConfirm={(name) => {
           setSaveLayoutOpen(false);
           saveCustomLayout(name);
+        }}
+      />
+      <PromptModal
+        isOpen={renameProfileId !== null}
+        title="Rename Profile"
+        description="Enter a new name for your profile."
+        placeholder="Profile name"
+        initialValue={customLayouts.find(l => l.id === renameProfileId)?.name ?? ''}
+        confirmText="Rename"
+        validate={(name) => {
+          if (customLayouts.some(l => l.id !== renameProfileId && l.name.toLowerCase() === name.toLowerCase())) {
+            return 'A profile with this name already exists.';
+          }
+          if (presetLayouts.some(l => l.name.toLowerCase() === name.toLowerCase())) {
+            return 'A built-in preset already uses this name.';
+          }
+          return null;
+        }}
+        onCancel={() => setRenameProfileId(null)}
+        onConfirm={(name) => {
+          if (renameProfileId) renameCustomLayout(renameProfileId, name);
+          setRenameProfileId(null);
         }}
       />
       <ConfirmModal

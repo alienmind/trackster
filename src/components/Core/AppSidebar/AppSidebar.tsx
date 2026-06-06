@@ -17,6 +17,7 @@ import { useUIStore } from '../../../stores/useUIStore';
 import { HARDWARE_LIBRARY } from '../../../devices';
 import { useOverviewStore } from '../../../stores/useOverviewStore';
 import Logo from '../Logo';
+import LogoIcon from '../LogoIcon';
 import * as Icons from 'lucide-react';
 import pkg from '../../../../package.json';
 import { ThemeToggle } from '../ThemeToggle';
@@ -58,10 +59,10 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader className="relative flex flex-col items-center justify-center py-4 border-b border-border group-data-[collapsible=icon]:pt-14">
-        <Logo className="h-8 w-auto text-foreground mb-2 group-data-[collapsible=icon]:h-5 group-data-[collapsible=icon]:mb-0" />
-        <div className="flex items-baseline space-x-1 group-data-[collapsible=icon]:hidden">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Tracks(ter)</h1>
-          <span className="text-[10px] text-muted-foreground font-mono font-bold">v{pkg.version}</span>
+        <Logo className="h-16 w-auto text-foreground mb-1 group-data-[collapsible=icon]:hidden" aria-label="Track(ster)" />
+        <LogoIcon className="hidden group-data-[collapsible=icon]:block h-8 w-auto text-foreground mb-0" aria-label="Track(ster)" />
+        <div className="flex items-center justify-center w-full group-data-[collapsible=icon]:hidden">
+          <span className="text-[10px] text-muted-foreground font-mono font-bold tracking-widest uppercase">v{pkg.version}</span>
         </div>
         {/* Collapse button — visible only when sidebar is expanded (not in icon mode). */}
         <button
@@ -176,6 +177,7 @@ export function AppSidebar() {
                 destructive: true,
                 onConfirm: async () => {
                   setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                  localStorage.clear();
                   await del('trackster-storage');
                   await del('trackster-ui-storage');
                   sessionStorage.setItem('autoOpenDisclaimer', 'true');
