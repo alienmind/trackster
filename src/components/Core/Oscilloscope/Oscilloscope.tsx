@@ -79,32 +79,9 @@ export default function Oscilloscope() {
       canvasCtx.fillRect(0, 0, width, height);
 
       // --- 1. Top/Left: Full Waveform or Monitoring History ---
-      if (isMonitoring) {
-        // Calculate max amplitude of current frame
-        let maxAmp = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          const val = (timeDataArray[i]! - 128) / 128.0;
-          if (Math.abs(val) > maxAmp) maxAmp = Math.abs(val);
-        }
+      const showStaticWaveform = !isMonitoring && fullWaveformPaths.length > 0;
 
-        // Shift array left
-        const hist = monitorHistoryRef.current;
-        hist.copyWithin(0, 1);
-        hist[hist.length - 1] = maxAmp;
-
-        // Draw seismograph
-        canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.6)';
-        const stepX = width / hist.length;
-        for (let i = 0; i < hist.length; i++) {
-          const amp = hist[i]!;
-          if (amp > 0) {
-            const x = i * stepX;
-            const h = Math.max(1, amp * thirdHeight);
-            const y = (thirdHeight / 2) - (h / 2);
-            canvasCtx.fillRect(x, y, stepX + 0.5, h);
-          }
-        }
-      } else {
+      if (showStaticWaveform) {
         if (fullWaveformPaths.length > 0) {
           canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.6)';
           
@@ -137,6 +114,36 @@ export default function Oscilloscope() {
             canvasCtx.lineWidth = 2 * dpr;
             canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
             canvasCtx.stroke();
+          }
+        }
+      } else {
+        // Calculate max amplitude of current frame
+        let maxAmp = 0;
+        // Step size optimization for large buffer lengths
+        const step = Math.max(1, Math.floor(bufferLength / 1000));
+        for (let i = 0; i < bufferLength; i += step) {
+          const val = (timeDataArray[i]! - 128) / 128.0;
+          if (Math.abs(val) > maxAmp) maxAmp = Math.abs(val);
+        }
+
+        // Shift array left
+        const hist = monitorHistoryRef.current;
+        hist.copyWithin(0, 1);
+        hist[hist.length - 1] = maxAmp;
+
+        // Draw seismograph
+        canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.6)';
+        const boxWidth = isVert ? width : thirdWidth;
+        const boxHeight = isVert ? thirdHeight : height;
+        const stepX = boxWidth / hist.length;
+        
+        for (let i = 0; i < hist.length; i++) {
+          const amp = hist[i]!;
+          if (amp > 0) {
+            const x = i * stepX;
+            const h = Math.max(1, amp * boxHeight);
+            const y = (boxHeight / 2) - (h / 2);
+            canvasCtx.fillRect(x, y, stepX + 0.5, h);
           }
         }
       }

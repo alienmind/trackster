@@ -263,7 +263,7 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         source.buffer = buffer;
         if (analyser) {
           source.connect(analyser);
-          analyser.connect(ctx.destination);
+          source.connect(ctx.destination);
         } else {
           source.connect(ctx.destination);
         }

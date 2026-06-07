@@ -33,8 +33,8 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     if (!get().audioContext) {
       const ctx = Tone.getContext().rawContext as AudioContext;
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 2048;
-      analyser.connect(ctx.destination);
+      analyser.fftSize = 16384;
+      // Do not connect analyser to destination, it's just a passive visualizer endpoint!
       
       try {
         Tone.Destination.connect(analyser as any);
