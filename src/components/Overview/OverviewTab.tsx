@@ -1018,7 +1018,7 @@ export default function OverviewTab() {
                     node={node} 
                     isSelected={selectedNodeId === node.id}
                     onSelect={() => setSelectedNodeId(selectedNodeId === node.id ? null : node.id)}
-                    onNavigate={() => setActiveMainView(node.type as any)}
+                    onNavigate={() => setActiveMainView(node.type as any, node.id)}
                   />
                 </div>
               );
@@ -1144,14 +1144,14 @@ export default function OverviewTab() {
           >
             <button
               onClick={() => setRoutingMode('physical')}
-              className={`px-1.5 py-3 text-xs font-semibold tracking-wider rounded transition-colors ${routingMode === 'physical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+              className={`px-1 py-2 text-[9px] font-semibold tracking-wider rounded transition-colors ${routingMode === 'physical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
               title="Physical cable routing"
             >
               PHYSICAL
             </button>
             <button
               onClick={() => setRoutingMode('logical')}
-              className={`px-1.5 py-3 text-xs font-semibold tracking-wider rounded transition-colors ${routingMode === 'logical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+              className={`px-1 py-2 text-[9px] font-semibold tracking-wider rounded transition-colors ${routingMode === 'logical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
               title="Logical MIDI routing"
             >
               LOGICAL

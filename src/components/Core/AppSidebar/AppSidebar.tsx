@@ -59,11 +59,9 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader className="relative flex flex-col items-center justify-center py-4 border-b border-border group-data-[collapsible=icon]:pt-14">
-        <Logo className="h-16 w-auto text-foreground mb-1 group-data-[collapsible=icon]:hidden" aria-label="Track(ster)" />
-        <LogoIcon className="hidden group-data-[collapsible=icon]:block h-8 w-auto text-foreground mb-0" aria-label="Track(ster)" />
-        <div className="flex items-center justify-center w-full group-data-[collapsible=icon]:hidden">
-          <span className="text-[10px] text-muted-foreground font-mono font-bold tracking-widest uppercase">v{pkg.version}</span>
-        </div>
+        <Logo className="h-24 w-auto text-foreground mb-1 group-data-[collapsible=icon]:hidden" aria-label="Track(ster)" />
+        <LogoIcon className="hidden group-data-[collapsible=icon]:block h-6 w-auto text-foreground mb-0" aria-label="Track(ster)" />
+
         {/* Collapse button — visible only when sidebar is expanded (not in icon mode). */}
         <button
           type="button"
@@ -190,6 +188,9 @@ export function AppSidebar() {
           >
             <Icons.Trash2 size={16} />
           </Button>
+        </div>
+        <div className="flex items-center justify-center w-full pt-1">
+          <span className="text-[10px] text-muted-foreground font-mono font-bold tracking-widest uppercase">v{pkg.version}</span>
         </div>
       </SidebarFooter>
 

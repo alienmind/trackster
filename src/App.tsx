@@ -223,17 +223,18 @@ export default function App() {
             {/* Main View Container - reserves doc-drawer width when a doc is open */}
             <DocAwareLayoutEffects />
             <DocAwareMainView>
-              {activeMainView === 'overview' ? (
-                <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
-              ) : activeMainView === 'soundtoys' ? (
+              <div className="flex-1 flex-col overflow-auto bg-neutral-900" style={{ display: activeMainView === 'overview' ? 'flex' : 'none' }}>
+                <OverviewTab />
+              </div>
+              {activeMainView === 'soundtoys' ? (
                 <SoundToysLayout />
-              ) : DeviceLayout ? (
+              ) : activeMainView !== 'overview' && DeviceLayout ? (
                 <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-muted-foreground">Loading device...</div>}>
                   <DeviceLayout />
                 </React.Suspense>
-              ) : (
+              ) : activeMainView !== 'overview' ? (
                 <WIPPage deviceId={activeMainView} />
-              )}
+              ) : null}
             </DocAwareMainView>
 
             <DocumentationDrawer />
