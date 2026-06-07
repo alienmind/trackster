@@ -4,7 +4,7 @@ import type { PageIndex, Notification, SampleFile } from '../types';
 
 interface UIState {
   activePage: PageIndex;
-  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys';
+  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys' | 'sequencer';
   activeNodeId: string | null;
   selectedPadIndex: number | null;
   selectedPads: number[];
@@ -39,7 +39,7 @@ interface UIState {
     destructive?: boolean;
   };
 
-  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys', nodeId?: string | null) => void;
+  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys' | 'sequencer', nodeId?: string | null) => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null, shiftKey?: boolean, ctrlKey?: boolean) => void;
   openCommitDialog: () => void;

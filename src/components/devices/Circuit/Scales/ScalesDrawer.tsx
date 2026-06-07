@@ -3,15 +3,13 @@ import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore'
 import { usePianoAudioStore } from '../../../../stores/usePianoAudioStore';
 import { SCALE_MODES, ROOT_PAD_NAMES } from './scalesData';
 import * as Icons from 'lucide-react';
-import PianoKeyboard from './PianoKeyboard';
+import PianoKeyboard from '../../../Core/PianoKeyboard/PianoKeyboard';
+import { getAllowedPads } from './scalesData';
 
 export default function ScalesDrawer() {
   const { 
     deviceMode, activeRootNote, activeScaleType, 
     scalesViewMode, setScalesViewMode,
-    previewSequence, setPreviewSequence,
-    previewLoop, setPreviewLoop,
-    previewArpMode, setPreviewArpMode,
     previewSustain, setPreviewSustain
   } = useCircuitTracksStore();
   const { isLoadingAudio, initAudio, stopPreview } = usePianoAudioStore();
@@ -59,75 +57,6 @@ export default function ScalesDrawer() {
     window.addEventListener('pointerup', onUp);
   };
 
-  const SEQ_OPTIONS = ['full', '1-3-5', '1-3-5-7-9', '1-3-5-7-9-11'] as const;
-  const seqIndex = SEQ_OPTIONS.indexOf((previewSequence as any) || 'full');
-  const seqTopPositions = ['4px', 'calc(33.33% - 2px)', 'calc(66.66% - 14px)', 'calc(100% - 20px)'];
-
-  const handleSeqDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const track = e.currentTarget;
-    track.setPointerCapture(e.pointerId);
-    const rect = track.getBoundingClientRect();
-    
-    const updateMode = (clientY: number) => {
-      let percent = (clientY - rect.top) / rect.height;
-      percent = Math.max(0, Math.min(1, percent));
-      const newIndex = Math.min(3, Math.floor(percent * 4));
-      setPreviewSequence(SEQ_OPTIONS[newIndex]!);
-    };
-    
-    updateMode(e.clientY);
-    
-    const onMove = (moveEvent: PointerEvent) => updateMode(moveEvent.clientY);
-    const onUp = () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-  };
-
-  const ARP_OPTIONS = ['up', 'up-down', 'random'] as const;
-  const arpIndex = ARP_OPTIONS.indexOf((previewArpMode as any) || 'up');
-  const arpTopPositions = ['4px', 'calc(50% - 8px)', 'calc(100% - 20px)'];
-
-  const handleArpDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const track = e.currentTarget;
-    track.setPointerCapture(e.pointerId);
-    const rect = track.getBoundingClientRect();
-    const updateMode = (clientY: number) => {
-      let percent = (clientY - rect.top) / rect.height;
-      percent = Math.max(0, Math.min(1, percent));
-      const newIndex = Math.min(2, Math.floor(percent * 3));
-      setPreviewArpMode(ARP_OPTIONS[newIndex]!);
-    };
-    updateMode(e.clientY);
-    const onMove = (moveEvent: PointerEvent) => updateMode(moveEvent.clientY);
-    const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
-    window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp);
-  };
-
-  const LOOP_OPTIONS = ['one-off', 'continuous'] as const;
-  const loopIndex = LOOP_OPTIONS.indexOf((previewLoop as any) || 'one-off');
-  const loopTopPositions = ['4px', 'calc(100% - 20px)'];
-
-  const handleLoopDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const track = e.currentTarget;
-    track.setPointerCapture(e.pointerId);
-    const rect = track.getBoundingClientRect();
-    const updateMode = (clientY: number) => {
-      let percent = (clientY - rect.top) / rect.height;
-      percent = Math.max(0, Math.min(1, percent));
-      const newIndex = Math.min(1, Math.floor(percent * 2));
-      setPreviewLoop(LOOP_OPTIONS[newIndex]!);
-    };
-    updateMode(e.clientY);
-    const onMove = (moveEvent: PointerEvent) => updateMode(moveEvent.clientY);
-    const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
-    window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp);
-  };
 
 
   return (
@@ -167,64 +96,7 @@ export default function ScalesDrawer() {
         </div>
       </div>
 
-      {/* Right Vertical Toggles */}
-      <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-6">
-        
-        {/* Sequence Toggle */}
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col justify-between h-28 py-0.5 text-right">
-             <span onClick={() => setPreviewSequence('full')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewSequence === 'full' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>FULL</span>
-             <span onClick={() => setPreviewSequence('1-3-5')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewSequence === '1-3-5' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>1-3-5</span>
-             <span onClick={() => setPreviewSequence('1-3-5-7-9')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewSequence === '1-3-5-7-9' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>1-3-5-7-9</span>
-             <span onClick={() => setPreviewSequence('1-3-5-7-9-11')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewSequence === '1-3-5-7-9-11' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>1-3-5-7-9-11</span>
-          </div>
-          <div 
-            className="relative w-6 h-28 bg-neutral-800/80 rounded-full border border-white/5 shadow-inner p-1 cursor-ns-resize touch-none"
-            onPointerDown={handleSeqDrag}
-          >
-             <div 
-               className="absolute left-1 w-4 h-4 bg-pink-500 rounded-full shadow-md transition-all duration-300 ease-out"
-               style={{ top: seqTopPositions[seqIndex] }}
-             />
-          </div>
-        </div>
 
-        {/* Loop Toggle */}
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col justify-between h-28 py-0.5 text-right">
-             <span onClick={() => setPreviewLoop('one-off')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewLoop === 'one-off' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>ONE-OFF</span>
-             <span onClick={() => setPreviewLoop('continuous')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewLoop === 'continuous' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>LOOP</span>
-          </div>
-          <div 
-            className="relative w-6 h-28 bg-neutral-800/80 rounded-full border border-white/5 shadow-inner p-1 cursor-ns-resize touch-none"
-            onPointerDown={handleLoopDrag}
-          >
-             <div 
-               className="absolute left-1 w-4 h-4 bg-pink-500 rounded-full shadow-md transition-all duration-300 ease-out"
-               style={{ top: loopTopPositions[loopIndex] }}
-             />
-          </div>
-        </div>
-
-        {/* Arp Mode Toggle */}
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col justify-between h-28 py-0.5 text-right">
-             <span onClick={() => setPreviewArpMode('up')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewArpMode === 'up' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>UP</span>
-             <span onClick={() => setPreviewArpMode('up-down')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewArpMode === 'up-down' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>UP-DOWN</span>
-             <span onClick={() => setPreviewArpMode('random')} className={`text-[9px] font-bold cursor-pointer transition-colors ${previewArpMode === 'random' ? 'text-pink-400 drop-shadow' : 'text-neutral-500 hover:text-neutral-300'}`}>RANDOM</span>
-          </div>
-          <div 
-            className="relative w-6 h-28 bg-neutral-800/80 rounded-full border border-white/5 shadow-inner p-1 cursor-ns-resize touch-none"
-            onPointerDown={handleArpDrag}
-          >
-             <div 
-               className="absolute left-1 w-4 h-4 bg-pink-500 rounded-full shadow-md transition-all duration-300 ease-out"
-               style={{ top: arpTopPositions[arpIndex] }}
-             />
-          </div>
-        </div>
-
-      </div>
       {scaleData && (
         <div className="flex flex-col items-center justify-start text-center max-w-[500px] mx-auto w-full h-full pt-6 relative">
           
@@ -253,7 +125,10 @@ export default function ScalesDrawer() {
             ) : (
               <div className="flex flex-col items-center gap-6 w-full">
                 <div className="w-full flex justify-center">
-                  <PianoKeyboard />
+                  <PianoKeyboard 
+                    activeRootNote={activeRootNote} 
+                    allowedPads={getAllowedPads(activeRootNote, activeScaleType)}
+                  />
                 </div>
                 
                 {/* Sustain Toggle */}

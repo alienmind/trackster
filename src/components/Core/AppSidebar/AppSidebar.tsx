@@ -129,6 +129,16 @@ export function AppSidebar() {
                   <SidebarMenu>
                     <SidebarMenuItem>
                       <SidebarMenuButton 
+                        isActive={activeMainView === 'sequencer'}
+                        onClick={() => setActiveMainView('sequencer')}
+                        tooltip="Global Sequencer"
+                      >
+                        <Icons.ListOrdered className="w-4 h-4" />
+                        <span>Sequencer</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
                         isActive={isOscilloscopeOpen}
                         onClick={() => setOscilloscopeOpen(!isOscilloscopeOpen)}
                         tooltip="Toggle Oscilloscope"

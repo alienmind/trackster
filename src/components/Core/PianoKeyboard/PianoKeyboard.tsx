@@ -1,7 +1,5 @@
 import { memo, useState } from 'react';
-import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
-import { usePianoAudioStore } from '../../../../stores/usePianoAudioStore';
-import { getAllowedPads } from './scalesData';
+import { usePianoAudioStore } from '../../../stores/usePianoAudioStore';
 
 const PIANO_KEYS = [
   { note: 'C', type: 'white', padIndex: 8 },
@@ -27,7 +25,7 @@ function PianoKey({
 }) {
   const [isPressed, setIsPressed] = useState(false);
   const { playNote, stopNote } = usePianoAudioStore();
-  const isPlaying = usePianoAudioStore(s => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i));
+  const isPlaying = usePianoAudioStore((s: any) => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i));
 
   const handlePress = (e: React.PointerEvent) => {
     if (!isAllowed) return;
@@ -101,25 +99,35 @@ function PianoKey({
   }
 }
 
-export default memo(function PianoKeyboard() {
-  const { activeRootNote, activeScaleType } = useCircuitTracksStore();
-  const allowedPads = getAllowedPads(activeRootNote, activeScaleType);
+export interface PianoKeyboardProps {
+  allowedPads: number[];
+  activeRootNote: number;
+  selectedNoteIndex?: number | null; // Provide an index (0-11) if a note is currently selected
+  onKeyClick?: (noteIndex: number, noteName: string) => void;
+}
 
+export default memo(function PianoKeyboard({ 
+  allowedPads, 
+  activeRootNote,
+  selectedNoteIndex = null,
+  onKeyClick
+}: PianoKeyboardProps) {
   return (
     <div className="relative flex justify-center items-start mt-2 h-[120px] select-none touch-none">
       {PIANO_KEYS.map((key, i) => {
         const whiteIndex = PIANO_KEYS.slice(0, i).filter(k => k.type === 'white').length;
         
         return (
-          <PianoKey
-            key={key.note}
-            note={key.note}
-            type={key.type}
-            i={i}
-            whiteIndex={whiteIndex}
-            isAllowed={allowedPads.includes(key.padIndex)}
-            isActiveRoot={key.padIndex === activeRootNote}
-          />
+          <div key={key.note} onClick={() => onKeyClick?.(i, key.note)}>
+            <PianoKey
+              note={key.note}
+              type={key.type}
+              i={i}
+              whiteIndex={whiteIndex}
+              isAllowed={allowedPads.includes(key.padIndex)}
+              isActiveRoot={key.padIndex === activeRootNote || i === selectedNoteIndex}
+            />
+          </div>
         );
       })}
     </div>

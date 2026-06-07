@@ -29,6 +29,7 @@ import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
 import { HARDWARE_LIBRARY } from './devices';
+import GlobalSequencer from './components/GlobalSequencer/GlobalSequencer';
 
 // Floating hamburger button that opens the sidebar on mobile/tablet,
 // and toggles the icon-collapsed sidebar on desktop. Hides itself when the
@@ -228,6 +229,8 @@ export default function App() {
               </div>
               {activeMainView === 'soundtoys' ? (
                 <SoundToysLayout />
+              ) : activeMainView === 'sequencer' ? (
+                <GlobalSequencer />
               ) : activeMainView !== 'overview' && DeviceLayout ? (
                 <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-muted-foreground">Loading device...</div>}>
                   <DeviceLayout />

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import { useSequencerStore } from '../../../stores/useSequencerStore';
 import { useOverviewStore } from '../../../stores/useOverviewStore';
@@ -47,26 +47,29 @@ const DocLink = ({ sectionId, children, className }: { sectionId: string, childr
 const globalS1Engines = new Map<string, any>();
 
 export default function RolandS1() {
-  const { isPlaying, togglePlaying, currentStep } = useSequencerStore();
+  const { isPlaying, togglePlaying, currentStep, tracks, toggleStep, patternSize } = useSequencerStore();
+  const s1Pattern = tracks['s1'] || [];
+  
+  const [page, setPage] = useState(0);
+  const maxPage = Math.max(0, Math.ceil(patternSize / 16) - 1);
+  const handlePageDown = () => setPage((p: number) => Math.max(0, p - 1));
+  const handlePageUp = () => setPage((p: number) => Math.min(maxPage, p + 1));
   const activeNodeId = useUIStore(s => s.activeNodeId);
   const updateNodeState = useOverviewStore(s => s.updateNodeState);
   
   const deviceState = useOverviewStore(s => activeNodeId ? s.nodes[activeNodeId]?.deviceState : null) || {};
 
   const defaultState = {
-    pattern: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
     mixer: { saw: 0.5, sqr: 0.0, sub: 0.5, noise: 0.0 },
     adsr: { a: 0.1, d: 0.2, s: 0.5, r: 0.2 },
     filter: { cutoff: 0.5, reso: 0.2, env: 0.5, lfo: 0.0 },
-    lfo: { rate: 0.5, wave: 0.0, osc: 0.0 }, // wave: 0=Tri, 0.25=Sqr, 0.5=Saw, 0.75=Rnd, 1=Noise
+    lfo: { rate: 0.5, wave: 0.0, osc: 0.0 },
     fx: { delay: 0.0, reverb: 0.0 },
     range: 0.5
   };
 
   const state = { ...defaultState, ...deviceState };
   
-  // We explicitly extract deeply nested defaults
-  const pattern = state.pattern;
   const mixer = { ...defaultState.mixer, ...(deviceState.mixer || {}) };
   const adsr = { ...defaultState.adsr, ...(deviceState.adsr || {}) };
   const filter = { ...defaultState.filter, ...(deviceState.filter || {}) };
@@ -74,7 +77,6 @@ export default function RolandS1() {
   const fx = { ...defaultState.fx, ...(deviceState.fx || {}) };
   const range = state.range;
 
-  const setPattern = (val: boolean[]) => { if(activeNodeId) updateNodeState(activeNodeId, { pattern: val }); };
   const setMixer = (val: any) => { if(activeNodeId) updateNodeState(activeNodeId, { mixer: val }); };
   const setAdsr = (val: any) => { if(activeNodeId) updateNodeState(activeNodeId, { adsr: val }); };
   const setFilter = (val: any) => { if(activeNodeId) updateNodeState(activeNodeId, { filter: val }); };
@@ -84,12 +86,7 @@ export default function RolandS1() {
   const nodesRef = useRef<any>(null);
   const loopRef = useRef<any>(null);
   
-  useEffect(() => {
-    if (activeNodeId) {
-      const engine = globalS1Engines.get(activeNodeId);
-      if (engine) engine.pattern = pattern;
-    }
-  }, [pattern, activeNodeId]);
+
 
   useEffect(() => {
     if (activeNodeId) {
@@ -170,14 +167,27 @@ export default function RolandS1() {
     loopRef.current = new Tone.Loop((time) => {
       const e = globalS1Engines.get(activeNodeId);
       if (!e) return;
-      const p = e.pattern || [];
-      const s = step % 16;
-      const isActive = p[s];
+      
+      // Get the pattern dynamically from store
+      const p = useSequencerStore.getState().tracks['s1'] || [];
+      const currentPatternSize = useSequencerStore.getState().patternSize || 16;
+      
+      const s = step % currentPatternSize;
+      const isActive = p[s]?.active;
+      const noteOverride = p[s]?.noteOverride;
 
       if (isActive) {
         const range = e.range ?? 0.5;
         const octaveOffset = Math.round((range - 0.5) * 4);
-        const baseFreq = Tone.Frequency("C3").transpose(octaveOffset * 12).toFrequency();
+        
+        // Use override if available, else default to C3
+        let baseFreq;
+        if (noteOverride) {
+          baseFreq = Tone.Frequency(noteOverride + "3").transpose(octaveOffset * 12).toFrequency();
+        } else {
+          baseFreq = Tone.Frequency("C3").transpose(octaveOffset * 12).toFrequency();
+        }
+        
         oscSaw.frequency.setValueAtTime(baseFreq, time);
         oscSqr.frequency.setValueAtTime(baseFreq, time);
         oscSub.frequency.setValueAtTime(baseFreq / 2, time);
@@ -201,7 +211,6 @@ export default function RolandS1() {
         vcf, lfoNode, lfoOscScale, lfoFilterScale, lfoFilterOffset,
         delaySend, reverbSend, delay, reverb, dryNode, limiter,
         loop: loopRef.current,
-        pattern: [],
         range: 0.5
     });
     } // end if !globalS1Engines.has
@@ -267,10 +276,11 @@ export default function RolandS1() {
   }, [mixer, adsr, filter, lfo, fx]);
 
   const handlePadDown = (idx: number) => {
+    const globalIdx = page * 16 + idx;
+    if (globalIdx >= patternSize) return; // Out of bounds of pattern
+    
     if (isPlaying) {
-      const newPattern = [...pattern];
-      newPattern[idx] = !newPattern[idx];
-      setPattern(newPattern);
+      toggleStep('s1', globalIdx);
     } else {
       if (!nodesRef.current) return;
       const octaveOffset = Math.round((range - 0.5) * 4);
@@ -291,7 +301,12 @@ export default function RolandS1() {
   };
 
   const getPadGlowingState = (idx: number) => {
-    if (isPlaying) return currentStep === idx || pattern[idx];
+    const globalIdx = page * 16 + idx;
+    if (globalIdx >= patternSize) return false;
+    
+    if (isPlaying) {
+      return currentStep === globalIdx || s1Pattern[globalIdx]?.active;
+    }
     return false;
   };
   const deviceContent = (
@@ -425,8 +440,8 @@ export default function RolandS1() {
             {/* Col 1 */}
             <div className="flex justify-center"><DocLink sectionId="btn-shift" className="w-full flex justify-center"><VerticalBtn label="SHIFT" /></DocLink></div>
             {/* Cols 2-3 (Piano Offset: 50% shifted right across gap) */}
-            <div className="flex justify-center translate-x-[calc(50%+0.25rem)]"><DocLink sectionId="btn-octave" className="w-full flex justify-center"><VerticalBtn label="OCT-" /></DocLink></div>
-            <div className="flex justify-center translate-x-[calc(50%+0.25rem)]"><DocLink sectionId="btn-octave" className="w-full flex justify-center"><VerticalBtn label="OCT+" /></DocLink></div>
+            <div className="flex justify-center translate-x-[calc(50%+0.25rem)]"><DocLink sectionId="btn-octave" className="w-full flex justify-center"><VerticalBtn label="OCT-" bottomLabel="< PAGE" onClick={handlePageDown} /></DocLink></div>
+            <div className="flex justify-center translate-x-[calc(50%+0.25rem)]"><DocLink sectionId="btn-octave" className="w-full flex justify-center"><VerticalBtn label="OCT+" bottomLabel="PAGE >" onClick={handlePageUp} /></DocLink></div>
             {/* Col 4 (Empty) */} <div />
             {/* Cols 5-7 */}
             <div className="flex justify-center translate-x-[calc(50%+0.25rem)]"><DocLink sectionId="pad-pwm-depth" className="w-full flex justify-center"><VerticalBtn label="PWM" bottomLabel="DEPTH" /></DocLink></div>
