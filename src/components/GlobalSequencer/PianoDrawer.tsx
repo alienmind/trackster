@@ -2,6 +2,7 @@
 import PianoKeyboard from '../Core/PianoKeyboard/PianoKeyboard';
 import { useCircuitTracksStore } from '../../stores/useCircuitTracksStore';
 import { getAllowedPads } from '../devices/Circuit/Scales/scalesData';
+import { Button } from '../Core/ui/button';
 
 interface PianoDrawerProps {
   isOpen: boolean;
@@ -19,20 +20,21 @@ export default function PianoDrawer({ isOpen, onClose, onNoteSelect, selectedNot
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 flex flex-col items-center justify-end bg-neutral-900 border-t border-neutral-700 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] rounded-t-2xl pt-4 pb-6 px-8"
+      className="fixed bottom-0 left-0 right-0 z-50 flex flex-col items-center justify-end bg-card border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] rounded-t-2xl pt-4 pb-6 px-8"
       style={{
         transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
         pointerEvents: isOpen ? 'auto' : 'none',
       }}
     >
       <div className="flex justify-between items-center w-full max-w-2xl mb-4">
-        <h3 className="text-white font-bold text-lg">Select Note Override</h3>
-        <button 
+        <h3 className="text-card-foreground font-bold text-lg">Select Note Override</h3>
+        <Button 
+          variant="outline"
+          size="sm"
           onClick={onClose}
-          className="text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 px-3 py-1 rounded text-sm transition-colors"
         >
           Close
-        </button>
+        </Button>
       </div>
 
       <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
@@ -51,20 +53,22 @@ export default function PianoDrawer({ isOpen, onClose, onNoteSelect, selectedNot
           />
         </div>
         
-        <div className="text-neutral-400 text-sm h-6">
+        <div className="text-muted-foreground text-sm h-6">
           {selectedNoteName ? (
-             <span>Overriding step with <strong className="text-pink-400">{selectedNoteName}</strong></span>
+             <span>Overriding step with <strong className="text-primary">{selectedNoteName}</strong></span>
           ) : (
              <span>Click a key to override the sequence note</span>
           )}
         </div>
         
-        <button 
+        <Button 
+          variant="ghost"
+          size="sm"
           onClick={() => onNoteSelect(null)}
-          className="text-neutral-300 hover:text-pink-400 text-xs transition-colors"
+          className="text-muted-foreground hover:text-primary transition-colors"
         >
           Clear Override
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useUIStore } from '../../../stores/useUIStore';
 import { useCircuitTracksStore } from '../../../stores/useCircuitTracksStore';
 import { formatBytes } from '../../../utils/formatters';
 import { TagBadge } from '../../Core/TagBadge/TagBadge';
+import { Button } from '../ui/button';
 import * as Icons from 'lucide-react';
 
 export default function FileInspector() {
@@ -69,17 +70,18 @@ export default function FileInspector() {
   return (
     <div className="flex flex-col h-full bg-card rounded border border-border p-2 text-xs overflow-y-auto">
       <div className="flex items-center gap-2 mb-2">
-        <button
+        <Button
+          size="icon"
           onClick={() => {
             const indexToPlay = (selectedPadIndex !== null && selectedPadIndex !== -1) ? selectedPadIndex : -1;
             useCircuitTracksStore.getState().playSlot(indexToPlay, selectedFile.fileHandle);
             useUIStore.getState().setOscilloscopeOpen(true);
           }}
-          className="flex-shrink-0 p-1.5 bg-primary/20 hover:bg-primary/40 text-primary rounded-full transition-colors"
+          className="flex-shrink-0 h-6 w-6 bg-primary/20 hover:bg-primary/40 text-primary rounded-full transition-colors"
           title="Play sample"
         >
           <Icons.Play size={14} className="ml-0.5" />
-        </button>
+        </Button>
 
         <div 
           className="break-all cursor-pointer hover:bg-muted/50 p-1 rounded -ml-1 transition-colors flex-1 min-w-0" 
@@ -139,8 +141,9 @@ export default function FileInspector() {
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Assign Tag</div>
         <div className="flex flex-wrap gap-1">
           {tags.map(tag => (
-            <button
+            <Button
               key={tag.id}
+              variant="ghost"
               onClick={() => {
                 if (selectedPadIndex !== null && selectedPadIndex !== -1) {
                   assignTagToSlot(tag.id, selectedPadIndex);
@@ -148,11 +151,11 @@ export default function FileInspector() {
                   useUIStore.getState().setSelectedFile({ ...selectedFile, tag: tag.id });
                 }
               }}
-              className={`p-1 rounded transition-colors ${fileTag?.id === tag.id ? 'ring-2 ring-primary ring-offset-1 ring-offset-card' : 'opacity-70 hover:opacity-100'}`}
+              className={`h-auto p-1 rounded transition-colors ${fileTag?.id === tag.id ? 'ring-2 ring-primary ring-offset-1 ring-offset-card' : 'opacity-70 hover:opacity-100 hover:bg-transparent'}`}
               title={tag.label}
             >
               <TagBadge tag={tag} compact={true} />
-            </button>
+            </Button>
           ))}
         </div>
       </div>

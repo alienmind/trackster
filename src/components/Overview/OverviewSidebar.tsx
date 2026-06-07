@@ -302,13 +302,15 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                         ))}
                       </select>
                     </div>
-                    <button
-                      className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all h-6 w-6"
                       onClick={(e) => { e.stopPropagation(); deleteConnection(c.id); }}
                       title="Delete connection"
                     >
                       <Icons.Trash2 size={12} />
-                    </button>
+                    </Button>
                   </div>
                 );
               })}
@@ -567,17 +569,18 @@ export default function OverviewSidebar({ onClose }: OverviewSidebarProps) {
                     const dirLabel = dir === 'out' ? 'OUT' : dir === 'in' ? 'IN' : 'I/O';
                     const dirColor = dir === 'out' ? 'text-cyan-400' : dir === 'in' ? 'text-emerald-400' : 'text-amber-400';
                     return (
-                      <button
+                      <Button
                         key={p.id}
+                        variant="outline"
                         onClick={() => { setPendingPortId(p.id); setPendingRemotePortId(null); }}
-                        className={`flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-left transition ${pendingPortId === p.id ? 'border-cyan-500/60 bg-cyan-950/30' : 'border-border hover:border-foreground/30 bg-muted/30'}`}
+                        className={`h-auto flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-left transition w-full ${pendingPortId === p.id ? 'border-cyan-500/60 bg-cyan-950/30' : 'border-border hover:border-foreground/30 bg-muted/30'}`}
                       >
-                        <span className="flex flex-col min-w-0">
+                        <span className="flex flex-col min-w-0 text-left">
                           <span className="text-xs font-medium text-foreground truncate">{p.label ?? humanisePortId(p.id)}</span>
                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.type}</span>
                         </span>
                         <span className={`text-[10px] font-bold ${dirColor}`}>{dirLabel}</span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>

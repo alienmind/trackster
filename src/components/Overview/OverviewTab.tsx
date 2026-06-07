@@ -841,13 +841,15 @@ export default function OverviewTab() {
                           title={`Rename "${p.name}" (Right-click to copy JSON)`}>
                           <Icons.LayoutGrid size={14} className="mr-2 text-muted-foreground" /> {p.name}
                         </Button>
-                        <button
-                          className="opacity-0 group-hover/row:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="opacity-0 group-hover/row:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-6 w-6"
                           onClick={() => setDeleteProfileId(p.id)}
                           title="Delete profile"
                         >
                           <Icons.Trash2 size={12} />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -1047,15 +1049,16 @@ export default function OverviewTab() {
                 <div className="bg-card/90 backdrop-blur border border-border/60 rounded-lg shadow-lg flex flex-col w-[200px] overflow-hidden">
                   <div className="bg-muted p-2 flex justify-between items-center cursor-move border-b border-border/50">
                     <h3 className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Cable Legend</h3>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); persistLegendCell({ ...legendCell, collapsed: !legendCell.collapsed }); }}
                       title={legendCell.collapsed ? 'Expand legend' : 'Collapse legend'}
-                      className="text-muted-foreground hover:text-foreground transition"
+                      className="text-muted-foreground hover:text-foreground h-6 w-6"
                     >
                       {legendCell.collapsed ? <Icons.ChevronDown size={14} /> : <Icons.ChevronUp size={14} />}
-                    </button>
+                    </Button>
                   </div>
                   {!legendCell.collapsed && (
                     <div className="flex-1 overflow-auto px-3 py-2">
@@ -1142,20 +1145,22 @@ export default function OverviewTab() {
             className="flex bg-card/90 backdrop-blur border border-border/60 rounded-lg p-0.5 select-none shadow-lg gap-0.5"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
-            <button
+            <Button
+              variant={routingMode === 'physical' ? 'secondary' : 'ghost'}
               onClick={() => setRoutingMode('physical')}
-              className={`px-1 py-2 text-[9px] font-semibold tracking-wider rounded transition-colors ${routingMode === 'physical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+              className={`h-auto px-1 py-2 text-[9px] font-semibold tracking-wider rounded ${routingMode === 'physical' ? 'text-primary' : 'text-muted-foreground'}`}
               title="Physical cable routing"
             >
               PHYSICAL
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={routingMode === 'logical' ? 'secondary' : 'ghost'}
               onClick={() => setRoutingMode('logical')}
-              className={`px-1 py-2 text-[9px] font-semibold tracking-wider rounded transition-colors ${routingMode === 'logical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+              className={`h-auto px-1 py-2 text-[9px] font-semibold tracking-wider rounded ${routingMode === 'logical' ? 'text-primary' : 'text-muted-foreground'}`}
               title="Logical MIDI routing"
             >
               LOGICAL
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1189,21 +1194,25 @@ export default function OverviewTab() {
 
         {/* Zoom controls — bottom-right */}
         <div className="absolute bottom-4 right-4 z-40 flex items-center gap-1 bg-card/90 backdrop-blur border border-border/60 rounded-lg p-1 pointer-events-auto">
-          <button
-            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
             disabled={effectiveGridSize >= 10}
             onClick={() => setGridSize(Math.min(10, effectiveGridSize + 1))}
             title="Zoom out (larger grid)"
-          >−</button>
+          >−</Button>
           <span className="text-[10px] font-mono w-12 text-center text-muted-foreground select-none">
             {effectiveGridSize}×{effectiveGridSize}
           </span>
-          <button
-            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
             disabled={effectiveGridSize <= minGridSize}
             onClick={() => setGridSize(Math.max(minGridSize, effectiveGridSize - 1))}
             title="Zoom in (smaller grid)"
-          >+</button>
+          >+</Button>
         </div>
 
       </div>

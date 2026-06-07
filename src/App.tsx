@@ -30,6 +30,7 @@ import WIPPage from './components/Core/WIPPage/WIPPage';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
 import { HARDWARE_LIBRARY } from './devices';
 import GlobalSequencer from './components/GlobalSequencer/GlobalSequencer';
+import { Button } from './components/Core/ui/button';
 
 // Floating hamburger button that opens the sidebar on mobile/tablet,
 // and toggles the icon-collapsed sidebar on desktop. Hides itself when the
@@ -76,14 +77,15 @@ function FloatingMenuButton() {
   const Icon = state === 'expanded' ? Icons.PanelLeftClose : Icons.Menu;
   
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="icon"
       aria-label="Toggle menu"
       onClick={toggleSidebar}
-      className="fixed top-2 left-1.5 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/85 backdrop-blur text-foreground shadow-lg hover:bg-accent hover:text-accent-foreground active:scale-95 transition"
+      className="fixed top-2 left-1.5 z-50 flex h-9 w-9 rounded-lg bg-background/85 backdrop-blur shadow-lg active:scale-95 transition"
     >
       <Icon className="h-5 w-5" />
-    </button>
+    </Button>
   );
 }
 
