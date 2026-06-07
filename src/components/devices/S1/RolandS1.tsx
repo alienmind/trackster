@@ -48,13 +48,16 @@ const globalS1Engines = new Map<string, any>();
 
 export default function RolandS1() {
   const { isPlaying, togglePlaying, currentStep, tracks, trackAssignments, toggleStep, patternSize } = useSequencerStore();
-  const assignedTrackId = Object.keys(trackAssignments).find(tid => trackAssignments[tid] === activeNodeId);
+  const activeNodeId = useUIStore(s => s.activeNodeId);
+  const assignedTrackId = Object.keys(trackAssignments).find(tid => {
+    const assignment = trackAssignments[tid];
+    return assignment && activeNodeId && assignment.startsWith(`${activeNodeId}:`);
+  });
   const s1Pattern = assignedTrackId ? tracks[assignedTrackId] || [] : [];
   const [page, setPage] = useState(0);
   const maxPage = Math.max(0, Math.ceil(patternSize / 16) - 1);
   const handlePageDown = () => setPage((p: number) => Math.max(0, p - 1));
   const handlePageUp = () => setPage((p: number) => Math.min(maxPage, p + 1));
-  const activeNodeId = useUIStore(s => s.activeNodeId);
   const updateNodeState = useOverviewStore(s => s.updateNodeState);
   
   const deviceState = useOverviewStore(s => activeNodeId ? s.nodes[activeNodeId]?.deviceState : null) || {};

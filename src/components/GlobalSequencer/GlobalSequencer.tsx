@@ -6,6 +6,7 @@ import * as Icons from 'lucide-react';
 import { HARDWARE_LIBRARY } from '../../devices';
 import PianoDrawer from './PianoDrawer';
 import GenerateSequenceModal from './GenerateSequenceModal';
+import AddInstrumentModal from './AddInstrumentModal';
 import { Button } from '../Core/ui/button';
 
 const StepButton = ({ 
@@ -32,15 +33,15 @@ const StepButton = ({
         className={`w-10 h-10 rounded-md border flex items-center justify-center cursor-pointer transition-all duration-150 ${
           isActive 
             ? 'bg-cyan-500 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.6)]' 
-            : 'bg-neutral-800 border-neutral-700 hover:bg-neutral-700'
+            : 'bg-slate-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-700 hover:bg-slate-200 dark:hover:bg-neutral-700 shadow-sm'
         }`}
       >
-        <span className={`text-[10px] font-bold ${isActive ? 'text-cyan-900' : 'text-neutral-500'}`}>
+        <span className={`text-[10px] font-bold ${isActive ? 'text-cyan-900' : 'text-slate-500 dark:text-neutral-500'}`}>
           {index + 1}
         </span>
       </div>
       {noteOverride && (
-        <span className="absolute -bottom-4 text-[9px] font-bold text-pink-400 bg-neutral-900 px-1 rounded border border-pink-900">
+        <span className="absolute -bottom-4 text-[9px] font-bold text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-neutral-900 px-1 rounded border border-pink-300 dark:border-pink-900 z-10 whitespace-nowrap">
           {noteOverride}
         </span>
       )}
@@ -55,6 +56,7 @@ export default function GlobalSequencer() {
   
   const hasCircuitTracks = Object.values(overviewStore.nodes).some(n => n.type === 'circuit');
   const [generateTrackId, setGenerateTrackId] = useState<string | null>(null);
+  const [isAddInstrumentModalOpen, setIsAddInstrumentModalOpen] = useState(false);
 
   const [selectedStepForOverride, setSelectedStepForOverride] = useState<{ trackId: string, index: number } | null>(null);
 
@@ -69,7 +71,7 @@ export default function GlobalSequencer() {
 
   const deviceImages = import.meta.glob('../../devices/*/device.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 
-  const renderTrack = (trackId: string, defaultTitle: string, disabled: boolean = false) => {
+  const renderTrack = (trackId: string, disabled: boolean = false) => {
     const trackData = store.tracks[trackId];
     if (!trackData) return null;
 
@@ -106,7 +108,8 @@ export default function GlobalSequencer() {
     }
     
     // Assignment logic
-    const assignedNodeId = store.trackAssignments[trackId];
+    const assignedId = store.trackAssignments[trackId];
+    const [assignedNodeId, assignedChannelId] = assignedId ? assignedId.split(':') : [null, null];
     const assignedNode = assignedNodeId ? overviewStore.nodes[assignedNodeId] : null;
     let imageUrl = undefined;
     
@@ -131,22 +134,30 @@ export default function GlobalSequencer() {
             </div>
             
             <div className="flex flex-col">
-              <h3 className="text-xl font-bold text-card-foreground tracking-tight">{defaultTitle}</h3>
               <select 
-                className="bg-transparent text-xs font-bold text-cyan-400 focus:outline-none cursor-pointer hover:text-cyan-300"
-                value={assignedNodeId || ''}
+                className="bg-transparent text-xl font-bold text-card-foreground focus:outline-none cursor-pointer tracking-tight"
+                value={assignedId || ''}
                 onChange={(e) => store.setTrackAssignment(trackId, e.target.value || null)}
                 disabled={disabled}
               >
                 <option value="">No Instrument Assigned</option>
                 {Object.values(overviewStore.nodes)
                   .filter(n => n.type !== 'daw' && n.type !== 'flow8') // Filter out non-instruments
-                  .map(node => (
-                  <option key={node.id} value={node.id}>
-                    {HARDWARE_LIBRARY[node.type]?.longName || node.type} ({node.id.substring(0, 4)})
-                  </option>
-                ))}
+                  .map(node => {
+                    const blueprint = HARDWARE_LIBRARY[node.type];
+                    const modelName = blueprint?.model || node.type;
+                    
+                    if (node.midiTrackChannels) {
+                      return Object.keys(node.midiTrackChannels).map(channelKey => (
+                        <option key={`${node.id}:${channelKey}`} value={`${node.id}:${channelKey}`}>
+                          {modelName} ({channelKey})
+                        </option>
+                      ));
+                    }
+                    return null;
+                  })}
               </select>
+              <div className="text-xs text-muted-foreground mt-1">MIDI Out</div>
             </div>
           </div>
           
@@ -161,8 +172,19 @@ export default function GlobalSequencer() {
               Generate
             </Button>
             <div className="px-3 py-1 rounded bg-muted text-xs font-bold text-muted-foreground">
-              {assignedNode?.logicalInChannel ? `CH ${assignedNode.logicalInChannel}` : 'NO CH'}
+              {assignedNode && assignedChannelId && assignedNode.midiTrackChannels?.[assignedChannelId]
+                ? `CH ${assignedNode.midiTrackChannels[assignedChannelId].out || assignedNode.midiTrackChannels[assignedChannelId].in}` 
+                : 'NO CH'}
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors h-8 w-8 ml-2"
+              onClick={() => store.removeTrack(trackId)}
+              title="Remove Track"
+            >
+              <Icons.Trash2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
         <div className="pl-6">
@@ -215,17 +237,20 @@ export default function GlobalSequencer() {
           <strong>Hint:</strong> Left click to toggle step. Right click to override the specific note for a step.
         </div>
         
-        {renderTrack('s1', 'S1 Synthesizer', false)}
-        
-        {renderTrack('drums', 'Drum Sequencer (Coming Soon)', true)}
+        {Object.keys(store.tracks).map(trackId => (
+          <div key={trackId}>
+             {renderTrack(trackId, false)}
+          </div>
+        ))}
 
         <Button 
           variant="outline" 
           className="border-2 border-dashed h-32 flex flex-col items-center justify-center gap-2"
+          onClick={() => setIsAddInstrumentModalOpen(true)}
         >
           <Icons.PlusCircle className="w-8 h-8" />
           <span className="font-bold">Add Instrument Track</span>
-          <span className="text-xs">Assign a new sequence to a MIDI channel</span>
+          <span className="text-xs text-muted-foreground">Assign a new sequence to a MIDI channel</span>
         </Button>
       </div>
 
@@ -248,6 +273,11 @@ export default function GlobalSequencer() {
         isOpen={generateTrackId !== null} 
         onClose={() => setGenerateTrackId(null)} 
         trackId={generateTrackId || ''} 
+      />
+      
+      <AddInstrumentModal
+        isOpen={isAddInstrumentModalOpen}
+        onClose={() => setIsAddInstrumentModalOpen(false)}
       />
     </div>
   );

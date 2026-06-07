@@ -13,11 +13,14 @@ export interface SequencerState {
   
   patternSize: number; // Max 64
   
-  // Maps a trackId (e.g., 's1', 'drums') to an array of 64 StepData objects
+  // Maps a trackId (e.g., 'track_123') to an array of 64 StepData objects
   tracks: Record<string, StepData[]>;
   
-  // Maps a trackId to a canvas Node ID
+  // Maps a trackId to a composite string "nodeId:channelId"
   trackAssignments: Record<string, string | null>;
+
+  addTrack: (assignmentId: string) => void;
+  removeTrack: (trackId: string) => void;
 
   setPlaying: (playing: boolean) => Promise<void>;
   togglePlaying: () => Promise<void>;
@@ -40,18 +43,30 @@ export const useSequencerStore = create<SequencerState>((set, get) => ({
   
   patternSize: 16,
   
-  tracks: {
-    s1: createEmptyTrack(),
-    drums: createEmptyTrack()
-  },
+  tracks: {},
+  trackAssignments: {},
   
-  trackAssignments: {
-    s1: null,
-    drums: null
-  },
+  addTrack: (assignmentId: string) => set((state) => {
+    const trackId = `track_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    return {
+      tracks: { ...state.tracks, [trackId]: createEmptyTrack() },
+      trackAssignments: { ...state.trackAssignments, [trackId]: assignmentId }
+    };
+  }),
   
-  setTrackAssignment: (trackId, nodeId) => set((state) => ({
-    trackAssignments: { ...state.trackAssignments, [trackId]: nodeId }
+  removeTrack: (trackId: string) => set((state) => {
+    const newTracks = { ...state.tracks };
+    delete newTracks[trackId];
+    const newAssignments = { ...state.trackAssignments };
+    delete newAssignments[trackId];
+    return {
+      tracks: newTracks,
+      trackAssignments: newAssignments
+    };
+  }),
+  
+  setTrackAssignment: (trackId, assignmentId) => set((state) => ({
+    trackAssignments: { ...state.trackAssignments, [trackId]: assignmentId }
   })),
   
   setPlaying: async (playing: boolean) => {
