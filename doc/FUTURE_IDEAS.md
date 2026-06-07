@@ -27,6 +27,12 @@ Implement a robust configuration backup system to serialize all local user setti
   * An image of the gear will be added - LLM will generate an SVG optionally, but the image can still be used.
   * LLM would also generate a set of cable routings for the new gear as a default.
   * It will be added to the catalogue of available units.
+  
+### MIDI integration
+* USe the multi-track global sequencer for routing MIDI notes directly to the connected hardware.
+* The ability to also "listen to MIDI" and save the sequenced pattern from any connected MIDI device in the global sequencer.
+* MIDI files handling (import / export)
+* Clock synchronization to act as the master tempo for the actual hardware setup.
 
 ### Strudel.cc Integration
 Seamlessly integrate Strudel live-coding to merge your hardware setup with algorithmic music generation. This feature would include:
@@ -37,19 +43,9 @@ Seamlessly integrate Strudel live-coding to merge your hardware setup with algor
 * **Layout Syncing**: Save Strudel sketches alongside your DAWless hardware routing configurations to instantly recall entire studio states.
 * **Sequencer integration**: Translate sequences from/to the global sequencer
 
-### MIDI integration
-* USe the multi-track global sequencer for routing MIDI notes directly to the connected hardware.
-* The ability to also "listen to MIDI" and save the sequenced pattern from any connected MIDI device in the global sequencer.
-* MIDI files handling (import / export)
-* Clock synchronization to act as the master tempo for the actual hardware setup.
-
 ---
 
 ## Novation Circuit Tracks
-
-### Enhancements in the samples similarity search
-The current feature is very poor, we need to first cluster all sample types by what it is (this is usually hinted by the name). Kicks compare to kicks, Snares to snares. Now everything compares to everything.
-The algorithm should be more robust, we need to do spectral analysis and transients analysis. We have too many false positives
 
 ### Live MIDI Preview Feature
 The "Live Preview" module is a Web MIDI-powered interface for the "Trackster" web application. It allows users to remotely control a connected Novation Circuit Tracks via USB. The UI provides a track selector (Synth 1-2, MIDI 1-2, Drum 1-4) and a 64-pad grid. Clicking a pad automatically sends the specific MIDI protocol sequence to load that preset/sample on the hardware and immediately trigger a sound, simulating a physical pad press on the device.
@@ -68,12 +64,6 @@ Currently we can preview the samples on each bank, extend the ability to work wi
   * Synth 1 & Synth 2: PGM `0-63` (Ch 1/2) followed by Note `60` ON.
   * Drums 1-4: CC `8`, `18`, `44`, `50` (Ch 10) followed by Notes `60`, `62`, `64`, `65`.
   * MIDI 1 & MIDI 2: PGM `0-63` (Ch 3/4) followed by Note `60` ON.
-
-### Interactive Scales Visualizer
-Enable the Scales button functionality to explore musical scales dynamically within the UI.
-* **Visual Piano Keyboard**: Toggle the layout into a piano shape, highlighting which specific notes are valid within the currently selected scale (e.g., Phrygian, Dorian, etc.).
-* **Scale Explanations**: Provide textual information detailing what each specific scale mode is about and what kind of musical feeling or emotion it "evokes".
-* **Interactive Discovery**: Allow users to easily view different scale types and immediately see the theoretical mapping to understand how it operates.
 
 ---
 

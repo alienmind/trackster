@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import { useSequencerStore } from '../../../stores/useSequencerStore';
+import { getSequenceNoteForStep } from '../../GlobalSequencer/sequenceUtils';
 import { useOverviewStore } from '../../../stores/useOverviewStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import ScaleFit from '../../Core/ScaleFit/ScaleFit';
@@ -180,12 +181,13 @@ export default function RolandS1() {
         const range = e.range ?? 0.5;
         const octaveOffset = Math.round((range - 0.5) * 4);
         
-        // Use override if available, else default to C3
+        // Use override if available, else calculate from scale
         let baseFreq;
         if (noteOverride) {
           baseFreq = Tone.Frequency(noteOverride + "3").transpose(octaveOffset * 12).toFrequency();
         } else {
-          baseFreq = Tone.Frequency("C3").transpose(octaveOffset * 12).toFrequency();
+          const sequenceNote = getSequenceNoteForStep(s, useSequencerStore.getState());
+          baseFreq = Tone.Frequency((sequenceNote || "C") + "3").transpose(octaveOffset * 12).toFrequency();
         }
         
         oscSaw.frequency.setValueAtTime(baseFreq, time);

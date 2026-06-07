@@ -72,18 +72,17 @@ function FloatingMenuButton() {
   const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
   // Hide while the mobile sheet is open (the sheet has its own close button)
   if (isMobile && openMobile) return null;
-  // On desktop, only show when sidebar is collapsed to icons; on mobile/tablet,
-  // always show because the sidebar lives in a Sheet that needs an external trigger.
-  const visible = isMobile || state === 'collapsed';
-  if (!visible) return null;
+  
+  const Icon = state === 'expanded' ? Icons.PanelLeftClose : Icons.Menu;
+  
   return (
     <button
       type="button"
-      aria-label="Open menu"
+      aria-label="Toggle menu"
       onClick={toggleSidebar}
       className="fixed top-2 left-1.5 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/85 backdrop-blur text-foreground shadow-lg hover:bg-accent hover:text-accent-foreground active:scale-95 transition"
     >
-      <Icons.Menu className="h-5 w-5" />
+      <Icon className="h-5 w-5" />
     </button>
   );
 }

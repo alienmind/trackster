@@ -3,6 +3,7 @@ import { useSequencerStore } from '../../stores/useSequencerStore';
 import { useOverviewStore } from '../../stores/useOverviewStore';
 import { useUIStore } from '../../stores/useUIStore';
 import * as Icons from 'lucide-react';
+import { HARDWARE_LIBRARY } from '../../devices';
 import PianoDrawer from './PianoDrawer';
 
 const StepButton = ({ 
@@ -63,7 +64,9 @@ export default function GlobalSequencer() {
     setSelectedStepForOverride({ trackId, index });
   };
 
-  const renderTrack = (trackId: string, title: string, disabled: boolean = false) => {
+  const deviceImages = import.meta.glob('../../devices/*/device.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+
+  const renderTrack = (trackId: string, defaultTitle: string, disabled: boolean = false) => {
     const trackData = store.tracks[trackId];
     if (!trackData) return null;
 
@@ -98,13 +101,56 @@ export default function GlobalSequencer() {
         </div>
       );
     }
+    
+    // Assignment logic
+    const assignedNodeId = store.trackAssignments[trackId];
+    const assignedNode = assignedNodeId ? overviewStore.nodes[assignedNodeId] : null;
+    let imageUrl = undefined;
+    
+    if (assignedNode) {
+      const blueprint = HARDWARE_LIBRARY[assignedNode.type];
+      const assetFolder = blueprint?.assetFolder || assignedNode.type;
+      const imageKey = Object.keys(deviceImages).find(k => k.includes(`/${assetFolder}/`));
+      imageUrl = imageKey ? deviceImages[imageKey] : undefined;
+    }
 
     return (
       <div className={`bg-neutral-900 border border-neutral-800 rounded-xl p-6 ${disabled ? 'opacity-50 grayscale' : ''}`}>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+          <div className="flex items-center gap-4">
+            {/* Device Image Preview */}
+            <div className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
+              {imageUrl ? (
+                <img src={imageUrl} alt="Device Preview" className="w-full h-full object-contain p-1 drop-shadow-lg" />
+              ) : (
+                <Icons.Box className="w-5 h-5 text-neutral-600" />
+              )}
+            </div>
+            
+            <div className="flex flex-col">
+              <h3 className="text-xl font-bold text-white tracking-tight">{defaultTitle}</h3>
+              <select 
+                className="bg-transparent text-xs font-bold text-cyan-400 focus:outline-none cursor-pointer hover:text-cyan-300"
+                value={assignedNodeId || ''}
+                onChange={(e) => store.setTrackAssignment(trackId, e.target.value || null)}
+                disabled={disabled}
+              >
+                <option value="">No Instrument Assigned</option>
+                {Object.values(overviewStore.nodes)
+                  .filter(n => n.type !== 'daw' && n.type !== 'flow8') // Filter out non-instruments
+                  .map(node => (
+                  <option key={node.id} value={node.id}>
+                    {HARDWARE_LIBRARY[node.type]?.longName || node.type} ({node.id.substring(0, 4)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
           <div className="flex gap-2">
-            <div className="px-3 py-1 rounded bg-neutral-800 text-xs font-bold text-neutral-400">CH 1</div>
+            <div className="px-3 py-1 rounded bg-neutral-800 text-xs font-bold text-neutral-400">
+              {assignedNode?.logicalInChannel ? `CH ${assignedNode.logicalInChannel}` : 'NO CH'}
+            </div>
           </div>
         </div>
         <div className="pl-6">

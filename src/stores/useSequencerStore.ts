@@ -6,7 +6,7 @@ export type StepData = {
   noteOverride?: string;
 };
 
-interface SequencerState {
+export interface SequencerState {
   isPlaying: boolean;
   bpm: number;
   currentStep: number;
@@ -19,11 +19,16 @@ interface SequencerState {
   
   // Maps a trackId (e.g., 's1', 'drums') to an array of 64 StepData objects
   tracks: Record<string, StepData[]>;
+  
+  // Maps a trackId to a canvas Node ID
+  trackAssignments: Record<string, string | null>;
 
   setPlaying: (playing: boolean) => Promise<void>;
   togglePlaying: () => Promise<void>;
   setBpm: (bpm: number) => void;
   setCurrentStep: (step: number) => void;
+  
+  setTrackAssignment: (trackId: string, nodeId: string | null) => void;
   
   setStep: (trackId: string, stepIndex: number, active: boolean, noteOverride?: string) => void;
   toggleStep: (trackId: string, stepIndex: number) => void;
@@ -51,6 +56,15 @@ export const useSequencerStore = create<SequencerState>((set, get) => ({
     s1: createEmptyTrack(),
     drums: createEmptyTrack()
   },
+  
+  trackAssignments: {
+    s1: null,
+    drums: null
+  },
+  
+  setTrackAssignment: (trackId, nodeId) => set((state) => ({
+    trackAssignments: { ...state.trackAssignments, [trackId]: nodeId }
+  })),
   
   setPlaying: async (playing: boolean) => {
     if (playing) {
