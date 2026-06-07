@@ -173,10 +173,9 @@ export default function RolandS1() {
       
       // Get the pattern dynamically from store
       const { tracks, trackAssignments, patternSize } = useSequencerStore.getState();
-      const currentActiveNodeId = useUIStore.getState().activeNodeId;
       const assignedTrackId = Object.keys(trackAssignments).find(tid => {
         const a = trackAssignments[tid];
-        return a && currentActiveNodeId && a.startsWith(`${currentActiveNodeId}:`);
+        return a && activeNodeId && a.startsWith(`${activeNodeId}:`);
       });
       const p = assignedTrackId ? tracks[assignedTrackId] || [] : [];
       const currentPatternSize = patternSize || 16;
@@ -184,6 +183,8 @@ export default function RolandS1() {
       const s = step % currentPatternSize;
       const isActive = p[s]?.active;
       const noteOverride = p[s]?.noteOverride;
+      
+      console.log("S1 Loop tick! activeNodeId:", activeNodeId, "isActive:", isActive, "assignedTrackId:", assignedTrackId, "step:", s);
 
       if (isActive) {
         const range = e.range ?? 0.5;
@@ -203,10 +204,6 @@ export default function RolandS1() {
         env.triggerAttackRelease("16n", time);
         filterEnvNode.triggerAttackRelease("16n", time);
       }
-      
-      Tone.Draw.schedule(() => {
-        useSequencerStore.getState().setCurrentStep(s);
-      }, time);
       
       step++;
     }, "16n");
@@ -284,7 +281,8 @@ export default function RolandS1() {
     
   }, [mixer, adsr, filter, lfo, fx]);
 
-  const handlePadDown = (idx: number) => {
+  const handlePadDown = async (idx: number) => {
+    await Tone.start();
     const globalIdx = page * 16 + idx;
     if (globalIdx >= patternSize) return; // Out of bounds of pattern
     

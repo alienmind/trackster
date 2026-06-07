@@ -13,12 +13,14 @@ const StepButton = ({
   active, 
   noteOverride, 
   index, 
+  isCurrent,
   onClick,
   onContextMenu
 }: { 
   active: boolean, 
   noteOverride?: string, 
   index: number, 
+  isCurrent: boolean,
   onClick: () => void,
   onContextMenu: (e: React.MouseEvent) => void
 }) => {
@@ -30,13 +32,22 @@ const StepButton = ({
       onContextMenu={onContextMenu}
     >
       <div 
-        className={`w-10 h-10 rounded-md border flex items-center justify-center cursor-pointer transition-all duration-150 ${
+        className={`w-10 h-10 rounded-md border flex items-center justify-center cursor-pointer transition-all duration-150 relative ${
           isActive 
-            ? 'bg-cyan-500 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.6)]' 
-            : 'bg-slate-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-700 hover:bg-slate-200 dark:hover:bg-neutral-700 shadow-sm'
-        }`}
+            ? 'bg-cyan-500 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.6)] text-cyan-950' 
+            : 'bg-slate-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-700 hover:bg-slate-200 dark:hover:bg-neutral-700 shadow-sm text-slate-500 dark:text-neutral-500'
+        } ${isCurrent ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 ring-offset-background scale-105 z-10' : ''}`}
       >
-        <span className={`text-[10px] font-bold ${isActive ? 'text-cyan-900' : 'text-slate-500 dark:text-neutral-500'}`}>
+        {/* LED Indicator */}
+        <div className={`absolute top-1 w-1.5 h-1.5 rounded-full ${
+          isCurrent 
+            ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
+            : isActive 
+              ? 'bg-cyan-300' 
+              : 'bg-transparent'
+        }`} />
+
+        <span className={`text-[10px] font-bold ${isActive ? 'text-cyan-900' : 'text-slate-500 dark:text-neutral-500'} ${isCurrent ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
           {index + 1}
         </span>
       </div>
@@ -91,6 +102,7 @@ export default function GlobalSequencer() {
               active={step?.active || false} 
               noteOverride={step?.noteOverride}
               index={index}
+              isCurrent={store.isPlaying && store.currentStep === index}
               onClick={() => { if (!disabled) handleStepClick(trackId, index); }}
               onContextMenu={(e) => { if (!disabled) handleStepContextMenu(e, trackId, index); }}
             />

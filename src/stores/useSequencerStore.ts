@@ -36,6 +36,29 @@ export interface SequencerState {
 
 const createEmptyTrack = (): StepData[] => Array.from({ length: 64 }, () => ({ active: false }));
 
+let masterLoop: Tone.Loop | null = null;
+
+const ensureMasterLoop = () => {
+  if (masterLoop) return;
+  
+  let step = 0;
+  masterLoop = new Tone.Loop((time) => {
+    const { patternSize, isPlaying } = useSequencerStore.getState();
+    if (!isPlaying) return;
+    
+    const currentPatternSize = patternSize || 16;
+    const s = step % currentPatternSize;
+    
+    Tone.Draw.schedule(() => {
+      useSequencerStore.getState().setCurrentStep(s);
+    }, time);
+    
+    step++;
+  }, "16n");
+  
+  masterLoop.start(0);
+};
+
 export const useSequencerStore = create<SequencerState>((set, get) => ({
   isPlaying: false,
   bpm: 120,
@@ -72,6 +95,7 @@ export const useSequencerStore = create<SequencerState>((set, get) => ({
   setPlaying: async (playing: boolean) => {
     if (playing) {
       await Tone.start();
+      ensureMasterLoop();
       Tone.Transport.start();
       set({ isPlaying: true });
     } else {

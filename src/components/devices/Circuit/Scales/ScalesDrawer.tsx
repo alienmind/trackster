@@ -9,8 +9,7 @@ import { getAllowedPads } from './scalesData';
 export default function ScalesDrawer() {
   const { 
     deviceMode, activeRootNote, activeScaleType, 
-    scalesViewMode, setScalesViewMode,
-    previewSustain, setPreviewSustain
+    scalesViewMode, setScalesViewMode
   } = useCircuitTracksStore();
   const { isLoadingAudio, initAudio, stopPreview } = usePianoAudioStore();
   const [isOpen, setIsOpen] = useState(false);
@@ -129,23 +128,6 @@ export default function ScalesDrawer() {
                     activeRootNote={activeRootNote} 
                     allowedPads={getAllowedPads(activeRootNote, activeScaleType)}
                   />
-                </div>
-                
-                {/* Sustain Toggle */}
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold tracking-wider text-neutral-400">SUSTAIN</span>
-                  <div 
-                    className="relative w-16 h-6 bg-neutral-800/80 rounded-full border border-white/5 shadow-inner cursor-pointer"
-                    onClick={() => setPreviewSustain(previewSustain === 'on' ? 'off' : 'on')}
-                  >
-                     <div 
-                       className={`absolute top-0.5 bottom-0.5 w-[30px] rounded-full shadow-md transition-all duration-300 ease-out ${previewSustain === 'on' ? 'bg-pink-500 left-[calc(100%-32px)]' : 'bg-neutral-600 left-0.5'}`}
-                     />
-                     <div className="absolute inset-0 flex items-center justify-between px-2 pointer-events-none">
-                       <span className={`text-[8px] font-bold z-10 ${previewSustain === 'off' ? 'text-white' : 'text-neutral-500'}`}>OFF</span>
-                       <span className={`text-[8px] font-bold z-10 ${previewSustain === 'on' ? 'text-white' : 'text-neutral-500'}`}>ON</span>
-                     </div>
-                  </div>
                 </div>
               </div>
             )}

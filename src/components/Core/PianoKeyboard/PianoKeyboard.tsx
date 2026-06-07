@@ -29,16 +29,20 @@ function PianoKey({
 
   const handlePress = (e: React.PointerEvent) => {
     if (!isAllowed) return;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture(e.pointerId);
     setIsPressed(true);
     playNote(i + 1);
     onClick?.();
   };
 
   const handleRelease = (e: React.PointerEvent) => {
-    (e.target as Element).releasePointerCapture(e.pointerId);
     setIsPressed(false);
     stopNote(i + 1);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (err) {
+      // Ignore if pointer capture was already released
+    }
   };
 
   const isWhite = type === 'white';
