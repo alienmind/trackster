@@ -1,9 +1,11 @@
-import React, { useState, useRef } from 'react';
+import { useState } from 'react';
+import { useKnobInteraction } from '../../../hooks/useKnobInteraction';
 import ScaleFit from '../../Core/ScaleFit/ScaleFit';
 import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
 import GrindSidebarContext from './GrindSidebarContext';
 import DeviceHelpToggle from '../../Core/DeviceHelpToggle/DeviceHelpToggle';
 
+import { useOverviewStore } from '../../../stores/useOverviewStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
 import grindGuideUrl from "../../../../doc/grind/behringer-grind-guide.md?url";
@@ -38,33 +40,15 @@ const MidiPort = () => (
 // --- COMPONENTS ---
 
 // Analog style knob with metallic cap
-const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, onInteract }: any) => {
-  const [rotation, setRotation] = useState(0); // -135 to 135 degrees
+const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, value, onChange, onInteract }: any) => {
   const { hoveredDocSection, setHoveredDocSection, helpMode } = useUIStore();
   const interactive = helpMode && !!sectionId;
-  const isDragging = useRef(false);
-  const startY = useRef(0);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    isDragging.current = true;
-    startY.current = e.clientY;
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    e.preventDefault();
-  };
-
-  const handlePointerMove = (e: PointerEvent) => {
-    if (!isDragging.current) return;
-    const deltaY = startY.current - e.clientY;
-    startY.current = e.clientY;
-    setRotation((prev) => Math.min(135, Math.max(-135, prev + deltaY * 2)));
-  };
-
-  const handlePointerUp = () => {
-    isDragging.current = false;
-    window.removeEventListener('pointerup', handlePointerUp);
-    if (onInteract) onInteract();
-  };
+  const { rotation, handlePointerDown, resetRotation } = useKnobInteraction({
+    value,
+    onChange,
+    sensitivity: 2,
+    onInteract
+  });
 
   return (
     <div 
@@ -76,7 +60,7 @@ const Knob = ({ label, subLabel, size = 50, markerColor = "#fff", sectionId, onI
       <div 
         className="relative flex justify-center items-center cursor-ns-resize"
         onPointerDown={handlePointerDown}
-        onDoubleClick={() => { setRotation(0); if (onInteract) onInteract(); }}
+        onDoubleClick={() => { resetRotation(); if (onInteract) onInteract(); }}
         style={{ touchAction: 'none' }}
       >
         <svg 
@@ -146,16 +130,18 @@ const PatchJack = ({ label, sectionId, onInteract }: any) => {
 };
 
 // Metal Toggle Switch
-const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, sectionId, onInteract }: any) => {
-  const [pos, setPos] = useState(0); // -1 (bottom), 0 (middle), 1 (top)
+const ToggleSwitch = ({ label, topLabel, bottomLabel, threeWay = false, sectionId, value, onChange, onInteract }: any) => {
   const { hoveredDocSection, setHoveredDocSection } = useUIStore();
+  const pos = value ?? (threeWay ? 0 : -1);
 
   const toggle = () => {
+    let newPos;
     if (threeWay) {
-      setPos(p => p === 1 ? 0 : (p === 0 ? -1 : 1));
+      newPos = pos === 1 ? 0 : (pos === 0 ? -1 : 1);
     } else {
-      setPos(p => p === 1 ? -1 : 1);
+      newPos = pos === 1 ? -1 : 1;
     }
+    if (onChange) onChange(newPos);
     if (onInteract) onInteract();
   };
 
@@ -219,13 +205,13 @@ const FuncButton = ({ label, subLabel, isDark = true, sectionId, onInteract }: a
 };
 
 // Red Sequencer Step Button
-const StepButton = ({ num }: any) => {
-  const [active, setActive] = useState(false);
+const StepButton = ({ num, value, onChange }: any) => {
+  const active = value || false;
   
   return (
     <div className="flex flex-col items-center gap-1">
       <button 
-        onClick={() => setActive(!active)}
+        onClick={() => { if(onChange) onChange(!active); }}
         className={`w-10 h-7 rounded-[3px] border border-black shadow-[0_2px_5px_rgba(0,0,0,0.8)] transition-all duration-100 relative overflow-hidden
           ${active 
             ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8),inset_0_2px_5px_rgba(255,255,255,0.4)] translate-y-[1px]' 
@@ -288,9 +274,49 @@ export default function BehringerGrind() {
   const topPatchLabels = ['OSC TIMBRE', 'OSC HAR', 'OSC FM', 'OSC MORPH', 'VCF IN', 'VCF CUTOFF', 'VCF RES', 'MIX 1', 'MIX 2', 'VC MIX', 'VC MIX', 'LFO TRI', 'OSC OUT 1', 'OSC OUT 2', 'ENV', 'VCA/LINE', 'PHONES'];
   const bottomPatchLabels = ['OSC MODEL', 'OSC V/OCT', 'OSC LEVEL', 'OSC TRIG', 'TEMPO', 'PLAY/STOP', 'RESET', 'HOLD', 'ENV GATE', 'VCA CV', 'LFO RATE', 'LFO SQU', 'NOISE', 'ASSIGN', 'KB CV', 'GATE', 'VCF'];
 
-  // State for Bank (0: Red, 1: Green, 2: Yellow) and Model Grid position (0-9)
-  const [bank, setBank] = useState(0); 
-  const [model, setModel] = useState(0);
+  const activeNodeId = useUIStore(s => s.activeNodeId);
+  const updateNodeState = useOverviewStore(s => s.updateNodeState);
+  const deviceState = useOverviewStore(s => activeNodeId ? s.nodes[activeNodeId]?.deviceState : null) || {};
+
+  const state = {
+    bank: 0,
+    model: 0,
+    knobs: {} as Record<string, number>,
+    switches: {} as Record<string, number>,
+    steps: {} as Record<number, boolean>,
+    ...deviceState
+  };
+
+  const bank = state.bank;
+  const model = state.model;
+  
+  const setBank = (updater: any) => {
+    if (!activeNodeId) return;
+    const nextVal = typeof updater === 'function' ? updater(bank) : updater;
+    updateNodeState(activeNodeId, { bank: nextVal });
+  };
+  
+  const setModel = (updater: any) => {
+    if (!activeNodeId) return;
+    const nextVal = typeof updater === 'function' ? updater(model) : updater;
+    updateNodeState(activeNodeId, { model: nextVal });
+  };
+  
+  const setKnob = (id: string, val: number) => {
+    if (!activeNodeId) return;
+    updateNodeState(activeNodeId, { knobs: { ...state.knobs, [id]: val } });
+  };
+  
+  const setSwitch = (id: string, val: number) => {
+    if (!activeNodeId) return;
+    updateNodeState(activeNodeId, { switches: { ...state.switches, [id]: val } });
+  };
+  
+  const setStep = (id: number, val: boolean) => {
+    if (!activeNodeId) return;
+    updateNodeState(activeNodeId, { steps: { ...state.steps, [id]: val } });
+  };
+
   const { setActiveDocSection, hoveredDocSection, setHoveredDocSection, helpMode } = useUIStore();
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const activeDoc = useUIStore((s) => s.activeDoc);
@@ -308,7 +334,7 @@ export default function BehringerGrind() {
   const handleBankClick = () => {
     handleSectionClick('213-bank-button');
     if (helpMode) return;
-    setBank((prev) => {
+    setBank((prev: number) => {
       const nextBank = (prev + 1) % 3;
       // When switching to Bank C (Yellow), restrict models to 1-4 (indexes 0-3)
       if (nextBank === 2 && model > 3) {
@@ -321,7 +347,7 @@ export default function BehringerGrind() {
   const handleModelIncrement = () => {
     handleSectionClick('214-model-button');
     if (helpMode) return;
-    setModel((prev) => {
+    setModel((prev: number) => {
       const max = bank === 2 ? 4 : 10;
       return (prev + 1) % max;
     });
@@ -330,7 +356,7 @@ export default function BehringerGrind() {
   const handleModelDecrement = () => {
     handleSectionClick('214-model-button');
     if (helpMode) return;
-    setModel((prev) => {
+    setModel((prev: number) => {
       const max = bank === 2 ? 4 : 10;
       return (prev - 1 + max) % max;
     });
@@ -403,8 +429,8 @@ export default function BehringerGrind() {
               {/* OSCILLATOR */}
               <Section title="OSCILLATOR" className="col-span-5 bg-[#242424]">
                 <div className="flex justify-around items-start">
-                  <Knob label="TIMBRE" sectionId="211-timbre" onInteract={() => handleSectionClick('211-timbre')} />
-                  <Knob label="HARMONICS" sectionId="215-harmonics" onInteract={() => handleSectionClick('215-harmonics')} />
+                  <Knob label="TIMBRE" value={state.knobs.timbre || 0.5} onChange={(v: number) => setKnob("timbre", v)} sectionId="211-timbre" onInteract={() => handleSectionClick('211-timbre')} />
+                  <Knob label="HARMONICS" value={state.knobs.harmonics || 0.5} onChange={(v: number) => setKnob("harmonics", v)} sectionId="215-harmonics" onInteract={() => handleSectionClick('215-harmonics')} />
                   <div className="flex flex-col items-center pt-6 px-2 group relative cursor-pointer" onPointerDown={() => handleSectionClick('216-fm-knob')} onPointerEnter={() => setHoveredDocSection('216-fm-knob')} onPointerLeave={() => setHoveredDocSection(null)}>
                     <span className="text-[8px] text-white font-bold mb-1">FM</span>
                     <div className="relative">
@@ -413,8 +439,8 @@ export default function BehringerGrind() {
                     <span className="text-[8px] text-white font-bold mt-1">-      +</span>
                     <div className={cn("absolute inset-0 rounded-lg pointer-events-none transition-all duration-300 group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]", hoveredDocSection === '216-fm-knob' ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
                   </div>
-                  <Knob label="FREQUENCY" sectionId="217-frequency-knob" onInteract={() => handleSectionClick('217-frequency-knob')} />
-                  <Knob label="MORPH" sectionId="218-morph-knob" onInteract={() => handleSectionClick('218-morph-knob')} />
+                  <Knob label="FREQUENCY" value={state.knobs.frequency || 0.5} onChange={(v: number) => setKnob("frequency", v)} sectionId="217-frequency-knob" onInteract={() => handleSectionClick('217-frequency-knob')} />
+                  <Knob label="MORPH" value={state.knobs.morph || 0.5} onChange={(v: number) => setKnob("morph", v)} sectionId="218-morph-knob" onInteract={() => handleSectionClick('218-morph-knob')} />
                 </div>
                 
                 <div className="flex justify-around items-end mt-4 px-4">
@@ -547,23 +573,23 @@ export default function BehringerGrind() {
               {/* FILTER */}
               <Section title="FILTER (VCF)" className="col-span-3 bg-[#242424]">
                 <div className="flex justify-around items-start">
-                  <Knob label="CUTOFF" sectionId="221-cutoff" onInteract={() => handleSectionClick('221-cutoff')} />
-                  <Knob label="RESONANCE" sectionId="223-resonance" onInteract={() => handleSectionClick('223-resonance')} />
-                  <Knob label="VCF MOD" sectionId="225-vcf-mod" onInteract={() => handleSectionClick('225-vcf-mod')} />
+                  <Knob label="CUTOFF" value={state.knobs.cutoff || 0.5} onChange={(v: number) => setKnob("cutoff", v)} sectionId="221-cutoff" onInteract={() => handleSectionClick('221-cutoff')} />
+                  <Knob label="RESONANCE" value={state.knobs.resonance || 0.5} onChange={(v: number) => setKnob("resonance", v)} sectionId="223-resonance" onInteract={() => handleSectionClick('223-resonance')} />
+                  <Knob label="VCF MOD" value={state.knobs.vcfmod || 0.5} onChange={(v: number) => setKnob("vcfmod", v)} sectionId="225-vcf-mod" onInteract={() => handleSectionClick('225-vcf-mod')} />
                 </div>
                 <div className="flex justify-around items-start mt-6">
-                  <ToggleSwitch label="MODE" topLabel="LO" bottomLabel="HI" sectionId="222-mode" onInteract={() => handleSectionClick('222-mode')} />
-                  <ToggleSwitch label="MOD SOURCE" topLabel="ENV" bottomLabel="LFO" sectionId="224-mod-source" onInteract={() => handleSectionClick('224-mod-source')} />
-                  <ToggleSwitch label="MOD POLARITY" topLabel="POS" bottomLabel="NEG" sectionId="226-mod-polarity" onInteract={() => handleSectionClick('226-mod-polarity')} />
+                  <ToggleSwitch label="MODE" value={state.switches.mode} onChange={(v: number) => setSwitch("mode", v)} topLabel="LO" bottomLabel="HI" sectionId="222-mode" onInteract={() => handleSectionClick('222-mode')} />
+                  <ToggleSwitch label="MOD SOURCE" value={state.switches.modsource} onChange={(v: number) => setSwitch("modsource", v)} topLabel="ENV" bottomLabel="LFO" sectionId="224-mod-source" onInteract={() => handleSectionClick('224-mod-source')} />
+                  <ToggleSwitch label="MOD POLARITY" value={state.switches.modpolarity} onChange={(v: number) => setSwitch("modpolarity", v)} topLabel="POS" bottomLabel="NEG" sectionId="226-mod-polarity" onInteract={() => handleSectionClick('226-mod-polarity')} />
                 </div>
               </Section>
 
               {/* OUTPUT */}
               <Section title="OUTPUT (VCA)" className="col-span-2 bg-[#242424]">
                 <div className="flex flex-col items-center h-full justify-between pb-2">
-                  <Knob label="VOLUME" sectionId="271-volume" onInteract={() => handleSectionClick('271-volume')} />
+                  <Knob label="VOLUME" value={state.knobs.volume || 0.5} onChange={(v: number) => setKnob("volume", v)} sectionId="271-volume" onInteract={() => handleSectionClick('271-volume')} />
                   <div className="mt-4 relative group cursor-pointer" onPointerEnter={() => setHoveredDocSection('272-vca-mode')} onPointerLeave={() => setHoveredDocSection(null)}>
-                    <ToggleSwitch label="VCA MODE" topLabel="ENV" bottomLabel="ON" threeWay sectionId="272-vca-mode" onInteract={() => handleSectionClick('272-vca-mode')} />
+                    <ToggleSwitch label="VCA MODE" value={state.switches.vcamode} onChange={(v: number) => setSwitch("vcamode", v)} topLabel="ENV" bottomLabel="ON" threeWay sectionId="272-vca-mode" onInteract={() => handleSectionClick('272-vca-mode')} />
                     <span className="block text-[8px] text-gray-400 text-center -mt-3">LPG</span>
                     <div className={cn("absolute inset-0 -m-2 rounded-sm pointer-events-none transition-all duration-300 group-hover:ring-2 group-hover:ring-cyan-500 group-hover:shadow-[0_0_15px_cyan]", hoveredDocSection === '272-vca-mode' ? 'ring-2 ring-cyan-500 shadow-[0_0_15px_cyan]' : '')} />
                   </div>
@@ -575,32 +601,32 @@ export default function BehringerGrind() {
             <div className="grid grid-cols-10 gap-[1px] bg-[#e65c00]">
               <Section title="ENVELOPE" className="col-span-4 bg-[#242424]">
                 <div className="flex justify-around">
-                  <Knob label="ATTACK" sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
-                  <Knob label="DECAY" sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
-                  <Knob label="SUSTAIN" sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
+                  <Knob label="ATTACK" value={state.knobs.attack || 0.5} onChange={(v: number) => setKnob("attack", v)} sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
+                  <Knob label="DECAY" value={state.knobs.decay || 0.5} onChange={(v: number) => setKnob("decay", v)} sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
+                  <Knob label="SUSTAIN" value={state.knobs.sustain || 0.5} onChange={(v: number) => setKnob("sustain", v)} sectionId="23-envelope" onInteract={() => handleSectionClick('23-envelope')} />
                 </div>
               </Section>
 
               <Section title="VIBRATO" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-center">
-                  <Knob label="OSC MOD" sectionId="24-vibrato" onInteract={() => handleSectionClick('24-vibrato')} />
+                  <Knob label="OSC MOD" value={state.knobs.oscmod || 0.5} onChange={(v: number) => setKnob("oscmod", v)} sectionId="24-vibrato" onInteract={() => handleSectionClick('24-vibrato')} />
                 </div>
               </Section>
 
               <Section title="MODULATION" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-around items-end pb-2">
                   <div className="relative">
-                    <Knob label="LFO RATE" sectionId="25-modulation" onInteract={() => handleSectionClick('25-modulation')} />
+                    <Knob label="LFO RATE" value={state.knobs.lforate || 0.5} onChange={(v: number) => setKnob("lforate", v)} sectionId="25-modulation" onInteract={() => handleSectionClick('25-modulation')} />
                     <div className="absolute top-4 -right-4 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#f00]"></div>
                   </div>
-                  <ToggleSwitch label="SHAPE" topLabel="SQR" bottomLabel="TRI" sectionId="25-modulation" onInteract={() => handleSectionClick('25-modulation')} />
+                  <ToggleSwitch label="SHAPE" value={state.switches.shape} onChange={(v: number) => setSwitch("shape", v)} topLabel="SQR" bottomLabel="TRI" sectionId="25-modulation" onInteract={() => handleSectionClick('25-modulation')} />
                 </div>
               </Section>
 
               <Section title="UTILITY" className="col-span-2 bg-[#242424]">
                 <div className="flex justify-around">
-                  <Knob label="GLIDE" sectionId="261-glide" onInteract={() => handleSectionClick('261-glide')} />
-                  <Knob label="VC MIX" subLabel="LO / MIX 1        HI / MIX 2" sectionId="262-vc-mix" onInteract={() => handleSectionClick('262-vc-mix')} />
+                  <Knob label="GLIDE" value={state.knobs.glide || 0.5} onChange={(v: number) => setKnob("glide", v)} sectionId="261-glide" onInteract={() => handleSectionClick('261-glide')} />
+                  <Knob label="VC MIX" value={state.knobs.vcmix || 0.5} onChange={(v: number) => setKnob("vcmix", v)} subLabel="LO / MIX 1        HI / MIX 2" sectionId="262-vc-mix" onInteract={() => handleSectionClick('262-vc-mix')} />
                 </div>
               </Section>
             </div>
@@ -612,7 +638,7 @@ export default function BehringerGrind() {
 
             {/* Tempo */}
             <div className="pl-4 pb-2">
-              <Knob label="TEMPO / GATE LENGTH" subLabel="SWING" sectionId="31-tempogate-length" onInteract={() => handleSectionClick('31-tempogate-length')} />
+              <Knob label="TEMPO / GATE LENGTH" value={state.knobs.tempogatelength || 0.5} onChange={(v: number) => setKnob("tempogatelength", v)} subLabel="SWING" sectionId="31-tempogate-length" onInteract={() => handleSectionClick('31-tempogate-length')} />
             </div>
 
             {/* Command Buttons */}
@@ -658,7 +684,7 @@ export default function BehringerGrind() {
               </div>
               
               <div className="flex gap-1.5 w-full justify-between">
-                {[1,2,3,4,5,6,7,8].map(i => <StepButton key={i} num={i} />)}
+                {[1,2,3,4,5,6,7,8].map(i => <StepButton key={i} num={i} value={state.steps[i]} onChange={(v: boolean) => setStep(i, v)} />)}
               </div>
             </div>
 
