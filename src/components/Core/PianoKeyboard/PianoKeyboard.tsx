@@ -18,10 +18,10 @@ const PIANO_KEYS = [
 
 function PianoKey({ 
   note, type, i, whiteIndex, 
-  isAllowed, isActiveRoot 
+  isAllowed, isActiveRoot, onClick
 }: { 
   note: string, type: string, i: number, whiteIndex: number, 
-  isAllowed: boolean, isActiveRoot: boolean 
+  isAllowed: boolean, isActiveRoot: boolean, onClick?: () => void
 }) {
   const [isPressed, setIsPressed] = useState(false);
   const { playNote, stopNote } = usePianoAudioStore();
@@ -32,6 +32,7 @@ function PianoKey({
     (e.target as Element).setPointerCapture(e.pointerId);
     setIsPressed(true);
     playNote(i + 1);
+    onClick?.();
   };
 
   const handleRelease = (e: React.PointerEvent) => {
@@ -118,16 +119,16 @@ export default memo(function PianoKeyboard({
         const whiteIndex = PIANO_KEYS.slice(0, i).filter(k => k.type === 'white').length;
         
         return (
-          <div key={key.note} onClick={() => onKeyClick?.(i, key.note)}>
-            <PianoKey
-              note={key.note}
-              type={key.type}
-              i={i}
-              whiteIndex={whiteIndex}
-              isAllowed={allowedPads.includes(key.padIndex)}
-              isActiveRoot={key.padIndex === activeRootNote || i === selectedNoteIndex}
-            />
-          </div>
+          <PianoKey
+            key={key.note}
+            note={key.note}
+            type={key.type}
+            i={i}
+            whiteIndex={whiteIndex}
+            isAllowed={allowedPads.includes(key.padIndex)}
+            isActiveRoot={key.padIndex === activeRootNote || i === selectedNoteIndex}
+            onClick={() => onKeyClick?.(i, key.note)}
+          />
         );
       })}
     </div>
