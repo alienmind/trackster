@@ -174,7 +174,10 @@ export default function RolandS1() {
       // Get the pattern dynamically from store
       const { tracks, trackAssignments, patternSize } = useSequencerStore.getState();
       const currentActiveNodeId = useUIStore.getState().activeNodeId;
-      const assignedTrackId = Object.keys(trackAssignments).find(tid => trackAssignments[tid] === currentActiveNodeId);
+      const assignedTrackId = Object.keys(trackAssignments).find(tid => {
+        const a = trackAssignments[tid];
+        return a && currentActiveNodeId && a.startsWith(`${currentActiveNodeId}:`);
+      });
       const p = assignedTrackId ? tracks[assignedTrackId] || [] : [];
       const currentPatternSize = patternSize || 16;
       

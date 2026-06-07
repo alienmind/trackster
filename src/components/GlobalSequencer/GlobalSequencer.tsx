@@ -135,7 +135,7 @@ export default function GlobalSequencer() {
             
             <div className="flex flex-col">
               <select 
-                className="bg-transparent text-xl font-bold text-card-foreground focus:outline-none cursor-pointer tracking-tight"
+                className="bg-card text-xl font-bold text-card-foreground focus:outline-none cursor-pointer tracking-tight border border-border rounded px-2 py-1"
                 value={assignedId || ''}
                 onChange={(e) => store.setTrackAssignment(trackId, e.target.value || null)}
                 disabled={disabled}
