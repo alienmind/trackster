@@ -1,7 +1,7 @@
 {
   "name": "trackster",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -30,6 +30,7 @@
     "shadcn": "^4.8.0",
     "soundfont-player": "^0.12.0",
     "tailwind-merge": "^3.6.0",
+    "tone": "^15.1.22",
     "tw-animate-css": "^1.4.0",
     "wavesurfer.js": "^7.12.7",
     "zustand": "^5.0.13"
