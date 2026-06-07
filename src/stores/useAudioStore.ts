@@ -15,6 +15,8 @@ interface AudioState {
   stopMonitoring: () => void;
 }
 
+import * as Tone from 'tone';
+
 export const useAudioStore = create<AudioState>((set, get) => ({
   audioContext: null,
   analyser: null,
@@ -29,10 +31,17 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   initAudioContext: () => {
     if (!get().audioContext) {
-      const ctx = new AudioContext();
+      const ctx = Tone.getContext().rawContext as AudioContext;
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 2048;
       analyser.connect(ctx.destination);
+      
+      try {
+        Tone.Destination.connect(analyser as any);
+      } catch (e) {
+        console.error("Failed to connect Tone.Destination to analyser", e);
+      }
+      
       set({ audioContext: ctx, analyser });
     }
   },
