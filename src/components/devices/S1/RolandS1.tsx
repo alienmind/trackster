@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import { useSequencerStore } from '../../../stores/useSequencerStore';
-import { getSequenceNoteForStep } from '../../GlobalSequencer/sequenceUtils';
 import { useOverviewStore } from '../../../stores/useOverviewStore';
 import { useUIStore } from '../../../stores/useUIStore';
 import ScaleFit from '../../Core/ScaleFit/ScaleFit';
@@ -48,9 +47,9 @@ const DocLink = ({ sectionId, children, className }: { sectionId: string, childr
 const globalS1Engines = new Map<string, any>();
 
 export default function RolandS1() {
-  const { isPlaying, togglePlaying, currentStep, tracks, toggleStep, patternSize } = useSequencerStore();
-  const s1Pattern = tracks['s1'] || [];
-  
+  const { isPlaying, togglePlaying, currentStep, tracks, trackAssignments, toggleStep, patternSize } = useSequencerStore();
+  const assignedTrackId = Object.keys(trackAssignments).find(tid => trackAssignments[tid] === activeNodeId);
+  const s1Pattern = assignedTrackId ? tracks[assignedTrackId] || [] : [];
   const [page, setPage] = useState(0);
   const maxPage = Math.max(0, Math.ceil(patternSize / 16) - 1);
   const handlePageDown = () => setPage((p: number) => Math.max(0, p - 1));
@@ -170,8 +169,11 @@ export default function RolandS1() {
       if (!e) return;
       
       // Get the pattern dynamically from store
-      const p = useSequencerStore.getState().tracks['s1'] || [];
-      const currentPatternSize = useSequencerStore.getState().patternSize || 16;
+      const { tracks, trackAssignments, patternSize } = useSequencerStore.getState();
+      const currentActiveNodeId = useUIStore.getState().activeNodeId;
+      const assignedTrackId = Object.keys(trackAssignments).find(tid => trackAssignments[tid] === currentActiveNodeId);
+      const p = assignedTrackId ? tracks[assignedTrackId] || [] : [];
+      const currentPatternSize = patternSize || 16;
       
       const s = step % currentPatternSize;
       const isActive = p[s]?.active;
@@ -186,8 +188,7 @@ export default function RolandS1() {
         if (noteOverride) {
           baseFreq = Tone.Frequency(noteOverride + "3").transpose(octaveOffset * 12).toFrequency();
         } else {
-          const sequenceNote = getSequenceNoteForStep(s, useSequencerStore.getState());
-          baseFreq = Tone.Frequency((sequenceNote || "C") + "3").transpose(octaveOffset * 12).toFrequency();
+          baseFreq = Tone.Frequency("C3").transpose(octaveOffset * 12).toFrequency();
         }
         
         oscSaw.frequency.setValueAtTime(baseFreq, time);

@@ -5,6 +5,8 @@ import { useUIStore } from '../../stores/useUIStore';
 import * as Icons from 'lucide-react';
 import { HARDWARE_LIBRARY } from '../../devices';
 import PianoDrawer from './PianoDrawer';
+import GenerateSequenceModal from './GenerateSequenceModal';
+import { Button } from '../Core/ui/button';
 
 const StepButton = ({ 
   active, 
@@ -51,7 +53,8 @@ export default function GlobalSequencer() {
   const uiStore = useUIStore();
   const overviewStore = useOverviewStore();
   
-  const hasCircuitTracks = Object.values(overviewStore.nodes).some(d => d.type === 'circuit');
+  const hasCircuitTracks = Object.values(overviewStore.nodes).some(n => n.type === 'circuit');
+  const [generateTrackId, setGenerateTrackId] = useState<string | null>(null);
 
   const [selectedStepForOverride, setSelectedStepForOverride] = useState<{ trackId: string, index: number } | null>(null);
 
@@ -115,20 +118,20 @@ export default function GlobalSequencer() {
     }
 
     return (
-      <div className={`bg-neutral-900 border border-neutral-800 rounded-xl p-6 ${disabled ? 'opacity-50 grayscale' : ''}`}>
+      <div className={`bg-card border border-border rounded-xl p-6 ${disabled ? 'opacity-50 grayscale' : ''}`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             {/* Device Image Preview */}
-            <div className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
               {imageUrl ? (
                 <img src={imageUrl} alt="Device Preview" className="w-full h-full object-contain p-1 drop-shadow-lg" />
               ) : (
-                <Icons.Box className="w-5 h-5 text-neutral-600" />
+                <Icons.Box className="w-5 h-5 text-muted-foreground" />
               )}
             </div>
             
             <div className="flex flex-col">
-              <h3 className="text-xl font-bold text-white tracking-tight">{defaultTitle}</h3>
+              <h3 className="text-xl font-bold text-card-foreground tracking-tight">{defaultTitle}</h3>
               <select 
                 className="bg-transparent text-xs font-bold text-cyan-400 focus:outline-none cursor-pointer hover:text-cyan-300"
                 value={assignedNodeId || ''}
@@ -147,8 +150,17 @@ export default function GlobalSequencer() {
             </div>
           </div>
           
-          <div className="flex gap-2">
-            <div className="px-3 py-1 rounded bg-neutral-800 text-xs font-bold text-neutral-400">
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={() => setGenerateTrackId(trackId)}
+            >
+              <Icons.Wand2 className="w-4 h-4 mr-2" />
+              Generate
+            </Button>
+            <div className="px-3 py-1 rounded bg-muted text-xs font-bold text-muted-foreground">
               {assignedNode?.logicalInChannel ? `CH ${assignedNode.logicalInChannel}` : 'NO CH'}
             </div>
           </div>
@@ -161,122 +173,45 @@ export default function GlobalSequencer() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-neutral-950 overflow-y-auto">
+    <div className="flex flex-col h-full bg-background overflow-y-auto">
       {/* Top Control Bar */}
-      <div className="sticky top-0 z-10 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 p-6 flex flex-col gap-6">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border p-6 flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
               <Icons.ListOrdered className="text-white w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Global Sequencer</h1>
-              <p className="text-sm text-neutral-400">Master Sequence Control</p>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Global Sequencer</h1>
+              <p className="text-sm text-muted-foreground">Master Sequence Control</p>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <button 
-              className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold transition-all ${hasCircuitTracks ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'}`}
+            <Button 
+              variant="default"
+              className={`font-bold transition-all ${hasCircuitTracks ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
               onClick={() => hasCircuitTracks && uiStore.setActiveMainView('circuit')}
               title={hasCircuitTracks ? 'Go to Circuit Tracks Scales Mode' : 'Add a Circuit Tracks device to define Global Scales'}
             >
-              <Icons.Music className="w-4 h-4" />
+              <Icons.Music className="w-4 h-4 mr-2" />
               Select Scale
-            </button>
-            <div className="w-px h-8 bg-neutral-800" />
-            <button 
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${store.isPlaying ? 'bg-red-500 hover:bg-red-400 shadow-lg shadow-red-500/30 text-white' : 'bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/30 text-white'}`}
+            </Button>
+            <div className="w-px h-8 bg-border" />
+            <Button 
+              size="icon"
+              className={`rounded-full transition-all ${store.isPlaying ? 'bg-destructive hover:bg-destructive/90 shadow-lg shadow-destructive/30 text-white' : 'bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/30 text-white'}`}
               onClick={() => store.togglePlaying()}
             >
               {store.isPlaying ? <Icons.Square className="w-5 h-5 fill-current" /> : <Icons.Play className="w-5 h-5 ml-1 fill-current" />}
-            </button>
+            </Button>
           </div>
-        </div>
-
-        {/* Global Sequence Settings */}
-        <div className="flex items-center gap-6 bg-neutral-900 border border-neutral-800 rounded-lg p-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Pattern Size</label>
-            <select 
-              className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:border-cyan-500"
-              value={store.patternSize}
-              onChange={(e) => store.setPatternSize(parseInt(e.target.value, 10))}
-            >
-              <option value={8}>8 Steps</option>
-              <option value={16}>16 Steps</option>
-              <option value={24}>24 Steps</option>
-              <option value={32}>32 Steps</option>
-              <option value={48}>48 Steps</option>
-              <option value={64}>64 Steps</option>
-            </select>
-          </div>
-
-          <div className="w-px h-8 bg-neutral-800" />
-
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Arp Type</label>
-            <select 
-              className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:border-pink-500"
-              value={store.arpMode}
-              onChange={(e) => store.setArpMode(e.target.value as any)}
-            >
-              <option value="up">Up</option>
-              <option value="up-down">Up-Down</option>
-              <option value="random">Random</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Sequence Mode</label>
-            <select 
-              className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:border-pink-500"
-              value={store.sequenceMode}
-              onChange={(e) => store.setSequenceMode(e.target.value as any)}
-            >
-              <option value="full">Full Scale</option>
-              <option value="1-3-5">1-3-5</option>
-              <option value="1-3-5-7-9">1-3-5-7-9</option>
-              <option value="1-3-5-7-9-11">1-3-5-7-9-11</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Loop Mode</label>
-            <select 
-              className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:border-pink-500"
-              value={store.loopMode}
-              onChange={(e) => store.setLoopMode(e.target.value as any)}
-            >
-              <option value="continuous">Continuous</option>
-              <option value="one-off">One-Off</option>
-            </select>
-          </div>
-
-          <div className="w-px h-8 bg-neutral-800" />
-
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <div className={`w-10 h-5 rounded-full p-1 transition-colors ${store.rollingBass ? 'bg-cyan-500' : 'bg-neutral-700'}`}>
-              <div className={`w-3 h-3 bg-white rounded-full transition-transform ${store.rollingBass ? 'translate-x-5' : ''}`} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">Rolling Bass</span>
-              <span className="text-[10px] text-neutral-500">Continuous 16th notes</span>
-            </div>
-            <input 
-              type="checkbox" 
-              className="hidden" 
-              checked={store.rollingBass} 
-              onChange={(e) => store.setRollingBass(e.target.checked)} 
-            />
-          </label>
-
         </div>
       </div>
 
       {/* Tracks Container */}
       <div className="p-6 flex flex-col gap-8 pb-32">
-        <div className="text-neutral-500 text-sm mb-[-1rem]">
+        <div className="text-muted-foreground text-sm mb-[-1rem]">
           <strong>Hint:</strong> Left click to toggle step. Right click to override the specific note for a step.
         </div>
         
@@ -284,11 +219,14 @@ export default function GlobalSequencer() {
         
         {renderTrack('drums', 'Drum Sequencer (Coming Soon)', true)}
 
-        <button className="border-2 border-dashed border-neutral-800 rounded-xl p-8 flex flex-col items-center justify-center gap-2 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700 transition-colors">
+        <Button 
+          variant="outline" 
+          className="border-2 border-dashed h-32 flex flex-col items-center justify-center gap-2"
+        >
           <Icons.PlusCircle className="w-8 h-8" />
           <span className="font-bold">Add Instrument Track</span>
           <span className="text-xs">Assign a new sequence to a MIDI channel</span>
-        </button>
+        </Button>
       </div>
 
       <PianoDrawer 
@@ -299,16 +237,17 @@ export default function GlobalSequencer() {
             ? store.tracks[selectedStepForOverride.trackId]?.[selectedStepForOverride.index]?.noteOverride || null
             : null
         }
-        onNoteSelect={(noteName) => {
+        onNoteSelect={(note) => {
           if (selectedStepForOverride) {
-            store.setStep(
-              selectedStepForOverride.trackId, 
-              selectedStepForOverride.index, 
-              store.tracks[selectedStepForOverride.trackId]![selectedStepForOverride.index]!.active,
-              noteName || undefined
-            );
+            store.setStep(selectedStepForOverride.trackId, selectedStepForOverride.index, true, note || undefined);
           }
         }}
+      />
+      
+      <GenerateSequenceModal 
+        isOpen={generateTrackId !== null} 
+        onClose={() => setGenerateTrackId(null)} 
+        trackId={generateTrackId || ''} 
       />
     </div>
   );

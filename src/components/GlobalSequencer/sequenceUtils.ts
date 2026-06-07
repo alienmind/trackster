@@ -1,4 +1,3 @@
-import { SequencerState } from '../../stores/useSequencerStore';
 import { ROOT_PAD_NAMES, getAllowedPads } from '../devices/Circuit/Scales/scalesData';
 import { useCircuitTracksStore } from '../../stores/useCircuitTracksStore';
 
@@ -10,7 +9,14 @@ import { useCircuitTracksStore } from '../../stores/useCircuitTracksStore';
  * @param sequencerStore Current sequencer state
  * @returns The note name without octave (e.g. "C") or null if unable to resolve
  */
-export function getSequenceNoteForStep(stepIndex: number, sequencerStore: SequencerState): string | null {
+export type SequenceMode = 'full' | '1-3-5' | '1-3-5-7-9' | '1-3-5-7-9-11';
+export type ArpMode = 'up' | 'up-down' | 'random';
+
+export function getSequenceNoteForStep(
+  stepIndex: number, 
+  sequenceMode: SequenceMode,
+  arpMode: ArpMode
+): string | null {
   const circuitStore = useCircuitTracksStore.getState();
   const rootPad = circuitStore.activeRootNote;
   const scalePad = circuitStore.activeScaleType;
@@ -24,7 +30,7 @@ export function getSequenceNoteForStep(stepIndex: number, sequencerStore: Sequen
   
   // 3. Filter by sequenceMode
   let filteredNotes = [...scaleNotes];
-  switch (sequencerStore.sequenceMode) {
+  switch (sequenceMode) {
     case '1-3-5':
       filteredNotes = [scaleNotes[0], scaleNotes[2], scaleNotes[4]].filter(Boolean) as string[];
       break;
@@ -52,7 +58,7 @@ export function getSequenceNoteForStep(stepIndex: number, sequencerStore: Sequen
   const N = filteredNotes.length;
   let noteIndex = 0;
   
-  switch (sequencerStore.arpMode) {
+  switch (arpMode) {
     case 'up':
       noteIndex = stepIndex % N;
       break;
