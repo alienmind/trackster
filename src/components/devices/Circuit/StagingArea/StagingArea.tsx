@@ -59,6 +59,7 @@ function DraggableSample({ sample }: DraggableSampleProps) {
 export default function StagingArea() {
   const unassignedFiles = useCircuitTracksStore((s) => s.unassignedFiles);
   const rootHandle = useCircuitTracksStore((s) => s.rootHandle);
+  const clearUnassigned = useCircuitTracksStore((s) => s.clearUnassigned);
 
   const { setNodeRef, isOver } = useDroppable({
     id: 'staging-area',
@@ -67,16 +68,39 @@ export default function StagingArea() {
 
   if (!rootHandle) return null;
 
+  const handleClearStaging = () => {
+    if (unassignedFiles.length === 0) return;
+    const count = unassignedFiles.length;
+    useUIStore.getState().showConfirmModal({
+      title: "Clear Staging Area",
+      description: `Are you sure you want to completely remove ${count} file${count === 1 ? '' : 's'} from your SD Card?\n\nThis cannot be undone.`,
+      confirmText: count === 1 ? "Delete File" : `Delete ${count} Files`,
+      cancelText: "Cancel",
+      destructive: true,
+      onConfirm: () => {
+        clearUnassigned();
+      }
+    });
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-card">
       <div className="flex-none border-b border-border flex items-center justify-between px-4 h-14 bg-muted/30">
         <div className="flex items-center gap-2">
-          <Icons.Inbox size={16} className="text-primary" />
+          <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full min-w-[24px] text-center">
+            {unassignedFiles.length}
+          </span>
           <h2 className="font-semibold text-sm">Staging Area</h2>
         </div>
-        <div className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-          {unassignedFiles.length}
-        </div>
+        <button
+          type="button"
+          onClick={handleClearStaging}
+          disabled={unassignedFiles.length === 0}
+          title={unassignedFiles.length === 0 ? 'Staging Area is empty' : 'Remove all files in the Staging Area from the SD Card'}
+          className="p-1.5 rounded text-muted-foreground enabled:hover:text-red-500 enabled:hover:bg-red-500/10 enabled:cursor-pointer disabled:opacity-40 transition-colors"
+        >
+          <Icons.Trash2 size={16} />
+        </button>
       </div>
       
       <div className="px-4 py-2 bg-muted/50 border-b border-border text-[10px] text-muted-foreground leading-tight">

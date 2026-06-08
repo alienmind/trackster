@@ -13,7 +13,6 @@ export default function DuplicateScanModal() {
   const duplicateClusters = useUIStore((s) => s.duplicateClusters);
   const closeDuplicateModal = useUIStore((s) => s.closeDuplicateModal);
   const removeFile = useCircuitTracksStore((s) => s.removeFile);
-  const assignToSlot = useCircuitTracksStore((s) => s.assignToSlot);
   const playSlot = useCircuitTracksStore((s) => s.playSlot);
 
   // Store the selected originalFilename for each cluster index
@@ -69,16 +68,16 @@ export default function DuplicateScanModal() {
   };
 
   const handleApply = () => {
+    let removed = 0;
     localClusters.forEach((cluster, index) => {
       const keptFilename = selections[index];
 
       cluster.forEach((sample) => {
-        if (sample.originalFilename === keptFilename) {
-          // If it's the kept file, move it to the staging area (-1 slot)
-          assignToSlot(sample, -1);
-        } else {
-          // If it's a discarded file, remove it from the workspace
+        if (sample.originalFilename !== keptFilename) {
+          // Remove the non-selected duplicates from the workspace.
+          // The kept sample stays wherever it currently lives (slot or unassigned).
           removeFile(sample);
+          removed++;
         }
       });
     });
@@ -86,7 +85,7 @@ export default function DuplicateScanModal() {
     closeDuplicateModal();
     useUIStore.getState().addNotification({
       type: 'success',
-      message: 'Duplicates resolved and kept files moved to Staging Area.',
+      message: `Duplicates resolved. ${removed} file${removed === 1 ? '' : 's'} removed from your workspace.`,
       autoDismissMs: 3000
     });
   };
@@ -98,9 +97,8 @@ export default function DuplicateScanModal() {
           <DialogTitle className="text-xl font-bold">Resolve Duplicates</DialogTitle>
           <DialogDescription>
             We found {localClusters.length} group(s) of similar files that can be potentially be removed.
-            Choose which one to keep in each group. The kept file will be moved to the Staging Area,
-            and the rest will be removed from your workspace. After applying, you should click on
-            <strong>Magic Sort</strong> to automatically rearrange the staged files into the available slots.
+            Choose which one to keep in each group. The kept file will stay where it currently is,
+            and the rest will be removed from your workspace.
           </DialogDescription>
         </DialogHeader>
 
@@ -139,7 +137,6 @@ export default function DuplicateScanModal() {
                         className={`flex items-center justify-between p-3 rounded-md transition-colors cursor-pointer border ${isSelected ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-muted/50'}`}
                         onClick={() => {
                           setSelections({ ...selections, [index]: sample.originalFilename });
-                          playSlot(-1, sample.fileHandle);
                         }}
                       >
                         <div className="flex items-center gap-3">
@@ -149,7 +146,17 @@ export default function DuplicateScanModal() {
                             readOnly
                             className="w-4 h-4 text-primary focus:ring-primary"
                           />
-                          <Play className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
+                          <button
+                            type="button"
+                            aria-label="Preview sample"
+                            className="p-0.5 rounded text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playSlot(-1, sample.fileHandle);
+                            }}
+                          >
+                            <Play className="w-4 h-4" />
+                          </button>
                           <span className="font-mono text-sm">{sample.displayName}</span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -179,7 +186,7 @@ export default function DuplicateScanModal() {
 
         <DialogFooter className="mt-4 border-t border-border pt-4">
           <Button variant="default" onClick={closeDuplicateModal}>Cancel</Button>
-          <Button onClick={handleApply}>Apply Resolutions</Button>
+          <Button variant="destructive" onClick={handleApply}>Apply Resolutions</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
