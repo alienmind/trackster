@@ -38,11 +38,10 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       
       try {
         Tone.Destination.connect(analyser as any);
-        // Explicitly connect to destination just in case the analyser connection overrides the default
-        Tone.Destination.connect(ctx.destination as any);
       } catch (e) {
         console.error("Failed to connect Tone.Destination to analyser", e);
       }
+
       
       set({ audioContext: ctx, analyser });
     }

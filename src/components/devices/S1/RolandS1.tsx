@@ -182,14 +182,17 @@ export default function RolandS1() {
   const setMixerField = useCallback((field: keyof S1DeviceState['mixer'], val: number) => {
     if (!activeNodeId) return;
     const prev = readDeviceState().mixer || DEFAULT_S1_STATE.mixer;
+    console.log("Setting mixer field", field, "to", val, "prev:", prev);
     updateNodeState(activeNodeId, { mixer: { ...prev, [field]: val } });
   }, [activeNodeId, readDeviceState, updateNodeState]);
 
   const setAdsrField = useCallback((field: keyof S1DeviceState['adsr'], val: number) => {
     if (!activeNodeId) return;
     const prev = readDeviceState().adsr || DEFAULT_S1_STATE.adsr;
+    console.log("Setting adsr field", field, "to", val, "prev:", prev);
     updateNodeState(activeNodeId, { adsr: { ...prev, [field]: val } });
   }, [activeNodeId, readDeviceState, updateNodeState]);
+
 
   const setFilterField = useCallback((field: keyof S1DeviceState['filter'], val: number) => {
     if (!activeNodeId) return;
@@ -369,9 +372,19 @@ export default function RolandS1() {
 
   // Audio-param smoothing helper. Static reference, no captures.
   const smoothSet = useCallback((param: ToneParamLike, val: number) => {
-    try { param.rampTo(val, 0.1); }
-    catch { (param as { value: number }).value = val; }
+    if (!param) return;
+    try {
+      if (typeof (param as any).value !== 'undefined') {
+        (param as any).value = val;
+      } else {
+        (param as any).rampTo?.(val, 0.05);
+      }
+    } catch (e) {
+      console.warn("smoothSet error", e, param);
+    }
   }, []);
+
+
 
   // Each smoothing effect is keyed on PRIMITIVE deps so it fires only when a
   // user-changed parameter actually changes value, not on every parent
@@ -381,15 +394,18 @@ export default function RolandS1() {
   // Mixer
   useEffect(() => {
     const n = nodesRef.current; if (!n) return;
+    console.log("Setting S1 mixer to", mixer);
     smoothSet(n.gainSaw.gain, mixer.saw);
     smoothSet(n.gainSqr.gain, mixer.sqr);
     smoothSet(n.gainSub.gain, mixer.sub);
     smoothSet(n.gainNoise.gain, mixer.noise);
   }, [mixer.saw, mixer.sqr, mixer.sub, mixer.noise, smoothSet]);
 
+
   // ADSR (shared between amp env and filter env)
   useEffect(() => {
     const n = nodesRef.current; if (!n) return;
+    console.log("S1 updating ADSR", adsr);
     const attack = Math.max(0.001, adsr.a * 2);
     const decay = Math.max(0.01, adsr.d * 2);
     const release = Math.max(0.01, adsr.r * 5);
@@ -406,10 +422,23 @@ export default function RolandS1() {
   // Filter (cutoff / resonance / env depth)
   useEffect(() => {
     const n = nodesRef.current; if (!n) return;
+    console.log("S1 updating Filter", filter);
     smoothSet(n.vcf.frequency, getLogFreq(filter.cutoff));
     n.vcf.Q.value = filter.reso * 20;
-    n.filterEnvScale.max = filter.env * 10000;
+    
+    try {
+      if ((n.filterEnvScale.max as unknown as ToneParamLike).value !== undefined) {
+        (n.filterEnvScale.max as unknown as ToneParamLike).value = filter.env * 10000;
+      } else {
+        (n.filterEnvScale as any).max = filter.env * 10000;
+      }
+    } catch(e) {
+      console.error("FilterEnvScale max update error:", e);
+    }
   }, [filter.cutoff, filter.reso, filter.env, smoothSet]);
+
+
+
 
   // LFO (rate, waveform, depths)
   useEffect(() => {
