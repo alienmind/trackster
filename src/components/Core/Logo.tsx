@@ -1,6 +1,6 @@
 export default function Logo({ className = '' }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" className={className}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" className={className}>
       <defs>
         <linearGradient id="boardGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#4ade80" />

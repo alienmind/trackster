@@ -4,7 +4,8 @@ import type { PageIndex, Notification, SampleFile } from '../types';
 
 interface UIState {
   activePage: PageIndex;
-  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys';
+  activeMainView: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys' | 'sequencer';
+  activeNodeId: string | null;
   selectedPadIndex: number | null;
   selectedPads: number[];
   isCommitDialogOpen: boolean;
@@ -38,7 +39,7 @@ interface UIState {
     destructive?: boolean;
   };
 
-  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys') => void;
+  setActiveMainView: (view: 'circuit' | 'overview' | 'grind' | 's1' | 'minifreak' | 'flow8' | 'daw' | 'soundtoys' | 'sequencer', nodeId?: string | null) => void;
   setActivePage: (page: PageIndex) => void;
   selectPad: (index: number | null, shiftKey?: boolean, ctrlKey?: boolean) => void;
   openCommitDialog: () => void;
@@ -73,6 +74,7 @@ interface UIState {
 const storeCreator: StateCreator<UIState> = (set) => ({
   activePage: 0,
   activeMainView: 'overview',
+  activeNodeId: null,
   selectedPadIndex: null,
   selectedPads: [],
   isCommitDialogOpen: false,
@@ -102,9 +104,10 @@ const storeCreator: StateCreator<UIState> = (set) => ({
 
   deferredPrompt: null,
 
-  setActiveMainView: (view) => set((state) => {
+  setActiveMainView: (view, nodeId = null) => set((state) => {
     return { 
       activeMainView: view, 
+      activeNodeId: nodeId,
       activeDoc: null, 
       helpMode: false, 
       activeDocSection: null, 
@@ -216,6 +219,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state: any) => ({
         activePage: state.activePage,
         activeMainView: state.activeMainView,
+        activeNodeId: state.activeNodeId,
         isLeftPaneCollapsed: state.isLeftPaneCollapsed,
         sidebarSectionStates: state.sidebarSectionStates
       })

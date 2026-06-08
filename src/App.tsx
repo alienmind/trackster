@@ -29,6 +29,8 @@ import OverviewTab from './components/Overview/OverviewTab';
 import WIPPage from './components/Core/WIPPage/WIPPage';
 import SoundToysLayout from './components/devices/SoundToys/SoundToysLayout';
 import { HARDWARE_LIBRARY } from './devices';
+import GlobalSequencer from './components/GlobalSequencer/GlobalSequencer';
+import { Button } from './components/Core/ui/button';
 
 // Floating hamburger button that opens the sidebar on mobile/tablet,
 // and toggles the icon-collapsed sidebar on desktop. Hides itself when the
@@ -71,19 +73,19 @@ function FloatingMenuButton() {
   const { isMobile, openMobile, state, toggleSidebar } = useSidebar();
   // Hide while the mobile sheet is open (the sheet has its own close button)
   if (isMobile && openMobile) return null;
-  // On desktop, only show when sidebar is collapsed to icons; on mobile/tablet,
-  // always show because the sidebar lives in a Sheet that needs an external trigger.
-  const visible = isMobile || state === 'collapsed';
-  if (!visible) return null;
+  
+  const Icon = state === 'expanded' ? Icons.PanelLeftClose : Icons.Menu;
+  
   return (
-    <button
-      type="button"
-      aria-label="Open menu"
+    <Button
+      variant="outline"
+      size="icon"
+      aria-label="Toggle menu"
       onClick={toggleSidebar}
-      className="fixed top-2 left-1.5 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/85 backdrop-blur text-foreground shadow-lg hover:bg-accent hover:text-accent-foreground active:scale-95 transition"
+      className="fixed top-2 left-1.5 z-50 flex h-9 w-9 rounded-lg bg-background/85 backdrop-blur shadow-lg active:scale-95 transition"
     >
-      <Icons.Menu className="h-5 w-5" />
-    </button>
+      <Icon className="h-5 w-5" />
+    </Button>
   );
 }
 
@@ -223,17 +225,20 @@ export default function App() {
             {/* Main View Container - reserves doc-drawer width when a doc is open */}
             <DocAwareLayoutEffects />
             <DocAwareMainView>
-              {activeMainView === 'overview' ? (
-                <div className="flex-1 flex flex-col overflow-auto bg-neutral-900"><OverviewTab /></div>
-              ) : activeMainView === 'soundtoys' ? (
+              <div className="flex-1 flex-col overflow-auto bg-neutral-900" style={{ display: activeMainView === 'overview' ? 'flex' : 'none' }}>
+                <OverviewTab />
+              </div>
+              {activeMainView === 'soundtoys' ? (
                 <SoundToysLayout />
-              ) : DeviceLayout ? (
+              ) : activeMainView === 'sequencer' ? (
+                <GlobalSequencer />
+              ) : activeMainView !== 'overview' && DeviceLayout ? (
                 <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-muted-foreground">Loading device...</div>}>
                   <DeviceLayout />
                 </React.Suspense>
-              ) : (
+              ) : activeMainView !== 'overview' ? (
                 <WIPPage deviceId={activeMainView} />
-              )}
+              ) : null}
             </DocAwareMainView>
 
             <DocumentationDrawer />

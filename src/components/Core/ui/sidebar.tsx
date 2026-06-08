@@ -531,7 +531,7 @@ function SidebarMenuButton({
     return comp
   }
 
-  if (typeof tooltip === "string") {
+  if (typeof tooltip === "string" || React.isValidElement(tooltip)) {
     tooltip = {
       children: tooltip,
     }

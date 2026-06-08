@@ -42,3 +42,6 @@ coverage/
 
 # WSL
 *:Zone.Identifier
+
+# More
+tmp

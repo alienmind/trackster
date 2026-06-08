@@ -75,6 +75,7 @@ export interface OverviewNode {
    *  Each entry may have an in-channel, out-channel, or both. */
   midiTrackChannels?: Record<string, { in?: number | '*' | null; out?: number | '*' | null }>;
   circuitLogicalOuts?: { synth1?: number | null, synth2?: number | null, midi1?: number | null, midi2?: number | null };
+  deviceState?: Record<string, any>;
 }
 
 export interface OverviewConnection {
@@ -129,6 +130,7 @@ interface OverviewState {
   /** Id of the profile that is currently loaded (built-in or custom). Persisted in localStorage. */
   activeProfileId: string | null;
   setActiveProfileId: (id: string | null) => void;
+  updateNodeState: (id: string, partialState: Record<string, any>) => void;
 }
 
 export const useOverviewStore = create<OverviewState>((set, get) => ({
@@ -176,6 +178,20 @@ export const useOverviewStore = create<OverviewState>((set, get) => ({
   addNode: (id, node) => set((state) => ({
     nodes: { ...state.nodes, [id]: node }
   })),
+
+  updateNodeState: (id, partialState) => set((state) => {
+    const node = state.nodes[id];
+    if (!node) return state;
+    return {
+      nodes: {
+        ...state.nodes,
+        [id]: {
+          ...node,
+          deviceState: { ...(node.deviceState || {}), ...partialState }
+        }
+      }
+    };
+  }),
 
   findNextFreeCell: () => {
     const { nodes, gridSize } = get();

@@ -1,11 +1,11 @@
-import type { PadSlot, PackSlot, RenamePlan, RenameOperation } from '../types';
+import type { PadSlot, PackSlot, RenamePlan, RenameOperation, SampleFile } from '../types';
 import { buildFilename } from './fileNaming';
 
 /**
  * Compare current slot assignments to on-disk filenames across all packs and pack folders.
  * Returns a RenamePlan containing only the files and folders that need renaming.
  */
-export async function computeRenamePlan(slotsByPack: Record<string, PadSlot[]>, packSlots: PackSlot[], originalPacks: string[], tracksHandle: FileSystemDirectoryHandle, applyTagsToFilenames: boolean): Promise<RenamePlan> {
+export async function computeRenamePlan(slotsByPack: Record<string, PadSlot[]>, packSlots: PackSlot[], originalPacks: string[], tracksHandle: FileSystemDirectoryHandle, applyTagsToFilenames: boolean, pendingDeletionsByPack: Record<string, SampleFile[]> = {}): Promise<RenamePlan> {
   const operations: RenameOperation[] = [];
 
   for (const packName in slotsByPack) {
@@ -93,6 +93,22 @@ export async function computeRenamePlan(slotsByPack: Record<string, PadSlot[]>, 
           });
         }
       }
+    }
+  }
+
+  // Pending sample deletions (X on pad, clear staging area, duplicate resolution)
+  for (const packName in pendingDeletionsByPack) {
+    const files = pendingDeletionsByPack[packName];
+    if (!files) continue;
+    for (const file of files) {
+      operations.push({
+        type: 'file',
+        action: 'delete',
+        from: file.originalFilename,
+        to: file.originalFilename,
+        handle: file.fileHandle,
+        parentDirHandle: file.parentDirHandle,
+      });
     }
   }
 

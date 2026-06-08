@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import Soundfont from 'soundfont-player';
+import * as Tone from 'tone';
 import { useAudioStore } from './useAudioStore';
 import { useCircuitTracksStore } from './useCircuitTracksStore';
 
@@ -9,6 +10,7 @@ interface PianoAudioState {
   piano: any | null;
   audioContext: AudioContext | null;
   playingNodes: Record<number, any>;
+  pressedNotes: Record<number, boolean>;
   
   initAudio: () => Promise<void>;
   playNote: (interval: number, durationMs?: number) => Promise<void>;
@@ -24,6 +26,7 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
   piano: null,
   audioContext: null,
   playingNodes: {},
+  pressedNotes: {},
   arpeggioId: 0,
 
   initAudio: async () => {
@@ -32,8 +35,14 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
 
     set({ isLoadingAudio: true });
     try {
-      const ac = useAudioStore.getState().audioContext;
-      const analyser = useAudioStore.getState().analyser;
+      await Tone.start();
+      
+      let ac = useAudioStore.getState().audioContext;
+      if (!ac) {
+        useAudioStore.getState().initAudioContext();
+        ac = useAudioStore.getState().audioContext;
+      }
+      // No longer need analyser for destination, we route directly to Tone.Destination
       
       if (!ac) throw new Error("Could not initialize shared AudioContext");
 
@@ -41,9 +50,17 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
         throw new Error("Soundfont.instrument is not a function. Check import.");
       }
       
+      const destNode = ac.createGain();
+      destNode.connect(ac.destination);
+      
+      const analyser = useAudioStore.getState().analyser;
+      if (analyser) {
+          destNode.connect(analyser);
+      }
+      
       const instrument = await Soundfont.instrument(ac, 'acoustic_grand_piano', {
         nameToUrl: (name: string, _sf: string, format?: string) => `${import.meta.env.BASE_URL}soundfonts/${name}-${format || 'mp3'}.js`,
-        destination: analyser || ac.destination
+        destination: destNode
       });
       
       set({ 
@@ -59,14 +76,34 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
   },
 
   playNote: async (interval: number, durationMs?: number) => {
-    const { piano, audioContext, playingNodes } = get();
-    if (!piano || !audioContext) return;
+    // 1. Set pressed state synchronously
+    set(state => ({
+      pressedNotes: { ...state.pressedNotes, [interval]: true }
+    }));
+
+    const { piano, audioContext } = get();
     
-    if (audioContext.state === 'suspended') {
-        await audioContext.resume();
+    // If not ready, try to initialize it now
+    if (!piano || !audioContext) {
+      await get().initAudio();
+    }
+
+    const updatedPiano = get().piano;
+    const updatedCtx = get().audioContext;
+    if (!updatedPiano || !updatedCtx) return;
+    
+    if (updatedCtx.state === 'suspended') {
+        await updatedCtx.resume();
+    }
+    await Tone.start();
+    
+    // 2. Check if the user released the key during the asynchronous wait time
+    if (!get().pressedNotes[interval] && !durationMs) {
+      return; // Released before we could play it
     }
     
     // Stop the note if it is already playing to avoid overlap
+    const { playingNodes } = get();
     if (playingNodes[interval]) {
         playingNodes[interval].stop();
     }
@@ -76,7 +113,14 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
     
     try {
       const options = durationMs ? { duration: durationMs / 1000 } : undefined;
-      const node = piano.play(midiNote.toString(), audioContext.currentTime, options);
+      const node = updatedPiano.play(midiNote.toString(), updatedCtx.currentTime, options);
+      
+      // Double check in case it was released just as we triggered play
+      if (!get().pressedNotes[interval] && !durationMs) {
+        node.stop();
+        return;
+      }
+
       set(state => ({
         playingNodes: { ...state.playingNodes, [interval]: node }
       }));
@@ -86,6 +130,10 @@ export const usePianoAudioStore = create<PianoAudioState>((set, get) => ({
   },
 
   stopNote: (interval: number) => {
+    set(state => ({
+      pressedNotes: { ...state.pressedNotes, [interval]: false }
+    }));
+
     const { playingNodes } = get();
     if (playingNodes[interval]) {
         playingNodes[interval].stop();

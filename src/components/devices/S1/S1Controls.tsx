@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
+import { useKnobInteraction } from '../../../hooks/useKnobInteraction';
 
 // Raw 3.5mm Patch Jack
 export const Jack = () => (
@@ -10,38 +11,24 @@ export const Jack = () => (
 );
 
 // Interactive Knob (S1 Specific)
-export const S1Knob = ({ label, subLabel, size = 36, ringColor = "transparent", variant = "standard" }: { label?: React.ReactNode, subLabel?: string, size?: number, ringColor?: string, variant?: 'standard' | 'encoder' }) => {
-  const [rotation, setRotation] = useState(0); 
-  const isDragging = useRef(false);
-  const startY = useRef(0);
+// Memoized so that re-renders of the parent caused by unrelated state
+// (e.g. the Global Sequencer's `currentStep` updates) do not re-render every
+// knob in the panel. For this to be effective callers MUST pass a stable
+// `onChange` reference (use `useCallback`). See DEV_ARCHITECTURE.md §10.
+export const S1Knob = React.memo(function S1Knob({ label, subLabel, size = 36, ringColor = "transparent", variant = "standard", value, onChange }: { label?: React.ReactNode, subLabel?: string, size?: number, ringColor?: string, variant?: 'standard' | 'encoder', value?: number, onChange?: (val: number) => void }) {
+  const { rotation, handlePointerDown, resetRotation } = useKnobInteraction({
+    value,
+    onChange,
+    sensitivity: 2.7
+  });
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    isDragging.current = true;
-    startY.current = e.clientY;
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    e.preventDefault();
-  };
-
-  const handlePointerMove = (e: PointerEvent) => {
-    if (!isDragging.current) return;
-    const deltaY = startY.current - e.clientY;
-    startY.current = e.clientY;
-    setRotation((prev) => Math.min(135, Math.max(-135, prev + deltaY * 2)));
-  };
-
-  const handlePointerUp = () => {
-    isDragging.current = false;
-    window.removeEventListener('pointermove', handlePointerMove);
-    window.removeEventListener('pointerup', handlePointerUp);
-  };
 
   return (
     <div className="flex flex-col items-center group relative z-10 w-12">
       <div 
         className="relative flex justify-center items-center cursor-ns-resize"
         onPointerDown={handlePointerDown}
-        onDoubleClick={() => setRotation(0)}
+        onDoubleClick={resetRotation}
         style={{ touchAction: 'none' }}
       >
         <svg 
@@ -75,9 +62,10 @@ export const S1Knob = ({ label, subLabel, size = 36, ringColor = "transparent", 
       </div>
     </div>
   );
-};
+});
 
 // Simple SVG Icons for Waveforms
+
 export const SqIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round">
     <path d="M3 12h5v-6h8v12h5v-6h3" />
@@ -90,7 +78,7 @@ export const SawIcon = () => (
 );
 
 // Range Knob Component
-export const RangeKnob = () => (
+export const RangeKnob = ({ value, onChange }: { value?: number, onChange?: (val: number) => void }) => (
   <div className="relative w-[48px] flex justify-center items-center pt-2">
      <span className="absolute top-1 left-0 text-[8px] text-white font-bold pointer-events-none">16'</span>
      <span className="absolute top-1 right-0 text-[8px] text-white font-bold pointer-events-none">8'</span>
@@ -98,12 +86,12 @@ export const RangeKnob = () => (
      <span className="absolute top-[18px] -right-2 text-[8px] text-white font-bold pointer-events-none">4'</span>
      <span className="absolute top-[32px] left-0 text-[8px] text-white font-bold pointer-events-none">64'</span>
      <span className="absolute top-[32px] right-0 text-[8px] text-white font-bold pointer-events-none">2'</span>
-     <S1Knob size={36} subLabel="RANGE" />
+     <S1Knob size={36} subLabel="RANGE" value={value} onChange={onChange} />
   </div>
 );
 
 // Rectangular Button (For standard buttons)
-export const RectButton = ({ label, topLabel, bottomLabel, active = false, ledColor = "#ff3333", className = "", width = "w-10", height = "h-6" }: { label: React.ReactNode, topLabel?: string, bottomLabel?: string, active?: boolean, ledColor?: string, className?: string, width?: string, height?: string }) => {
+export const RectButton = ({ label, topLabel, bottomLabel, active = false, ledColor = "#ff3333", className = "", width = "w-10", height = "h-6", onClick }: { label: React.ReactNode, topLabel?: string, bottomLabel?: string, active?: boolean, ledColor?: string, className?: string, width?: string, height?: string, onClick?: () => void }) => {
   const [isPressed, setIsPressed] = useState(false);
 
   return (
@@ -113,6 +101,7 @@ export const RectButton = ({ label, topLabel, bottomLabel, active = false, ledCo
         onMouseDown={() => setIsPressed(true)}
         onMouseUp={() => setIsPressed(false)}
         onMouseLeave={() => setIsPressed(false)}
+        onClick={onClick}
         className={`${width} ${height} rounded-[3px] bg-[#151515] border border-[#000] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-center transition-all ${className} ${isPressed ? 'translate-y-[2px] shadow-[0_0px_2px_rgba(0,0,0,0.8)]' : ''}`}
       >
         <span 
@@ -128,7 +117,7 @@ export const RectButton = ({ label, topLabel, bottomLabel, active = false, ledCo
 };
 
 // Vertical Button (For the "Black Keys" in the piano layout)
-export const VerticalBtn = ({ label, bottomLabel, active = false, ledColor = "#ef4444" }: { label: string, bottomLabel?: string, active?: boolean, ledColor?: string }) => {
+export const VerticalBtn = ({ label, bottomLabel, active = false, ledColor = "#ef4444", onClick }: { label: string, bottomLabel?: string, active?: boolean, ledColor?: string, onClick?: () => void }) => {
   const [isPressed, setIsPressed] = useState(false);
 
   return (
@@ -137,6 +126,7 @@ export const VerticalBtn = ({ label, bottomLabel, active = false, ledColor = "#e
         onMouseDown={() => setIsPressed(true)}
         onMouseUp={() => setIsPressed(false)}
         onMouseLeave={() => setIsPressed(false)}
+        onClick={onClick}
         className={`w-[75%] h-[28px] rounded-[2px] bg-[#1a1a1a] border-t border-x border-[#333] border-b-[3px] border-b-black shadow-[0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-center transition-all ${isPressed ? 'translate-y-[2px] border-b border-b-[#111] shadow-[0_0px_2px_rgba(0,0,0,0.8)]' : ''}`}
       >
         <span
@@ -154,19 +144,19 @@ export const VerticalBtn = ({ label, bottomLabel, active = false, ledColor = "#e
 };
 
 // TR-Style 16-Step Pad (White Keys)
-export const StepPad = ({ number, label, groupLabel, isGlowing = false }: { number: string, label?: string, groupLabel?: string, isGlowing?: boolean }) => {
-  const [active, setActive] = useState(isGlowing);
-
+export const StepPad = ({ number, label, groupLabel, isGlowing = false, onPointerDown, onPointerUp }: { number: string, label?: string, groupLabel?: string, isGlowing?: boolean, onPointerDown?: () => void, onPointerUp?: () => void }) => {
   return (
     <div className="flex flex-col items-center w-full">
       <button 
-        onClick={() => setActive(!active)}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
         className={`w-full h-8 rounded-sm border border-[#a1a1aa] relative overflow-hidden transition-all active:translate-y-[1px]
-          ${active ? 'bg-[#fbcfe8] border-[#f472b6] shadow-[0_0_8px_#ec4899]' : 'bg-[#e4e4e7] shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_3px_rgba(0,0,0,0.4)]'}
+          ${isGlowing ? 'bg-[#fbcfe8] border-[#f472b6] shadow-[0_0_8px_#ec4899]' : 'bg-[#e4e4e7] shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_3px_rgba(0,0,0,0.4)]'}
         `}
       >
-        {active && <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-2 bg-pink-400 blur-[2px] opacity-60 rounded-full"></div>}
-        <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold z-10 ${active ? 'text-[#be185d]' : 'text-gray-500'}`}>{number}</span>
+        {isGlowing && <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-2 bg-pink-400 blur-[2px] opacity-60 rounded-full"></div>}
+        <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold z-10 ${isGlowing ? 'text-[#be185d]' : 'text-gray-500'}`}>{number}</span>
       </button>
       <div className="h-6 mt-1 flex flex-col items-center">
         {label && <span className="text-[6px] text-gray-300 font-bold tracking-widest uppercase text-center leading-tight whitespace-nowrap">{label}</span>}

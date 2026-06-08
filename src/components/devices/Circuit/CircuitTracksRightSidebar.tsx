@@ -80,7 +80,7 @@ export default function CircuitTracksRightSidebar() {
                         </Tooltip>
                       </TooltipProvider>
 
-                      <Button variant="default" className="justify-start w-full" onClick={() => { autoTag(); autoArrange(); }}>
+                      <Button variant="destructive" className="justify-start w-full" onClick={() => { autoTag(); autoArrange(); }}>
                         <Icons.Wand2 className="mr-2 h-4 w-4" />
                         Auto-Tag & Arrange
                       </Button>
@@ -88,7 +88,7 @@ export default function CircuitTracksRightSidebar() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger render={<div className="w-full" />}>
-                            <Button variant="secondary" className="justify-start w-full" onClick={scanDuplicates}>
+                            <Button variant="default" className="justify-start w-full" onClick={scanDuplicates}>
                               <Icons.Copy className="mr-2 h-4 w-4" />
                               Find Duplicates
                             </Button>

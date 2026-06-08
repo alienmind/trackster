@@ -1,6 +1,5 @@
 import {
   Sidebar,
-  useSidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -28,7 +27,6 @@ import { useState } from 'react';
 
 export function AppSidebar() {
   const { activeMainView, setActiveMainView, sidebarSectionStates, setSidebarSectionState, isOscilloscopeOpen, setOscilloscopeOpen } = useUIStore();
-  const { toggleSidebar } = useSidebar();
 
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, description: React.ReactNode, onConfirm: () => void, destructive?: boolean }>({ isOpen: false, title: '', description: '', onConfirm: () => {} });
 
@@ -59,21 +57,10 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader className="relative flex flex-col items-center justify-center py-4 border-b border-border group-data-[collapsible=icon]:pt-14">
-        <Logo className="h-16 w-auto text-foreground mb-1 group-data-[collapsible=icon]:hidden" aria-label="Track(ster)" />
-        <LogoIcon className="hidden group-data-[collapsible=icon]:block h-8 w-auto text-foreground mb-0" aria-label="Track(ster)" />
-        <div className="flex items-center justify-center w-full group-data-[collapsible=icon]:hidden">
-          <span className="text-[10px] text-muted-foreground font-mono font-bold tracking-widest uppercase">v{pkg.version}</span>
-        </div>
-        {/* Collapse button — visible only when sidebar is expanded (not in icon mode). */}
-        <button
-          type="button"
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar (Ctrl/Cmd+B)"
-          onClick={() => toggleSidebar()}
-          className="absolute top-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition group-data-[collapsible=icon]:hidden"
-        >
-          <Icons.PanelLeftClose className="h-4 w-4" />
-        </button>
+        <Logo className="h-24 w-auto text-foreground mb-1 group-data-[collapsible=icon]:hidden" aria-label="Track(ster)" />
+        <LogoIcon className="hidden group-data-[collapsible=icon]:block h-6 w-auto text-foreground mb-0" aria-label="Track(ster)" />
+
+
       </SidebarHeader>
 
       <SidebarContent>
@@ -129,6 +116,16 @@ export function AppSidebar() {
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        isActive={activeMainView === 'sequencer'}
+                        onClick={() => setActiveMainView('sequencer')}
+                        tooltip="Global Sequencer"
+                      >
+                        <Icons.ListOrdered className="w-4 h-4" />
+                        <span>Sequencer</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton 
                         isActive={isOscilloscopeOpen}
@@ -190,6 +187,9 @@ export function AppSidebar() {
           >
             <Icons.Trash2 size={16} />
           </Button>
+        </div>
+        <div className="flex items-center justify-center w-full pt-1">
+          <span className="text-[10px] text-muted-foreground font-mono font-bold tracking-widest uppercase">v{pkg.version}</span>
         </div>
       </SidebarFooter>
 

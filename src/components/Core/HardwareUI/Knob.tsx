@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+
 import { useUIStore } from '../../../stores/useUIStore';
 import { cn } from '../../../lib/utils';
+
+import { useKnobInteraction } from '../../../hooks/useKnobInteraction';
 
 export interface KnobProps {
   label?: string;
@@ -17,31 +19,10 @@ export const Knob = ({ label = '', subLabel, size = 50, onInteract, variant = 'c
   const interactive = helpMode && !!sectionId;
   const gradId = label.replace(/\s+/g, '') + '-' + variant;
 
-  const [rotation, setRotation] = useState(0); // -135 to 135 degrees
-  const isDragging = React.useRef(false);
-  const startY = React.useRef(0);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    isDragging.current = true;
-    startY.current = e.clientY;
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    e.preventDefault();
-    if (onInteract) onInteract();
-  };
-
-  const handlePointerMove = (e: PointerEvent) => {
-    if (!isDragging.current) return;
-    const deltaY = startY.current - e.clientY;
-    startY.current = e.clientY;
-    setRotation((prev) => Math.min(135, Math.max(-135, prev + deltaY * 2)));
-  };
-
-  const handlePointerUp = () => {
-    isDragging.current = false;
-    window.removeEventListener('pointermove', handlePointerMove);
-    window.removeEventListener('pointerup', handlePointerUp);
-  };
+  const { rotation, handlePointerDown, resetRotation } = useKnobInteraction({
+    onInteract,
+    sensitivity: 2.0 // Match previous Circuit Tracks sensitivity
+  });
 
   const progress = Math.abs(rotation) / 135;
   let r = 156, g = 163, b = 175;
@@ -92,7 +73,7 @@ export const Knob = ({ label = '', subLabel, size = 50, onInteract, variant = 'c
       onPointerEnter={() => interactive && setHoveredDocSection(sectionId!)}
       onPointerLeave={() => interactive && setHoveredDocSection(null)}
       onPointerDown={handlePointerDown}
-      onDoubleClick={() => setRotation(0)}
+      onDoubleClick={resetRotation}
       style={{ touchAction: 'none' }}
     >
       <div className="relative flex justify-center items-center">

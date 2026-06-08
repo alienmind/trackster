@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
-import { usePianoAudioStore } from '../../../../stores/usePianoAudioStore';
-import { DISABLED_ROOT_PADS, ROOT_PAD_NAMES, SCALE_MODES, getAllowedPads, CHROMATIC_PADS } from './scalesData';
+import { DISABLED_ROOT_PADS, ROOT_PAD_NAMES, SCALE_MODES, getAllowedPads } from './scalesData';
 
 interface ScalePadProps {
   index: number;
@@ -9,7 +8,6 @@ interface ScalePadProps {
 
 const ScalePad = memo(function ScalePad({ index }: ScalePadProps) {
   const { activeRootNote, setActiveRootNote, activeScaleType, setActiveScaleType } = useCircuitTracksStore();
-  const { playPreview } = usePianoAudioStore();
 
   const isRootSection = index < 16;
   const isScaleSection = index >= 16;
@@ -31,19 +29,8 @@ const ScalePad = memo(function ScalePad({ index }: ScalePadProps) {
     if (isRootSection && isAllowedRoot) {
       (e.target as Element).setPointerCapture(e.pointerId);
       setActiveRootNote(index);
-      
-      const rootIdx = CHROMATIC_PADS.indexOf(index);
-      const scale = SCALE_MODES[activeScaleType];
-      if (rootIdx !== -1 && scale) {
-        playPreview(rootIdx, scale.intervals);
-      }
     } else if (isScaleSection && scaleData) {
       setActiveScaleType(index);
-      
-      const rootIdx = CHROMATIC_PADS.indexOf(activeRootNote);
-      if (rootIdx !== -1) {
-        playPreview(rootIdx, scaleData.intervals);
-      }
     }
   };
 

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
@@ -36,6 +36,21 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
   const isPlaying = currentlyPlayingSlot === slot.index;
   const togglePlayback = useCircuitTracksStore((s) => s.togglePlayback);
 
+  const handleDelete = useCallback(() => {
+    const sample = slot.sample;
+    if (!sample) return;
+    useUIStore.getState().showConfirmModal({
+      title: "Delete Sample",
+      description: `Mark "${sample.displayName}" for deletion?\n\nThe file will be removed from your SD Card the next time you commit changes.`,
+      confirmText: "Mark for Deletion",
+      cancelText: "Cancel",
+      destructive: true,
+      onConfirm: () => {
+        useCircuitTracksStore.getState().removeFile(sample);
+      }
+    });
+  }, [slot.sample]);
+
   const handleClick = (e: React.MouseEvent) => {
     if (isDragging) return;
     
@@ -67,7 +82,7 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
       ref={setNodeRef}
       style={style}
       className={`
-        relative rounded-sm flex flex-col items-center justify-center
+        group relative rounded-sm flex flex-col items-center justify-center
         transition-all duration-75 select-none touch-none aspect-square cursor-pointer
         ${colorClass}
         ${isOver ? 'ring-2 ring-white ring-inset scale-95' : ''}
@@ -83,11 +98,12 @@ const SortablePad = memo(function SortablePad({ slot }: SortablePadProps) {
       
       {slot.sample && (
         <>
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
-              useCircuitTracksStore.getState().clearSlot(slot.index);
+              handleDelete();
             }}
+            title="Delete sample from SD Card"
             className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 bg-black/20 rounded-full hover:bg-red-500/80 text-white z-10 cursor-pointer"
           >
             <Icons.X size={10} />

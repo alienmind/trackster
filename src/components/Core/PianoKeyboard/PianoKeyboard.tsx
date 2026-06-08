@@ -1,7 +1,5 @@
 import { memo, useState } from 'react';
-import { useCircuitTracksStore } from '../../../../stores/useCircuitTracksStore';
-import { usePianoAudioStore } from '../../../../stores/usePianoAudioStore';
-import { getAllowedPads } from './scalesData';
+import { usePianoAudioStore } from '../../../stores/usePianoAudioStore';
 
 const PIANO_KEYS = [
   { note: 'C', type: 'white', padIndex: 8 },
@@ -20,26 +18,31 @@ const PIANO_KEYS = [
 
 function PianoKey({ 
   note, type, i, whiteIndex, 
-  isAllowed, isActiveRoot 
+  isAllowed, isActiveRoot, onClick
 }: { 
   note: string, type: string, i: number, whiteIndex: number, 
-  isAllowed: boolean, isActiveRoot: boolean 
+  isAllowed: boolean, isActiveRoot: boolean, onClick?: () => void
 }) {
   const [isPressed, setIsPressed] = useState(false);
   const { playNote, stopNote } = usePianoAudioStore();
-  const isPlaying = usePianoAudioStore(s => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i));
+  const isPlaying = usePianoAudioStore((s: any) => Object.keys(s.playingNodes).some(k => (parseInt(k, 10) - 1) % 12 === i));
 
   const handlePress = (e: React.PointerEvent) => {
     if (!isAllowed) return;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture(e.pointerId);
     setIsPressed(true);
     playNote(i + 1);
+    onClick?.();
   };
 
   const handleRelease = (e: React.PointerEvent) => {
-    (e.target as Element).releasePointerCapture(e.pointerId);
     setIsPressed(false);
     stopNote(i + 1);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (err) {
+      // Ignore if pointer capture was already released
+    }
   };
 
   const isWhite = type === 'white';
@@ -101,10 +104,19 @@ function PianoKey({
   }
 }
 
-export default memo(function PianoKeyboard() {
-  const { activeRootNote, activeScaleType } = useCircuitTracksStore();
-  const allowedPads = getAllowedPads(activeRootNote, activeScaleType);
+export interface PianoKeyboardProps {
+  allowedPads: number[];
+  activeRootNote: number;
+  selectedNoteIndex?: number | null; // Provide an index (0-11) if a note is currently selected
+  onKeyClick?: (noteIndex: number, noteName: string) => void;
+}
 
+export default memo(function PianoKeyboard({ 
+  allowedPads, 
+  activeRootNote,
+  selectedNoteIndex = null,
+  onKeyClick
+}: PianoKeyboardProps) {
   return (
     <div className="relative flex justify-center items-start mt-2 h-[120px] select-none touch-none">
       {PIANO_KEYS.map((key, i) => {
@@ -118,7 +130,8 @@ export default memo(function PianoKeyboard() {
             i={i}
             whiteIndex={whiteIndex}
             isAllowed={allowedPads.includes(key.padIndex)}
-            isActiveRoot={key.padIndex === activeRootNote}
+            isActiveRoot={key.padIndex === activeRootNote || i === selectedNoteIndex}
+            onClick={() => onKeyClick?.(i, key.note)}
           />
         );
       })}

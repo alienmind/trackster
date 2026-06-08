@@ -3,6 +3,7 @@ import { useUIStore } from '../../../stores/useUIStore';
 import { useAudioStore } from '../../../stores/useAudioStore';
 import Oscilloscope from '../Oscilloscope/Oscilloscope';
 import * as Icons from 'lucide-react';
+import { Button } from '../ui/button';
 
 export default function OscilloscopeDrawer() {
   const isOscilloscopeOpen = useUIStore(s => s.isOscilloscopeOpen);
@@ -70,27 +71,31 @@ export default function OscilloscopeDrawer() {
         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Icons.Activity className="w-4 h-4" />
           Oscilloscope
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleMonitorToggle}
-            className={`ml-4 flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${
+            className={`h-auto ml-4 flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${
               isMonitoring
-                ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30'
-                : 'bg-primary/10 text-primary hover:bg-primary/20'
+                ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30 hover:text-red-500'
+                : 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary'
             }`}
           >
             <Icons.Mic className="w-3 h-3" />
             {isMonitoring ? 'Monitoring...' : 'Monitor'}
-          </button>
+          </Button>
         </div>
-        <button 
+        <Button 
+          variant="ghost"
+          size="icon"
           onClick={() => {
             stopMonitoring();
             setOscilloscopeOpen(false);
           }}
-          className="text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors h-6 w-6"
         >
           <Icons.X className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
       
       <div className="flex-1 min-h-0 p-4">
