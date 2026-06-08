@@ -8,6 +8,8 @@ import PianoDrawer from './PianoDrawer';
 import GenerateSequenceModal from './GenerateSequenceModal';
 import AddInstrumentModal from './AddInstrumentModal';
 import { Button } from '../Core/ui/button';
+import { getAssignableChannelKeys } from './sequenceUtils';
+
 
 const StepButton = ({ 
   active, 
@@ -158,16 +160,13 @@ export default function GlobalSequencer() {
                   .map(node => {
                     const blueprint = HARDWARE_LIBRARY[node.type];
                     const modelName = blueprint?.model || node.type;
-                    
-                    if (node.midiTrackChannels) {
-                      return Object.keys(node.midiTrackChannels).map(channelKey => (
-                        <option key={`${node.id}:${channelKey}`} value={`${node.id}:${channelKey}`}>
-                          {modelName} ({channelKey})
-                        </option>
-                      ));
-                    }
-                    return null;
+                    return getAssignableChannelKeys(node, blueprint).map(channelKey => (
+                      <option key={`${node.id}:${channelKey}`} value={`${node.id}:${channelKey}`}>
+                        {modelName} ({channelKey})
+                      </option>
+                    ));
                   })}
+
               </select>
               <div className="text-xs text-muted-foreground mt-1">MIDI Out</div>
             </div>

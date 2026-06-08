@@ -1,5 +1,7 @@
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
+import { persist } from 'zustand/middleware';
 import * as Tone from 'tone';
+
 
 export type StepData = {
   active: boolean;
@@ -59,7 +61,8 @@ const ensureMasterLoop = () => {
   masterLoop.start(0);
 };
 
-export const useSequencerStore = create<SequencerState>((set, get) => ({
+const sequencerStoreCreator: StateCreator<SequencerState> = (set, get) => ({
+
   isPlaying: false,
   bpm: 120,
   currentStep: 0,
@@ -138,4 +141,43 @@ export const useSequencerStore = create<SequencerState>((set, get) => ({
   }),
 
   setPatternSize: (size) => set({ patternSize: size })
-}));
+});
+
+type PersistOptions<T> = {
+  name: string;
+  partialize?: (state: T) => Partial<T>;
+  onRehydrateStorage?: () => ((state: T | undefined) => void) | void;
+};
+const persistMiddleware = persist as unknown as <T>(
+  config: StateCreator<T>,
+  options: PersistOptions<T>,
+) => StateCreator<T>;
+
+export const useSequencerStore = create<SequencerState>()(
+  persistMiddleware<SequencerState>(
+    sequencerStoreCreator,
+    {
+      name: 'trackster-sequencer-v1',
+      // Only persist the user-authored pattern data, not the live transport state
+      // or the in-memory Tone.js references. On rehydrate we explicitly reset
+      // isPlaying / currentStep so the transport stays stopped.
+      partialize: (state) => ({
+        bpm: state.bpm,
+        patternSize: state.patternSize,
+        tracks: state.tracks,
+        trackAssignments: state.trackAssignments,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        state.isPlaying = false;
+        state.currentStep = 0;
+        // Apply persisted bpm to Tone.Transport for next play
+        if (typeof state.bpm === 'number') {
+          try { Tone.Transport.bpm.value = state.bpm; } catch { /* Tone not ready yet */ }
+        }
+      },
+    }
+  )
+);
+
+

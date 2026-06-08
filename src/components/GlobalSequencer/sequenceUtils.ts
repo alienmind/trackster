@@ -91,3 +91,29 @@ export function getSequenceNoteForStep(
   
   return filteredNotes[noteIndex] || "C";
 }
+
+/**
+ * Returns the list of assignable channel keys for a node in the Global
+ * Sequencer's instrument dropdowns. Order of preference:
+ *  1. The node's per-instance `midiTrackChannels` keys (user-configured).
+ *  2. The blueprint's `midiTracks` ids (declared by the device JSON).
+ *  3. An implicit `['main']` channel when the device is `midiCapable`.
+ *
+ * Returning `['main']` (or the blueprint's first track id) as a fallback is
+ * what makes a freshly placed S1 / synth show up as an assignable instrument
+ * even before the user opens the Overview sidebar to configure channels.
+ */
+export function getAssignableChannelKeys(
+  node: { midiTrackChannels?: Record<string, unknown> } | null | undefined,
+  blueprint: { midiCapable?: boolean; midiTracks?: { id: string }[] } | null | undefined
+): string[] {
+  const configured = node?.midiTrackChannels ? Object.keys(node.midiTrackChannels) : [];
+  if (configured.length > 0) return configured;
+
+  const declared = blueprint?.midiTracks?.map(t => t.id) ?? [];
+  if (declared.length > 0) return declared;
+
+  if (blueprint?.midiCapable) return ['main'];
+
+  return [];
+}

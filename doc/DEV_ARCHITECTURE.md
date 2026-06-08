@@ -159,3 +159,58 @@ When contributing, these rules are **strictly enforced**:
 *   **Clean Architecture**: Ensure documentation and download paths respect the `deviceId` consistency rules, and avoid device-specific UI components in the global layout.
 *   **UI Component Separation**: The `src/components/Core/ui` directory is strictly reserved for verbatim shadcn/ui components. Do not modify these components or place custom UI components here. Any custom components (e.g., `DeviceUtilityDrawer`, `SidebarSection`) must be placed in their own dedicated folders under `src/components/Core/` or appropriate directories.
 *   **Command Execution**: When testing the build, running linting, or starting a dev server, you MUST use `pnpm` (e.g., `pnpm build`). Never run `npm run build` or `npm install`.
+*   **Avoid Per-Render Storms**: When working near high-frequency state sources (Global Sequencer ticks, oscilloscope samples, knob drags), follow the rules in §10 below: selector subscriptions, `useMemo`/`useCallback` for derived data and handlers, `React.memo` on leaf widgets, and primitive-scalar `useEffect` dependencies.
+
+
+---
+
+## 10. Avoiding Per-Render Storms
+
+Trackster has several "high-frequency state sources" that update many times per second:
+- The Global Sequencer's `currentStep` (a `Tone.Loop` ticking at 16th notes, ~10 Hz at 120 BPM).
+- The Oscilloscope's analyser sample reads (rAF-driven, ~60 Hz when visible).
+- Drag-driven knob and slider updates.
+
+Any component that subscribes to one of these sources will re-render at that rate. Without care, every other component co-located in the same panel re-renders too, causing audible glitches (parameter ramps fighting user drags), wasted CPU, and visual artifacts like knobs "snapping back". The following rules are **strictly enforced**:
+
+### 10.1 Subscribe with selectors, never destructure the whole store
+Subscribing to a Zustand store with `const { a, b, c } = useStore()` re-renders the component on **every** state change, even unrelated ones. Always use a selector that returns only the slice the component reads:
+
+```typescript
+// WRONG: re-renders on every other slice change too
+const { isPlaying, currentStep, tracks } = useSequencerStore();
+
+// RIGHT: each subscription only watches its own slice
+const isPlaying = useSequencerStore(s => s.isPlaying);
+const currentStep = useSequencerStore(s => s.currentStep);
+
+// RIGHT: when you need multiple slices, use `useShallow` so the dependency is
+// shallow-compared instead of reference-compared
+import { useShallow } from 'zustand/react/shallow';
+const trackAssignments = useSequencerStore(useShallow(s => s.trackAssignments));
+```
+
+### 10.2 Isolate the high-frequency slice in a small child component
+If exactly one element needs to react to `currentStep` (or another fast slice), do not subscribe to it in the parent panel. Instead, lift just that element into a small dedicated component that subscribes locally. The parent then stays stable.
+
+### 10.3 Memoize derived objects with `useMemo` and handlers with `useCallback`
+Inline object literals (`{ ...defaults, ...store.value }`) and inline arrow callbacks (`onChange={(v) => setX({ ...x, foo: v })}`) get a fresh identity on every render. They defeat both `React.memo` on child components AND `useEffect` dependency arrays. Wrap derived slice objects in `useMemo`, and pass `useCallback`-stabilised handlers to child components.
+
+### 10.4 `React.memo` re-rendered leaf widgets (`<Knob>`, `<StepPad>`, `<Pad>` ...)
+Tactile leaf components from `src/components/Core/HardwareUI/` (and device-specific variants such as `<S1Knob>`) **must** be wrapped in `React.memo`. Their props (a `value` number and a stable `onChange`) are cheap to shallow-compare, and skipping re-renders is the single biggest perf win during sequencer playback. For this to work, callers MUST pass stable callbacks (rule 10.3).
+
+### 10.5 Side-effect `useEffect`s must depend on **primitive scalars**
+A `useEffect(() => { ... }, [mixer, adsr, filter])` whose deps are objects rebuilt every render fires every render. Either memoize the objects (rule 10.3) **and** key the effect on them, or - preferred for audio-param ramps - split into separate effects each keyed on the specific scalar that triggered them:
+
+```typescript
+useEffect(() => { node.gain.rampTo(mixer.saw, 0.1); }, [mixer.saw]);
+useEffect(() => { node.gain.rampTo(mixer.sub, 0.1); }, [mixer.sub]);
+```
+
+This is especially important for parameter smoothing on Tone.js nodes: calling `param.rampTo(target, t)` 10 times a second with the same target schedules redundant ramps that can fight user drags.
+
+### 10.6 Window/document listeners attached on user gestures
+When you `window.addEventListener('pointermove', handler)` inside a pointer-down callback (knobs, sliders, draggable cables), the handler reference must be stable across re-renders of the parent (otherwise `removeEventListener` will be called with a different reference and leak). The canonical pattern is to store the latest props in a ref and let the registered listener read through that ref. See `src/hooks/useKnobInteraction.ts` for a reference implementation.
+
+### 10.7 Never `console.log` inside an audio-loop callback
+A `Tone.Loop`, `setInterval`, `requestAnimationFrame`, or any other tick-driven callback should never log to the console at production tempo. The DevTools console becomes the bottleneck, audio glitches appear under load, and the log entries are useless because they overflow instantly. Gate diagnostics behind an explicit debug flag, or remove them before merging.

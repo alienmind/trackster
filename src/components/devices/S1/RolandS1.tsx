@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import * as Tone from 'tone';
+import { useShallow } from 'zustand/react/shallow';
 import { useSequencerStore } from '../../../stores/useSequencerStore';
 import { useOverviewStore } from '../../../stores/useOverviewStore';
 import { useUIStore } from '../../../stores/useUIStore';
+
 import ScaleFit from '../../Core/ScaleFit/ScaleFit';
 import DeviceHelpToggle from '../../Core/DeviceHelpToggle/DeviceHelpToggle';
 import { SidebarContextPortal } from '../../Core/AppSidebar/SidebarContextPortal';
@@ -44,50 +46,186 @@ const DocLink = ({ sectionId, children, className }: { sectionId: string, childr
   );
 };
 
-const globalS1Engines = new Map<string, any>();
+
+// Strongly-typed audio-graph references for one Roland S1 instance. Exposed
+// in the module-level `globalS1Engines` map so a remount of the React tree
+// can rebind to the same audio graph.
+type S1Engine = {
+  oscSaw: Tone.Oscillator;
+  oscSqr: Tone.Oscillator;
+  oscSub: Tone.Oscillator;
+  oscNoise: Tone.Noise;
+  gainSaw: Tone.Gain;
+  gainSqr: Tone.Gain;
+  gainSub: Tone.Gain;
+  gainNoise: Tone.Gain;
+  env: Tone.AmplitudeEnvelope;
+  filterEnvNode: Tone.Envelope;
+  filterEnvScale: Tone.ScaleExp;
+  vcf: Tone.Filter;
+  lfoNode: Tone.LFO;
+  lfoOscScale: Tone.Gain;
+  lfoFilterScale: Tone.Gain;
+  lfoFilterOffset: Tone.Scale;
+  delaySend: Tone.Gain;
+  reverbSend: Tone.Gain;
+  delay: Tone.PingPongDelay;
+  reverb: Tone.Reverb;
+  dryNode: Tone.Gain;
+  limiter: Tone.Limiter;
+  loop?: Tone.Loop;
+  range?: number;
+};
+
+// Generic Tone parameter-like surface (Tone.Param, Tone.Signal, Tone.Gain.gain).
+// Note: Tone.Signal<U>.value uses a Unit type so we accept `unknown` for value
+// reads/writes (we only assign numeric values).
+type ToneParamLike = { rampTo: (val: number, time: number) => unknown; value: unknown };
+
+const globalS1Engines = new Map<string, S1Engine>();
+
+const DEFAULT_S1_STATE = {
+  mixer: { saw: 0.5, sqr: 0.0, sub: 0.5, noise: 0.0 },
+  adsr: { a: 0.1, d: 0.2, s: 0.5, r: 0.2 },
+  filter: { cutoff: 0.5, reso: 0.2, env: 0.5, lfo: 0.0 },
+  lfo: { rate: 0.5, wave: 0.0, osc: 0.0 },
+  fx: { delay: 0.0, reverb: 0.0 },
+  range: 0.5,
+};
+
+type S1DeviceState = typeof DEFAULT_S1_STATE;
+
+// Stable reference for "no deviceState yet". Reusing the same object lets the
+// useMemo dependency tracker treat the absent-state case as identity-stable.
+const EMPTY_DEVICE_STATE: Partial<S1DeviceState> = Object.freeze({});
+
 
 export default function RolandS1() {
-  const { isPlaying, togglePlaying, currentStep, tracks, trackAssignments, toggleStep, patternSize } = useSequencerStore();
+  // Fine-grained sequencer subscriptions: only the slices we actually render.
+  // `currentStep` is deliberately read into a separate variable so a future
+  // refactor can lift it into a `<StepPadGrid />` subcomponent if needed.
+  const isPlaying = useSequencerStore(s => s.isPlaying);
+  const togglePlaying = useSequencerStore(s => s.togglePlaying);
+  const currentStep = useSequencerStore(s => s.currentStep);
+  const patternSize = useSequencerStore(s => s.patternSize);
+  const toggleStep = useSequencerStore(s => s.toggleStep);
+  const addTrack = useSequencerStore(s => s.addTrack);
   const activeNodeId = useUIStore(s => s.activeNodeId);
-  const assignedTrackId = Object.keys(trackAssignments).find(tid => {
-    const assignment = trackAssignments[tid];
-    return assignment && activeNodeId && assignment.startsWith(`${activeNodeId}:`);
-  });
-  const s1Pattern = assignedTrackId ? tracks[assignedTrackId] || [] : [];
+
+  // Use shallow comparison so this only re-renders when the s1-related entries
+  // in trackAssignments change (not on every other instrument's reassignment).
+  const trackAssignments = useSequencerStore(useShallow(s => s.trackAssignments));
+  const assignedTrackId = useMemo(() => {
+    if (!activeNodeId) return undefined;
+    return Object.keys(trackAssignments).find(tid => {
+      const assignment = trackAssignments[tid];
+      return assignment && assignment.startsWith(`${activeNodeId}:`);
+    });
+  }, [trackAssignments, activeNodeId]);
+
+  // Only subscribe to *our* track's step array; other tracks ticking does not
+  // re-render the S1 panel.
+  const s1Pattern = useSequencerStore(
+    useShallow(s => (assignedTrackId ? s.tracks[assignedTrackId] || [] : []))
+  );
+
   const [page, setPage] = useState(0);
   const maxPage = Math.max(0, Math.ceil(patternSize / 16) - 1);
-  const handlePageDown = () => setPage((p: number) => Math.max(0, p - 1));
-  const handlePageUp = () => setPage((p: number) => Math.min(maxPage, p + 1));
+  const handlePageDown = useCallback(() => setPage((p: number) => Math.max(0, p - 1)), []);
+  const handlePageUp = useCallback(() => setPage((p: number) => Math.min(maxPage, p + 1)), [maxPage]);
+
   const updateNodeState = useOverviewStore(s => s.updateNodeState);
-  
-  const deviceState = useOverviewStore(s => activeNodeId ? s.nodes[activeNodeId]?.deviceState : null) || {};
+  // Selector returns the stored object directly. We push the `?? {}` fallback
+  // inside the selector so the returned reference is stable when there is no
+  // deviceState (avoids invalidating the useMemo deps below every render).
+  const deviceState = useOverviewStore(
+    useShallow(s => (activeNodeId ? (s.nodes[activeNodeId]?.deviceState as Partial<S1DeviceState>) ?? EMPTY_DEVICE_STATE : EMPTY_DEVICE_STATE))
+  );
 
-  const defaultState = {
-    mixer: { saw: 0.5, sqr: 0.0, sub: 0.5, noise: 0.0 },
-    adsr: { a: 0.1, d: 0.2, s: 0.5, r: 0.2 },
-    filter: { cutoff: 0.5, reso: 0.2, env: 0.5, lfo: 0.0 },
-    lfo: { rate: 0.5, wave: 0.0, osc: 0.0 },
-    fx: { delay: 0.0, reverb: 0.0 },
-    range: 0.5
-  };
 
-  const state = { ...defaultState, ...deviceState };
-  
-  const mixer = { ...defaultState.mixer, ...(deviceState.mixer || {}) };
-  const adsr = { ...defaultState.adsr, ...(deviceState.adsr || {}) };
-  const filter = { ...defaultState.filter, ...(deviceState.filter || {}) };
-  const lfo = { ...defaultState.lfo, ...(deviceState.lfo || {}) };
-  const fx = { ...defaultState.fx, ...(deviceState.fx || {}) };
-  const range = state.range;
+  // Memoize merged slice objects on the value bits we care about. Recomputing
+  // these objects on every render would defeat the `React.memo` on `S1Knob`
+  // and cause the smoothing effects below to fire every parent re-render
+  // (10x/s while the sequencer plays).
+  const mixer = useMemo(
+    () => ({ ...DEFAULT_S1_STATE.mixer, ...((deviceState as Partial<S1DeviceState>).mixer || {}) }),
+    [deviceState]
+  );
+  const adsr = useMemo(
+    () => ({ ...DEFAULT_S1_STATE.adsr, ...((deviceState as Partial<S1DeviceState>).adsr || {}) }),
+    [deviceState]
+  );
+  const filter = useMemo(
+    () => ({ ...DEFAULT_S1_STATE.filter, ...((deviceState as Partial<S1DeviceState>).filter || {}) }),
+    [deviceState]
+  );
+  const lfo = useMemo(
+    () => ({ ...DEFAULT_S1_STATE.lfo, ...((deviceState as Partial<S1DeviceState>).lfo || {}) }),
+    [deviceState]
+  );
+  const fx = useMemo(
+    () => ({ ...DEFAULT_S1_STATE.fx, ...((deviceState as Partial<S1DeviceState>).fx || {}) }),
+    [deviceState]
+  );
+  const range = (deviceState as Partial<S1DeviceState>).range ?? DEFAULT_S1_STATE.range;
 
-  const setMixer = (val: any) => { if(activeNodeId) updateNodeState(activeNodeId, { mixer: val }); };
-  const setAdsr = (val: any) => { if(activeNodeId) updateNodeState(activeNodeId, { adsr: val }); };
-  const setFilter = (val: any) => { if(activeNodeId) updateNodeState(activeNodeId, { filter: val }); };
-  const setLfo = (val: any) => { if(activeNodeId) updateNodeState(activeNodeId, { lfo: val }); };
-    const setRange = (val: number) => { if(activeNodeId) updateNodeState(activeNodeId, { range: val }); };
+  // Setters mutate via merging the LATEST store value (read inside the closure)
+  // so a stale captured object cannot clobber concurrent updates to sibling
+  // fields. The callbacks themselves only change when activeNodeId changes,
+  // which keeps S1Knob's React.memo effective.
+  const readDeviceState = useCallback((): Partial<S1DeviceState> => {
+    if (!activeNodeId) return {};
+    const node = useOverviewStore.getState().nodes[activeNodeId];
+    return (node?.deviceState as Partial<S1DeviceState>) || {};
+  }, [activeNodeId]);
 
-  const nodesRef = useRef<any>(null);
-  const loopRef = useRef<any>(null);
+  const setMixerField = useCallback((field: keyof S1DeviceState['mixer'], val: number) => {
+    if (!activeNodeId) return;
+    const prev = readDeviceState().mixer || DEFAULT_S1_STATE.mixer;
+    updateNodeState(activeNodeId, { mixer: { ...prev, [field]: val } });
+  }, [activeNodeId, readDeviceState, updateNodeState]);
+
+  const setAdsrField = useCallback((field: keyof S1DeviceState['adsr'], val: number) => {
+    if (!activeNodeId) return;
+    const prev = readDeviceState().adsr || DEFAULT_S1_STATE.adsr;
+    updateNodeState(activeNodeId, { adsr: { ...prev, [field]: val } });
+  }, [activeNodeId, readDeviceState, updateNodeState]);
+
+  const setFilterField = useCallback((field: keyof S1DeviceState['filter'], val: number) => {
+    if (!activeNodeId) return;
+    const prev = readDeviceState().filter || DEFAULT_S1_STATE.filter;
+    updateNodeState(activeNodeId, { filter: { ...prev, [field]: val } });
+  }, [activeNodeId, readDeviceState, updateNodeState]);
+
+  const setLfoField = useCallback((field: keyof S1DeviceState['lfo'], val: number) => {
+    if (!activeNodeId) return;
+    const prev = readDeviceState().lfo || DEFAULT_S1_STATE.lfo;
+    updateNodeState(activeNodeId, { lfo: { ...prev, [field]: val } });
+  }, [activeNodeId, readDeviceState, updateNodeState]);
+
+  const setRange = useCallback((val: number) => {
+    if (!activeNodeId) return;
+    updateNodeState(activeNodeId, { range: val });
+  }, [activeNodeId, updateNodeState]);
+
+  // Stable per-knob handlers so `React.memo(S1Knob)` actually skips renders.
+  const onMixerSaw   = useCallback((v: number) => setMixerField('saw', v),   [setMixerField]);
+  const onMixerSqr   = useCallback((v: number) => setMixerField('sqr', v),   [setMixerField]);
+  const onMixerSub   = useCallback((v: number) => setMixerField('sub', v),   [setMixerField]);
+  const onMixerNoise = useCallback((v: number) => setMixerField('noise', v), [setMixerField]);
+  const onAdsrA      = useCallback((v: number) => setAdsrField('a', v),      [setAdsrField]);
+  const onAdsrD      = useCallback((v: number) => setAdsrField('d', v),      [setAdsrField]);
+  const onAdsrS      = useCallback((v: number) => setAdsrField('s', v),      [setAdsrField]);
+  const onAdsrR      = useCallback((v: number) => setAdsrField('r', v),      [setAdsrField]);
+  const onFilterCut  = useCallback((v: number) => setFilterField('cutoff', v),[setFilterField]);
+  const onFilterReso = useCallback((v: number) => setFilterField('reso', v), [setFilterField]);
+  const onFilterEnv  = useCallback((v: number) => setFilterField('env', v),  [setFilterField]);
+  const onLfoRate    = useCallback((v: number) => setLfoField('rate', v),    [setLfoField]);
+  const onLfoWave    = useCallback((v: number) => setLfoField('wave', v),    [setLfoField]);
+
+
+  const nodesRef = useRef<S1Engine | null>(null);
+  const loopRef = useRef<Tone.Loop | null>(null);
   
 
 
@@ -183,10 +321,9 @@ export default function RolandS1() {
       const s = step % currentPatternSize;
       const isActive = p[s]?.active;
       const noteOverride = p[s]?.noteOverride;
-      
-      console.log("S1 Loop tick! activeNodeId:", activeNodeId, "isActive:", isActive, "assignedTrackId:", assignedTrackId, "step:", s);
 
       if (isActive) {
+
         const range = e.range ?? 0.5;
         const octaveOffset = Math.round((range - 0.5) * 4);
         
@@ -222,72 +359,108 @@ export default function RolandS1() {
     } // end if !globalS1Engines.has
 
     const engine = globalS1Engines.get(activeNodeId);
-    nodesRef.current = engine;
-    loopRef.current = engine.loop;
+    if (engine) {
+      nodesRef.current = engine;
+      loopRef.current = engine.loop ?? null;
+    }
 
   }, [activeNodeId]);
 
-  useEffect(() => {
-    if (!nodesRef.current) return;
-    const n = nodesRef.current;
-    
-    const smoothSet = (param: any, val: number) => {
-      try { param.rampTo(val, 0.1); } 
-      catch (e) { param.value = val; }
-    };
 
-    // Mixer
+  // Audio-param smoothing helper. Static reference, no captures.
+  const smoothSet = useCallback((param: ToneParamLike, val: number) => {
+    try { param.rampTo(val, 0.1); }
+    catch { (param as { value: number }).value = val; }
+  }, []);
+
+  // Each smoothing effect is keyed on PRIMITIVE deps so it fires only when a
+  // user-changed parameter actually changes value, not on every parent
+  // re-render (which happens at 16th-note rate when the Global Sequencer
+  // ticks). See DEV_ARCHITECTURE.md §10 on per-render-storm avoidance.
+
+  // Mixer
+  useEffect(() => {
+    const n = nodesRef.current; if (!n) return;
     smoothSet(n.gainSaw.gain, mixer.saw);
     smoothSet(n.gainSqr.gain, mixer.sqr);
     smoothSet(n.gainSub.gain, mixer.sub);
     smoothSet(n.gainNoise.gain, mixer.noise);
-    
-    // ADSR (Shared for AMP and Filter Envelope generator)
+  }, [mixer.saw, mixer.sqr, mixer.sub, mixer.noise, smoothSet]);
+
+  // ADSR (shared between amp env and filter env)
+  useEffect(() => {
+    const n = nodesRef.current; if (!n) return;
     const attack = Math.max(0.001, adsr.a * 2);
     const decay = Math.max(0.01, adsr.d * 2);
     const release = Math.max(0.01, adsr.r * 5);
-    n.env.attack = attack; 
-    n.env.decay = decay; 
-    n.env.sustain = adsr.s; 
+    n.env.attack = attack;
+    n.env.decay = decay;
+    n.env.sustain = adsr.s;
     n.env.release = release;
-    
     n.filterEnvNode.attack = attack;
     n.filterEnvNode.decay = decay;
     n.filterEnvNode.sustain = adsr.s;
     n.filterEnvNode.release = release;
-    
-    // Filter
+  }, [adsr.a, adsr.d, adsr.s, adsr.r]);
+
+  // Filter (cutoff / resonance / env depth)
+  useEffect(() => {
+    const n = nodesRef.current; if (!n) return;
     smoothSet(n.vcf.frequency, getLogFreq(filter.cutoff));
     n.vcf.Q.value = filter.reso * 20;
-    
-    // Filter Env Depth
     n.filterEnvScale.max = filter.env * 10000;
-    
-    // LFO
+  }, [filter.cutoff, filter.reso, filter.env, smoothSet]);
+
+  // LFO (rate, waveform, depths)
+  useEffect(() => {
+    const n = nodesRef.current; if (!n) return;
     smoothSet(n.lfoNode.frequency, Math.max(0.1, lfo.rate * 20));
-    let lfoType = "triangle";
-    if (lfo.wave > 0.8) lfoType = "square"; // For simplicity, map Rnd/Noise to Sqr here, Tone.js LFO doesn't have noise type directly
-    else if (lfo.wave > 0.6) lfoType = "sawtooth"; // Actually we should use the exact mappings
-    else if (lfo.wave > 0.4) lfoType = "square";
-    else if (lfo.wave > 0.2) lfoType = "sawtooth";
-    n.lfoNode.type = lfoType as any;
-    
+    let lfoType: 'triangle' | 'square' | 'sawtooth' = 'triangle';
+    if (lfo.wave > 0.8) lfoType = 'square';
+    else if (lfo.wave > 0.6) lfoType = 'sawtooth';
+    else if (lfo.wave > 0.4) lfoType = 'square';
+    else if (lfo.wave > 0.2) lfoType = 'sawtooth';
+    n.lfoNode.type = lfoType as Tone.ToneOscillatorType;
     smoothSet(n.lfoOscScale.gain, lfo.osc * 1200); // detune in cents
     smoothSet(n.lfoFilterScale.gain, filter.lfo);
-    
-    // FX
+  }, [lfo.rate, lfo.wave, lfo.osc, filter.lfo, smoothSet]);
+
+  // FX sends
+  useEffect(() => {
+    const n = nodesRef.current; if (!n) return;
     smoothSet(n.delaySend.gain, fx.delay);
     smoothSet(n.reverbSend.gain, fx.reverb);
-    
-  }, [mixer, adsr, filter, lfo, fx]);
+  }, [fx.delay, fx.reverb, smoothSet]);
 
-  const handlePadDown = async (idx: number) => {
+
+  /**
+   * Resolve the sequencer track id that this S1 instance writes into. If no
+   * track is yet bound to this device, auto-create a "main" track and assign
+   * it so the user's first pad press immediately starts editing a real
+   * sequence. The track will then appear in the Global Sequencer view.
+   */
+  const ensureAssignedTrackId = useCallback((): string | undefined => {
+    if (!activeNodeId) return undefined;
+    if (assignedTrackId) return assignedTrackId;
+    // Auto-assign: pick the device's first declared midi track if known,
+    // else fall back to 'main'. (S1's blueprint exposes 'main'.)
+    const channelKey = 'main';
+    const assignment = `${activeNodeId}:${channelKey}`;
+    addTrack(assignment);
+    // The new track id is the last key added; re-read to return it. We rely on
+    // addTrack having committed synchronously (zustand updates are sync).
+    const after = useSequencerStore.getState().trackAssignments;
+    return Object.keys(after).find(tid => after[tid] === assignment);
+  }, [activeNodeId, assignedTrackId, addTrack]);
+
+  const handlePadDown = useCallback(async (idx: number) => {
     await Tone.start();
     const globalIdx = page * 16 + idx;
     if (globalIdx >= patternSize) return; // Out of bounds of pattern
-    
+
     if (isPlaying) {
-      toggleStep('s1', globalIdx);
+      const tid = ensureAssignedTrackId();
+      if (tid) toggleStep(tid, globalIdx);
     } else {
       if (!nodesRef.current) return;
       const octaveOffset = Math.round((range - 0.5) * 4);
@@ -298,14 +471,16 @@ export default function RolandS1() {
       nodesRef.current.env.triggerAttack(Tone.now());
       nodesRef.current.filterEnvNode.triggerAttack(Tone.now());
     }
-  };
+  }, [page, patternSize, isPlaying, range, toggleStep, ensureAssignedTrackId]);
 
-  const handlePadUp = () => {
+
+  const handlePadUp = useCallback(() => {
     if (!isPlaying && nodesRef.current) {
       nodesRef.current.env.triggerRelease(Tone.now());
       nodesRef.current.filterEnvNode.triggerRelease(Tone.now());
     }
-  };
+  }, [isPlaying]);
+
 
   const getPadGlowingState = (idx: number) => {
     const globalIdx = page * 16 + idx;
@@ -380,9 +555,9 @@ export default function RolandS1() {
          {/* Col 1: LFO */}
          <div className="flex-1 flex flex-col items-center border-r border-[#444] relative z-10">
             <span className="absolute -top-4 text-[10px] text-white font-bold tracking-widest">LFO</span>
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-lfo-rate"><S1Knob label="RATE" value={lfo.rate} onChange={(v) => setLfo({...lfo, rate: v})} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-lfo-rate"><S1Knob label="RATE" value={lfo.rate} onChange={onLfoRate} /></DocLink></div>
             <div className="h-[75px] flex justify-center items-center relative w-full">
-               <DocLink sectionId="knob-lfo-wave" className="flex justify-center items-center w-full"><S1Knob label="WAVE FORM" value={lfo.wave} onChange={(v) => setLfo({...lfo, wave: v})} /></DocLink>
+               <DocLink sectionId="knob-lfo-wave" className="flex justify-center items-center w-full"><S1Knob label="WAVE FORM" value={lfo.wave} onChange={onLfoWave} /></DocLink>
                <div className="absolute top-[15px] left-[10px] text-[10px] text-white font-bold">/\</div>
                <div className="absolute top-[15px] right-[10px] text-[10px] text-white font-bold">⎍</div>
                <div className="absolute top-[35px] left-[6px] text-[10px] text-white font-bold">N</div>
@@ -402,31 +577,31 @@ export default function RolandS1() {
 
          {/* Col 3: OSC 1 / ATTACK */}
          <div className="flex-1 flex flex-col items-center relative z-10">
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc1-sqr"><S1Knob label={<SqIcon />} ringColor="#14b8a6" value={mixer.sqr} onChange={(v) => setMixer({...mixer, sqr: v})} /></DocLink></div>
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc1-sub"><S1Knob label="SUB" ringColor="#14b8a6" value={mixer.sub} onChange={(v) => setMixer({...mixer, sub: v})} /></DocLink></div>
-            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-attack"><S1Knob label="ATTACK" value={adsr.a} onChange={(v) => setAdsr({...adsr, a: v})} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc1-sqr"><S1Knob label={<SqIcon />} ringColor="#14b8a6" value={mixer.sqr} onChange={onMixerSqr} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc1-sub"><S1Knob label="SUB" ringColor="#14b8a6" value={mixer.sub} onChange={onMixerSub} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-attack"><S1Knob label="ATTACK" value={adsr.a} onChange={onAdsrA} /></DocLink></div>
          </div>
 
          {/* Col 4: OSC 2 / DECAY */}
          <div className="flex-1 flex flex-col items-center border-r border-[#444] relative z-10">
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc2-saw"><S1Knob label={<SawIcon />} ringColor="#14b8a6" value={mixer.saw} onChange={(v) => setMixer({...mixer, saw: v})} /></DocLink></div>
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc2-noise"><S1Knob label="NOISE" ringColor="#14b8a6" value={mixer.noise} onChange={(v) => setMixer({...mixer, noise: v})} /></DocLink></div>
-            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-decay"><S1Knob label="DECAY" value={adsr.d} onChange={(v) => setAdsr({...adsr, d: v})} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc2-saw"><S1Knob label={<SawIcon />} ringColor="#14b8a6" value={mixer.saw} onChange={onMixerSaw} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-osc2-noise"><S1Knob label="NOISE" ringColor="#14b8a6" value={mixer.noise} onChange={onMixerNoise} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-decay"><S1Knob label="DECAY" value={adsr.d} onChange={onAdsrD} /></DocLink></div>
          </div>
 
          {/* Col 5: FILTER 1 / SUSTAIN */}
          <div className="flex-1 flex flex-col items-center relative z-10">
             <span className="absolute -top-4 text-[10px] text-white font-bold tracking-widest left-[100%] -translate-x-1/2">FILTER</span>
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-filter-freq"><S1Knob label="FREQ" ringColor="#f97316" value={filter.cutoff} onChange={(v) => setFilter({...filter, cutoff: v})} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-filter-freq"><S1Knob label="FREQ" ringColor="#f97316" value={filter.cutoff} onChange={onFilterCut} /></DocLink></div>
             <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-filter-lfo"><S1Knob label="LFO" ringColor="#e5e7eb" /></DocLink></div>
-            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-sustain"><S1Knob label="SUSTAIN" value={adsr.s} onChange={(v) => setAdsr({...adsr, s: v})} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-sustain"><S1Knob label="SUSTAIN" value={adsr.s} onChange={onAdsrS} /></DocLink></div>
          </div>
 
          {/* Col 6: FILTER 2 / RELEASE */}
          <div className="flex-1 flex flex-col items-center border-r border-[#444] relative z-10">
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-filter-reso"><S1Knob label="RESO" ringColor="#f97316" value={filter.reso} onChange={(v) => setFilter({...filter, reso: v})} /></DocLink></div>
-            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-filter-env"><S1Knob label="ENV" ringColor="#f97316" value={filter.env} onChange={(v) => setFilter({...filter, env: v})} /></DocLink></div>
-            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-release"><S1Knob label="RELEASE" value={adsr.r} onChange={(v) => setAdsr({...adsr, r: v})} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-filter-reso"><S1Knob label="RESO" ringColor="#f97316" value={filter.reso} onChange={onFilterReso} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center"><DocLink sectionId="knob-filter-env"><S1Knob label="ENV" ringColor="#f97316" value={filter.env} onChange={onFilterEnv} /></DocLink></div>
+            <div className="h-[75px] flex justify-center items-center pt-2"><DocLink sectionId="knob-env-release"><S1Knob label="RELEASE" value={adsr.r} onChange={onAdsrR} /></DocLink></div>
          </div>
 
          {/* Col 7: EFX */}

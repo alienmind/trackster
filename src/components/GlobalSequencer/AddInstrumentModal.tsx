@@ -4,6 +4,8 @@ import { useOverviewStore } from '../../stores/useOverviewStore';
 import { useSequencerStore } from '../../stores/useSequencerStore';
 import { HARDWARE_LIBRARY } from '../../devices';
 import { useState } from 'react';
+import { getAssignableChannelKeys } from './sequenceUtils';
+
 
 interface AddInstrumentModalProps {
   isOpen: boolean;
@@ -25,19 +27,18 @@ export default function AddInstrumentModal({ isOpen, onClose }: AddInstrumentMod
     .forEach(node => {
       const blueprint = HARDWARE_LIBRARY[node.type];
       const model = blueprint?.model || node.type;
-      
-      if (node.midiTrackChannels) {
-        Object.keys(node.midiTrackChannels).forEach(channelKey => {
-          const val = `${node.id}:${channelKey}`;
-          if (!assignedSet.has(val)) {
-             options.push({
-               value: val,
-               label: `${model} (${channelKey})`
-             });
-          }
-        });
-      }
+
+      getAssignableChannelKeys(node, blueprint).forEach(channelKey => {
+        const val = `${node.id}:${channelKey}`;
+        if (!assignedSet.has(val)) {
+          options.push({
+            value: val,
+            label: `${model} (${channelKey})`
+          });
+        }
+      });
     });
+
 
   const handleAdd = () => {
     if (selectedAssignment) {

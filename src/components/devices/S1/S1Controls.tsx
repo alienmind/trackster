@@ -11,12 +11,17 @@ export const Jack = () => (
 );
 
 // Interactive Knob (S1 Specific)
-export const S1Knob = ({ label, subLabel, size = 36, ringColor = "transparent", variant = "standard", value, onChange }: { label?: React.ReactNode, subLabel?: string, size?: number, ringColor?: string, variant?: 'standard' | 'encoder', value?: number, onChange?: (val: number) => void }) => {
+// Memoized so that re-renders of the parent caused by unrelated state
+// (e.g. the Global Sequencer's `currentStep` updates) do not re-render every
+// knob in the panel. For this to be effective callers MUST pass a stable
+// `onChange` reference (use `useCallback`). See DEV_ARCHITECTURE.md §10.
+export const S1Knob = React.memo(function S1Knob({ label, subLabel, size = 36, ringColor = "transparent", variant = "standard", value, onChange }: { label?: React.ReactNode, subLabel?: string, size?: number, ringColor?: string, variant?: 'standard' | 'encoder', value?: number, onChange?: (val: number) => void }) {
   const { rotation, handlePointerDown, resetRotation } = useKnobInteraction({
     value,
     onChange,
     sensitivity: 2.7
   });
+
 
   return (
     <div className="flex flex-col items-center group relative z-10 w-12">
@@ -57,9 +62,10 @@ export const S1Knob = ({ label, subLabel, size = 36, ringColor = "transparent", 
       </div>
     </div>
   );
-};
+});
 
 // Simple SVG Icons for Waveforms
+
 export const SqIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round">
     <path d="M3 12h5v-6h8v12h5v-6h3" />
