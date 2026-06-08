@@ -104,7 +104,7 @@ export default function StagingArea() {
       </div>
       
       <div className="px-4 py-2 bg-muted/50 border-b border-border text-[10px] text-muted-foreground leading-tight">
-        <span className="font-semibold text-primary/80">NOTE:</span> These files are fully considered by automatic sample management (Duplicate Scan and Auto Arrange) and can exceed 64 items. Drag pads here to copy them for exchange!
+        <span className="font-semibold text-primary/80">NOTE:</span> The staging area is a cross-pack clipboard of references. Drag samples here from any pack to consider them in Duplicate Scan &amp; Auto Arrange. Items are references only &mdash; no files are copied to disk.
       </div>
 
       <div 
@@ -115,7 +115,7 @@ export default function StagingArea() {
         )}
       >
         {unassignedFiles.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground m-auto text-center px-4 pt-10">No unassigned files in this pack.</div>
+          <div className="text-[11px] text-muted-foreground m-auto text-center px-4 pt-10">Staging clipboard is empty. Drag samples here from any pack.</div>
         ) : (
           unassignedFiles.map(f => (
             <DraggableSample key={f.originalFilename} sample={f} />

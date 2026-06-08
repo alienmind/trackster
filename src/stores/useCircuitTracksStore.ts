@@ -419,7 +419,16 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       
       workspaceMode: null,
       deviceMode: 'samples',
-      setDeviceMode: (mode) => set({ deviceMode: mode }),
+      setDeviceMode: (mode) => {
+        // When switching INTO the pack-selection view, snap the page back to 0
+        // so the user always lands on the first 16 pack slots (where packs
+        // actually live). Otherwise leaving Page B (slots 32-63) selected
+        // would render the pack grid empty.
+        if (mode === 'packs') {
+          useUIStore.getState().setActivePage(0);
+        }
+        set({ deviceMode: mode });
+      },
       bpm: 120,
       setBpm: (bpm) => set({ bpm }),
       activeRootNote: 8,
@@ -543,7 +552,6 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     }
 
     const existingSlots = get().slotsByPack[packName];
-    const existingUnassigned = get().unassignedFilesByPack[packName];
 
     const newSlots: PadSlot[] = Array.from({ length: 64 }, (_, i) => ({ index: i, sample: null }));
     const newUnassigned: SampleFile[] = [];
@@ -599,12 +607,34 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     };
 
     await findWavFiles(packHandle);
-    
-    // Reconcile handles if we had existing layout
-    let finalSlots = newSlots;
-    let finalUnassigned = newUnassigned;
 
-    if (existingSlots && existingUnassigned) {
+    // Drop any rescanned files that the user has already marked for deletion in
+    // this pack. The on-disk deletion happens at commit time, so between mark
+    // and commit the file still exists on disk; without this filter, switching
+    // packs and coming back would make the file reappear in the staging area.
+    {
+      const pendingForPack = get().pendingDeletionsByPack[packName] || [];
+      if (pendingForPack.length > 0) {
+        const pendingNames = new Set(pendingForPack.map(f => f.originalFilename));
+        for (let i = 0; i < newSlots.length; i++) {
+          const s = newSlots[i]!;
+          if (s.sample && pendingNames.has(s.sample.originalFilename)) {
+            newSlots[i] = { ...s, sample: null };
+          }
+        }
+        for (let i = newUnassigned.length - 1; i >= 0; i--) {
+          if (pendingNames.has(newUnassigned[i]!.originalFilename)) {
+            newUnassigned.splice(i, 1);
+          }
+        }
+      }
+    }
+
+    // Reconcile handles for slots in this pack (unchanged behavior).
+    let finalSlots = newSlots;
+    let thisPackOrphans = newUnassigned;
+
+    if (existingSlots) {
       const allScanned = new Map<string, SampleFile>();
       newSlots.forEach(s => { if (s.sample) allScanned.set(s.sample.originalFilename, s.sample); });
       newUnassigned.forEach(s => allScanned.set(s.originalFilename, s));
@@ -619,17 +649,30 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         return { ...slot, sample: null }; // File deleted externally
       });
 
-      finalUnassigned = existingUnassigned.map(sample => {
-        const fresh = allScanned.get(sample.originalFilename);
-        if (fresh) {
-          allScanned.delete(sample.originalFilename);
-          return { ...sample, fileHandle: fresh.fileHandle, parentDirHandle: fresh.parentDirHandle, size: fresh.size };
-        }
-        return null;
-      }).filter(Boolean) as SampleFile[];
-
-      finalUnassigned.push(...Array.from(allScanned.values()));
+      // Leftover scanned files in this pack become this pack's orphans.
+      thisPackOrphans = Array.from(allScanned.values());
     }
+
+    // Merge this pack's orphans into the GLOBAL staging clipboard.
+    // The staging area is a cross-pack clipboard of references; switching packs
+    // must not wipe items contributed by other packs. We only refresh handles
+    // for entries that originated from THIS pack (matched by parentDirHandle
+    // name) and add any newly discovered ones.
+    const isFromThisPack = (f: SampleFile) => !!f.parentDirHandle && f.parentDirHandle.name === packName;
+    const freshByName = new Map<string, SampleFile>(thisPackOrphans.map(f => [f.originalFilename, f] as const));
+    const existingGlobal = get().unassignedFiles;
+    const nonThisPack = existingGlobal.filter(f => !isFromThisPack(f));
+    const refreshedThisPack: SampleFile[] = [];
+    const existingThisPackNames = new Set<string>();
+    for (const f of existingGlobal) {
+      if (!isFromThisPack(f)) continue;
+      existingThisPackNames.add(f.originalFilename);
+      const fresh = freshByName.get(f.originalFilename);
+      if (fresh) refreshedThisPack.push(fresh); // still on disk; use fresh handle
+      // else: file no longer in this pack on disk — drop from staging
+    }
+    const newlyDiscovered = thisPackOrphans.filter(f => !existingThisPackNames.has(f.originalFilename));
+    const finalUnassigned: SampleFile[] = [...nonThisPack, ...refreshedThisPack, ...newlyDiscovered];
 
     set((state) => {
       // Clear audio cache when switching packs to prevent playing old cached audio
@@ -1212,30 +1255,18 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
   },
 
   clearUnassigned: () => {
-    logger.log('[Store] Marking all unassigned files for deletion on next commit');
+    logger.log('[Store] Clearing global staging clipboard (no disk operations)');
     set((state) => {
-      if (!state.activePack) return state;
       if (state.unassignedFiles.length === 0) return state;
-      const snapshot = state.slots.map((s) => ({ ...s }));
-      const newUnassigned: SampleFile[] = [];
-      const newUnassignedByPack = { ...state.unassignedFilesByPack, [state.activePack]: newUnassigned };
-
-      const existing = state.pendingDeletionsByPack[state.activePack] || [];
-      const existingNames = new Set(existing.map(f => f.originalFilename));
-      const newPendingDeletions = [...existing, ...state.unassignedFiles.filter(f => !existingNames.has(f.originalFilename))];
-      const newPendingDeletionsByPack = { ...state.pendingDeletionsByPack, [state.activePack]: newPendingDeletions };
-
-      const newHistory = [...state.history, snapshot];
-      const pendingChanges = countAllPendingChanges(state.slotsByPack, state.packSlots, state.applyTagsToFilenames, state.packs, newPendingDeletionsByPack);
-
+      // Staging is a cross-pack clipboard of references — clearing it
+      // removes nothing from the SD card. We also wipe the per-pack mirror
+      // for the active pack so the loadPack reconciliation sees a clean slate.
+      const newUnassignedByPack = state.activePack
+        ? { ...state.unassignedFilesByPack, [state.activePack]: [] }
+        : state.unassignedFilesByPack;
       return {
-        unassignedFiles: newUnassigned,
-        pendingDeletions: newPendingDeletions,
-        pendingDeletionsByPack: newPendingDeletionsByPack,
-        history: newHistory,
+        unassignedFiles: [],
         unassignedFilesByPack: newUnassignedByPack,
-        historyByPack: { ...state.historyByPack, [state.activePack]: newHistory },
-        pendingChanges
       };
     });
   },
@@ -1459,6 +1490,8 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
     // Build a map from originalFilename → packName BEFORE renaming anything.
     // We can't use parentDirHandle.name because files may live in subdirectories (e.g. "PCM")
     // while the slotsByPack key is the pack name (e.g. "16_AcidTechno").
+    let failedOps = 0;
+    let failedDeletes = 0;
     const fileToPackMap = new Map<string, string>();
     const currentSlotsByPack = get().slotsByPack;
     for (const packName in currentSlotsByPack) {
@@ -1507,7 +1540,11 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
         logger.log(`[executeRenamePlan] Pass1 op${opIdx}: done`);
       } catch (err) {
         completedSteps++;
-        logger.error(`[executeRenamePlan] Pass1 op${opIdx} FAILED:`, err);
+        failedOps++;
+        if ((op.action || 'move') === 'delete') failedDeletes++;
+        // Always surface to the browser console (not just DEV) so users can
+        // diagnose silent disk failures (permission revoked, file gone, etc.).
+        console.error(`[executeRenamePlan] Pass1 op${opIdx} (${op.action || 'move'} ${op.type} "${op.from}") FAILED:`, err);
       }
     }
 
@@ -1758,6 +1795,12 @@ export const useCircuitTracksStore = create<CircuitTracksState>()(
       };
     });
 
+    if (failedOps > 0) {
+      const msg = failedDeletes > 0 && failedDeletes === failedOps
+        ? `Commit completed with errors: ${failedDeletes} delete operation${failedDeletes === 1 ? '' : 's'} failed. See the browser console for details.`
+        : `Commit completed with ${failedOps} failed operation${failedOps === 1 ? '' : 's'}. See the browser console for details.`;
+      useUIStore.getState().addNotification({ type: 'error', message: msg });
+    }
     logger.log(`[executeRenamePlan] Complete`);
   },
   
