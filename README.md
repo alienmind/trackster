@@ -6,6 +6,10 @@
 
 🌍 **Latest production build available (served online, locally installable)**: [https://alienmind.github.io/trackster/](https://alienmind.github.io/trackster/)
 
+
+> **⚠️ DISCLAIMER & CLARIFICATION ⚠️**
+> **This app is not officially supported by any of the vendors mentioned in the code. It just helps me keep track and in some cases, manage features of some real instruments (the ones that I own) based on publicly available specs, manuals and APIs. However, neither their representation on screen nor the features available in the app are (or will be) a 1:1 faithful representation of the real thing; these "emulation-like" features are incomplete and are there just to get a quick impression and to fiddle around, but cannot be considered a replacement of the original instruments.**
+
 > **⚠️ EXPERIMENTAL WARNING: POTENTIAL DATA LOSS ⚠️**
 > **This application is highly experimental and in some instances directly modifies some of your device files. Bugs or unexpected behavior CAN and WILL lead to unrecoverable data loss (obliterated packs, renamed/deleted samples).**
 > **It is MANDATORY to keep a backup of your data before using this tool. You have been warned! We strongly recommend using the default "Read-Only (Simulated)" mode unless you are 100% sure you want to write changes to your data.**

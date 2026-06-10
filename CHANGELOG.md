@@ -2,7 +2,19 @@
 
 This document tracks high-level major features and fixes across versions.
 
-## v0.5.6 (Current)
+## v0.6.2 (Current)
+
+| Type | Description |
+| --- | --- |
+| **Feature** | Roland S1-like emulator with custom synth controls, interactive layout, Tone.js synthesis, and pattern integration |
+| **Feature** | Global Multi-Track Sequencer with assignable tracks, dynamic device previews, arpeggiator, and local pattern generation |
+| **Feature** | Dynamic instrument manager to add, remove, and assign sequencer tracks to specific MIDI/Audio channels |
+| **Feature** | Oscilloscope visual enhancements including 3-way split, continuous waveforms, and spectral clustering |
+| **Feature** | Circuit Tracks staging area refactored into a global reference clipboard, deferring sample deletion to commit |
+| **Feature** | Abstracted common hardware knob interactions into a reusable hook (`useKnobInteraction`) for smoother UI control |
+| **Feature** | Custom AlienMind preset profiles, renaming, and standardized semantic button styling |
+
+## v0.5.6
 
 | Type | Description |
 | --- | --- |
