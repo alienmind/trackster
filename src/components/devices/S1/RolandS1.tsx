@@ -179,6 +179,35 @@ export default function RolandS1() {
     return (node?.deviceState as Partial<S1DeviceState>) || {};
   }, [activeNodeId]);
 
+  // Cleanup effect: Watch useOverviewStore for deleted nodes and properly dispose
+  // their Tone.js graph and global engine state to prevent ghost loops and routing bugs.
+  useEffect(() => {
+    const unsub = useOverviewStore.subscribe((state) => {
+      // Find engines that no longer have a corresponding node in the grid
+      Array.from(globalS1Engines.keys()).forEach(engineId => {
+        if (!state.nodes[engineId]) {
+          const e = globalS1Engines.get(engineId);
+          if (e) {
+            console.log("Cleaning up disposed S1 Engine:", engineId);
+            e.loop?.stop(0);
+            e.loop?.dispose();
+            
+            // Dispose core audio nodes to free resources and stop ghost sounds
+            [e.oscSaw, e.oscSqr, e.oscSub, e.oscNoise, 
+             e.gainSaw, e.gainSqr, e.gainSub, e.gainNoise,
+             e.env, e.filterEnvNode, e.vcf, e.lfoNode,
+             e.delay, e.reverb, e.limiter].forEach(node => {
+               try { node.dispose(); } catch (err) {}
+             });
+             
+            globalS1Engines.delete(engineId);
+          }
+        }
+      });
+    });
+    return unsub;
+  }, []);
+
   const setMixerField = useCallback((field: keyof S1DeviceState['mixer'], val: number) => {
     if (!activeNodeId) return;
     const prev = readDeviceState().mixer || DEFAULT_S1_STATE.mixer;
@@ -333,16 +362,16 @@ export default function RolandS1() {
         // Use override if available, else calculate from scale
         let baseFreq;
         if (noteOverride) {
-          baseFreq = Tone.Frequency(noteOverride + "3").transpose(octaveOffset * 12).toFrequency();
+          baseFreq = Tone.Frequency(noteOverride).transpose(octaveOffset * 12).toFrequency();
         } else {
           baseFreq = Tone.Frequency("C3").transpose(octaveOffset * 12).toFrequency();
         }
         
-        oscSaw.frequency.setValueAtTime(baseFreq, time);
-        oscSqr.frequency.setValueAtTime(baseFreq, time);
-        oscSub.frequency.setValueAtTime(baseFreq / 2, time);
-        env.triggerAttackRelease("16n", time);
-        filterEnvNode.triggerAttackRelease("16n", time);
+        e.oscSaw.frequency.setValueAtTime(baseFreq, time);
+        e.oscSqr.frequency.setValueAtTime(baseFreq, time);
+        e.oscSub.frequency.setValueAtTime(baseFreq / 2, time);
+        e.env.triggerAttackRelease("16n", time);
+        e.filterEnvNode.triggerAttackRelease("16n", time);
       }
       
       step++;
@@ -371,16 +400,14 @@ export default function RolandS1() {
 
 
   // Audio-param smoothing helper. Static reference, no captures.
-  const smoothSet = useCallback((param: ToneParamLike, val: number) => {
+  const smoothSet = useCallback((param: any, val: number) => {
     if (!param) return;
-    try {
-      if (typeof (param as any).value !== 'undefined') {
-        (param as any).value = val;
-      } else {
-        (param as any).rampTo?.(val, 0.05);
-      }
+    try { 
+      // Direct assignment is 100% stable during sequencer loops, whereas
+      // setTargetAtTime or rampTo can get cancelled or stuck by Transport ticks.
+      param.value = val;
     } catch (e) {
-      console.warn("smoothSet error", e, param);
+      console.warn("smoothSet error", e);
     }
   }, []);
 
@@ -405,18 +432,17 @@ export default function RolandS1() {
   // ADSR (shared between amp env and filter env)
   useEffect(() => {
     const n = nodesRef.current; if (!n) return;
-    console.log("S1 updating ADSR", adsr);
-    const attack = Math.max(0.001, adsr.a * 2);
-    const decay = Math.max(0.01, adsr.d * 2);
-    const release = Math.max(0.01, adsr.r * 5);
-    n.env.attack = attack;
-    n.env.decay = decay;
-    n.env.sustain = adsr.s;
-    n.env.release = release;
-    n.filterEnvNode.attack = attack;
-    n.filterEnvNode.decay = decay;
-    n.filterEnvNode.sustain = adsr.s;
-    n.filterEnvNode.release = release;
+    console.log("Setting S1 ADSR to", adsr);
+    // Prevent 0 attack/decay to avoid Tone.js NaN explosion
+    n.env.attack = Math.max(0.001, adsr.a); 
+    n.env.decay = Math.max(0.001, adsr.d); 
+    n.env.sustain = adsr.s; 
+    n.env.release = Math.max(0.001, adsr.r);
+    
+    n.filterEnvNode.attack = Math.max(0.001, adsr.a); 
+    n.filterEnvNode.decay = Math.max(0.001, adsr.d); 
+    n.filterEnvNode.sustain = adsr.s; 
+    n.filterEnvNode.release = Math.max(0.001, adsr.r);
   }, [adsr.a, adsr.d, adsr.s, adsr.r]);
 
   // Filter (cutoff / resonance / env depth)

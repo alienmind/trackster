@@ -37,6 +37,12 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       // Do not connect analyser to destination, it's just a passive visualizer endpoint!
       
       try {
+        // Use native connect on the Tone.Destination's underlying Web Audio node
+        // to prevent Tone.js from potentially dropping its default connection to ctx.destination
+        const outputNode = (Tone.Destination as any).output || Tone.Destination;
+        // Tone's 'output' is usually a Tone.Gain, which has an internal 'output' or '_gainNode'
+        // Tone.js automatically connects its destination to ctx.destination natively.
+        // Doing it again explicitly messes up stereo channels.
         Tone.Destination.connect(analyser as any);
       } catch (e) {
         console.error("Failed to connect Tone.Destination to analyser", e);
